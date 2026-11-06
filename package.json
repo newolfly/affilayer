@@ -1,0 +1,15 @@
+{
+  "name": "affilayer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AffiLayer — global CPA affiliate marketing network (MVP)",
+  "workspaces": ["apps/*", "services/*", "packages/*"],
+  "scripts": {
+    "install:all": "npm install",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "dev:web": "npm run dev --workspace=@affilayer/web",
+    "dev:tracking": "npm run dev --workspace=@affilayer/tracking"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,191 @@
+-- ============================================================================
+-- AffiLayer — tests/rls-checks.sql
+-- SELECT-based RLS checks to run BY HAND in the Supabase SQL editor AFTER
+-- applying migrations 001-004 to a real project.
+--
+-- This is NOT a runnable test harness: there is no live database here, and
+-- the SQL editor runs as the postgres / service role (which BYPASSES RLS),
+-- so running this file as-is in the editor proves nothing. To make the
+-- checks meaningful you must run each query WITH A REAL USER'S JWT — e.g.
+-- sign in to the app as the named demo user and run the equivalent query
+-- through the app / Supabase client, or use `SET LOCAL ROLE authenticated`
+-- plus `SET LOCAL request.jwt.claims` with a crafted JWT in a psql session
+-- connected as a superuser (see the note at the bottom).
+--
+-- Demo UUIDs (from 004_seed.sql — replace if you changed them):
+--   admin:      bbbbbbbb-0000-4000-8000-000000000001
+--   advertiser: bbbbbbbb-0000-4000-8000-000000000002
+--   affiliate1: bbbbbbbb-0000-4000-8000-000000000003  (code AFF-DEMO-001)
+--   affiliate2: bbbbbbbb-0000-4000-8000-000000000004  (code AFF-DEMO-002)
+-- ============================================================================
+
+-- ---------------------------------------------------------------------------
+-- 1. AS AFFILIATE1: own conversions are visible.
+--    Expected: 2 rows (conv_demo_001 approved, conv_demo_002 pending).
+-- ---------------------------------------------------------------------------
+-- SELECT conversion_id, status FROM public.conversions
+--   WHERE affiliate_id = 'bbbbbbbb-0000-4000-8000-000000000003';
+
+-- ---------------------------------------------------------------------------
+-- 2. AS AFFILIATE1: another affiliate's conversions are invisible.
+--    Expected: 0 rows (affiliate2's conv_demo_003 must NOT leak).
+-- ---------------------------------------------------------------------------
+-- SELECT conversion_id FROM public.conversions
+--   WHERE affiliate_id = 'bbbbbbbb-0000-4000-8000-000000000004';
+
+-- ---------------------------------------------------------------------------
+-- 3. AS AFFILIATE1: own clicks are visible; affiliate2's clicks are not.
+--    Expected: first query 3 rows, second query 0 rows.
+-- ---------------------------------------------------------------------------
+-- SELECT click_id FROM public.clicks WHERE affiliate_code = 'AFF-DEMO-001';
+-- SELECT click_id FROM public.clicks WHERE affiliate_code = 'AFF-DEMO-002';
+
+-- ---------------------------------------------------------------------------
+-- 4. AS AFFILIATE1: own ledger rows are visible; own balance view is right.
+--    Expected: ledger 2 rows; affiliate_balances for affiliate1 shows
+--    pending = 12.00, approved = 12.00, payable = 0, paid = 0.
+-- ---------------------------------------------------------------------------
+-- SELECT id, amount, status FROM public.commission_ledger
+--   WHERE affiliate_id = 'bbbbbbbb-0000-4000-8000-000000000003';
+-- SELECT * FROM public.affiliate_balances
+--   WHERE affiliate_id = 'bbbbbbbb-0000-4000-8000-000000000003';
+
+-- ---------------------------------------------------------------------------
+-- 5. AS AFFILIATE1: another affiliate's ledger is invisible.
+--    Expected: 0 rows.
+-- ---------------------------------------------------------------------------
+-- SELECT id FROM public.commission_ledger
+--   WHERE affiliate_id = 'bbbbbbbb-0000-4000-8000-000000000004';
+
+-- ---------------------------------------------------------------------------
+-- 6. AS AFFILIATE1: own payout requests are visible.
+--    Expected: 1 row (the $12.00 pending demo request).
+-- ---------------------------------------------------------------------------
+-- SELECT id, amount, status FROM public.payout_requests
+--   WHERE affiliate_id = 'bbbbbbbb-0000-4000-8000-000000000003';
+
+-- ---------------------------------------------------------------------------
+-- 7. AS AFFILIATE1: audit_logs are invisible to non-admins.
+--    Expected: 0 rows (admins-only SELECT policy).
+-- ---------------------------------------------------------------------------
+-- SELECT * FROM public.audit_logs;
+
+-- ---------------------------------------------------------------------------
+-- 8. AS AFFILIATE1: active offers are browsable (marketplace catalogue),
+--    but the paused gaming offer is visible ONLY via its own org / admin.
+--    Expected: first query 2 rows (finance + ecommerce); the paused offer
+--    must NOT appear for affiliate1.
+-- ---------------------------------------------------------------------------
+-- SELECT name, status FROM public.offers WHERE status = 'active';
+-- SELECT name FROM public.offers WHERE name = 'Demo Gaming Signup';
+
+-- ---------------------------------------------------------------------------
+-- 9. AS AFFILIATE1: direct write to a tracking table must FAIL.
+--    Expected: ERROR "new row violates row-level security policy" (or
+--    "permission denied"). If this INSERT succeeds, RLS is broken.
+-- ---------------------------------------------------------------------------
+-- INSERT INTO public.clicks (click_id, affiliate_code, offer_id)
+--   VALUES ('clk_should_fail_001', 'AFF-DEMO-001',
+--           'dddddddd-0000-4000-8000-000000000002');
+
+-- ---------------------------------------------------------------------------
+-- 10. AS AFFILIATE1: direct write to conversions / ledger must FAIL.
+--     Expected: both ERROR (no INSERT policy for authenticated).
+-- ---------------------------------------------------------------------------
+-- INSERT INTO public.conversions (conversion_id, offer_id, affiliate_id,
+--   idempotency_key) VALUES ('conv_should_fail', 'dddddddd-0000-4000-8000-000000000002',
+--   'bbbbbbbb-0000-4000-8000-000000000003', 'idem-should-fail');
+-- INSERT INTO public.commission_ledger (affiliate_id, amount)
+--   VALUES ('bbbbbbbb-0000-4000-8000-000000000003', 999.00);
+
+-- ---------------------------------------------------------------------------
+-- 11. AS AFFILIATE1: direct write to audit_logs must FAIL.
+--     Expected: ERROR (no INSERT policy for authenticated).
+-- ---------------------------------------------------------------------------
+-- INSERT INTO public.audit_logs (actor_id, action)
+--   VALUES ('bbbbbbbb-0000-4000-8000-000000000003', 'fake.action');
+
+-- ---------------------------------------------------------------------------
+-- 12. AS ADVERTISER: own org's offers + their conversions are visible,
+--     and the advertiser sees conversions on their offers.
+--     Expected: 3 offers; conversions on their offers visible (3 rows);
+--     affiliate1's ledger rows must NOT be visible to the advertiser
+--     unless via an offer (ledger SELECT allows the offer's org — expect
+--     the 3 ledger rows to appear; if that is unwanted, tighten the
+--     ledger policy in 002_rls.sql).
+-- ---------------------------------------------------------------------------
+-- SELECT name FROM public.offers
+--   WHERE organization_id = 'aaaaaaaa-0000-4000-8000-000000000002';
+-- SELECT conversion_id FROM public.conversions
+--   WHERE offer_id IN (SELECT id FROM public.offers
+--     WHERE organization_id = 'aaaaaaaa-0000-4000-8000-000000000002');
+
+-- ---------------------------------------------------------------------------
+-- 13. AS ADMIN: everything is visible.
+--     Expected: 3 conversions, 5 clicks, 3 ledger rows, audit_logs readable.
+-- ---------------------------------------------------------------------------
+-- SELECT count(*) AS conversions FROM public.conversions;  -- expect 3
+-- SELECT count(*) AS clicks FROM public.clicks;              -- expect 5
+-- SELECT count(*) AS ledger FROM public.commission_ledger;   -- expect 3
+-- SELECT count(*) AS audit FROM public.audit_logs;           -- expect >= 0
+
+-- ---------------------------------------------------------------------------
+-- 14. AS ADMIN (via SQL function call): approve a pending conversion.
+--     Run as the admin user (or service role) and check the state machine:
+--     Expected: returns 'approved'; the conversion row becomes approved;
+--     its ledger row becomes approved; an audit_logs row appears.
+--     Approving the SAME conversion a second time must ERROR
+--     ("cannot be approved from status approved").
+-- ---------------------------------------------------------------------------
+-- SELECT public.approve_conversion(
+--   '11111111-1111-4000-8000-000000000002',
+--   'bbbbbbbb-0000-4000-8000-000000000001');
+-- SELECT status FROM public.conversions
+--   WHERE id = '11111111-1111-4000-8000-000000000002';  -- expect 'approved'
+-- SELECT status FROM public.commission_ledger
+--   WHERE conversion_id = '11111111-1111-4000-8000-000000000002';  -- expect 'approved'
+-- SELECT action, entity_id FROM public.audit_logs
+--   WHERE entity_id = '11111111-1111-4000-8000-000000000002';  -- expect 'conversion.approved'
+
+-- ---------------------------------------------------------------------------
+-- 15. LEDGER IMMUTABILITY (service role / postgres): editing the amount
+--     or deleting a ledger row must FAIL.
+--     Expected: both ERROR ("commission_ledger is immutable...").
+-- ---------------------------------------------------------------------------
+-- UPDATE public.commission_ledger SET amount = 0.01
+--   WHERE id = '22222222-2222-4000-8000-000000000001';
+-- DELETE FROM public.commission_ledger
+--   WHERE id = '22222222-2222-4000-8000-000000000001';
+
+-- ---------------------------------------------------------------------------
+-- 16. DEDUP (service role): a second conversion with the same
+--     idempotency_key, or the same click+offer while the first is not
+--     reversed, must FAIL with a unique-violation error.
+--     Expected: both ERROR (unique constraint).
+-- ---------------------------------------------------------------------------
+-- INSERT INTO public.conversions (conversion_id, click_id, offer_id,
+--   affiliate_id, idempotency_key) VALUES ('conv_dup_1',
+--   'clk_demo00000000000000000001', 'dddddddd-0000-4000-8000-000000000002',
+--   'bbbbbbbb-0000-4000-8000-000000000003', 'idem-demo-001');
+-- INSERT INTO public.conversions (conversion_id, click_id, offer_id,
+--   affiliate_id, idempotency_key) VALUES ('conv_dup_2',
+--   'clk_demo00000000000000000001', 'dddddddd-0000-4000-8000-000000000002',
+--   'bbbbbbbb-0000-4000-8000-000000000003', 'idem-demo-999');
+
+-- ---------------------------------------------------------------------------
+-- HOW TO RUN THESE AS A REAL USER (psql, superuser connection):
+--   Supabase Auth sets request.jwt.claims from the JWT. In psql you can
+--   impersonate a user for one transaction like this (replace the UUID):
+--
+--     BEGIN;
+--     SET LOCAL ROLE authenticated;
+--     SET LOCAL request.jwt.claims TO
+--       '{"sub": "bbbbbbbb-0000-4000-8000-000000000003", "role": "authenticated"}';
+--     SELECT ... ;  -- paste one check here
+--     ROLLBACK;
+--
+--   The dashboard SQL editor cannot do this — it runs as postgres and
+--   bypasses RLS, so checks run there only validate syntax, not policy.
+--   The reliable end-to-end check is: sign in to the app as the demo user
+--   and confirm the app can / cannot see each row as the comments state.
+-- ---------------------------------------------------------------------------
