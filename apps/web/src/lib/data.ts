@@ -2,8 +2,12 @@
 // In Supabase mode we only SELECT user-visible tables with the anon key;
 // clicks / conversions / commission_ledger writes are service-role only
 // (see 002_rls.sql) and never happen from this browser code.
+// In demo mode reads come from the local demo store (lib/demo-store.ts),
+// so demo writes (offer create, payout requests, admin actions) show up
+// everywhere immediately. Database rows are snake_case; the mappers below
+// convert them to the shared camelCase domain types.
 import { supabase, isSupabaseConfigured } from './supabase'
-import { demoCampaigns, demoClicks, demoConversions, demoOffers, demoPayouts, demoProfiles, demoTickets } from './demo-data'
+import { getDemoState } from './demo-store'
 import type { Campaign, Click, Conversion, Offer, PayoutRequest, Profile, Stats, SupportTicket } from './types'
 
 export { isSupabaseConfigured }
@@ -25,11 +29,84 @@ function inRange(iso: string, f: ReportFilters): boolean {
   return true
 }
 
+type Row = Record<string, unknown>
+const str = (r: Row, k: string): string | undefined => (typeof r[k] === 'string' ? (r[k] as string) : undefined)
+const num = (r: Row, k: string): number | undefined => (typeof r[k] === 'number' ? (r[k] as number) : undefined)
+const arr = (r: Row, k: string): string[] | undefined => (Array.isArray(r[k]) ? (r[k] as string[]) : undefined)
+
+export function mapOffer(r: Row): Offer {
+  return {
+    id: String(r.id), name: String(r.name ?? ''), advertiserId: str(r, 'advertiser_id'),
+    campaignId: str(r, 'campaign_id'), payout: num(r, 'payout') ?? 0, currency: String(r.currency ?? 'USD'),
+    payoutModel: (r.payout_model as Offer['payoutModel']) ?? 'CPA', status: (r.status as Offer['status']) ?? 'active',
+    landingUrl: String(r.landing_url ?? ''), countries: arr(r, 'countries'), devices: arr(r, 'devices'),
+    trafficSources: arr(r, 'traffic_sources'), capDaily: num(r, 'cap_daily') ?? null,
+    capTotal: num(r, 'cap_total') ?? null, vertical: str(r, 'vertical'),
+    conversionType: str(r, 'conversion_type'), approvalRequired: Boolean(r.approval_required),
+    creatives: arr(r, 'creatives'), description: str(r, 'description'), createdAt: str(r, 'created_at'),
+  }
+}
+
+export function mapCampaign(r: Row): Campaign {
+  return {
+    id: String(r.id), name: String(r.name ?? ''), advertiserId: String(r.advertiser_id ?? ''),
+    status: (r.status as Campaign['status']) ?? 'draft', budget: num(r, 'budget'),
+    currency: String(r.currency ?? 'USD'), description: str(r, 'description'),
+    startDate: str(r, 'start_date'), endDate: str(r, 'end_date'), createdAt: str(r, 'created_at'),
+  }
+}
+
+export function mapClick(r: Row): Click {
+  return {
+    id: String(r.id), clickId: String(r.click_id ?? r.id), affiliateCode: String(r.affiliate_code ?? ''),
+    offerId: String(r.offer_id ?? ''), sub1: str(r, 'sub1'), sub2: str(r, 'sub2'), sub3: str(r, 'sub3'),
+    sub4: str(r, 'sub4'), sub5: str(r, 'sub5'), source: str(r, 'source'), referrer: str(r, 'referrer'),
+    ip: str(r, 'ip'), userAgent: str(r, 'user_agent'), country: str(r, 'country'), device: str(r, 'device'),
+    createdAt: String(r.created_at ?? ''),
+  }
+}
+
+export function mapConversion(r: Row): Conversion {
+  return {
+    id: String(r.id), clickId: String(r.click_id ?? ''), offerId: String(r.offer_id ?? ''),
+    affiliateCode: str(r, 'affiliate_code'), payout: num(r, 'payout') ?? 0, currency: String(r.currency ?? 'USD'),
+    status: (r.status as Conversion['status']) ?? 'pending', idempotencyKey: String(r.idempotency_key ?? ''),
+    sub1: str(r, 'sub1'), createdAt: String(r.created_at ?? ''),
+  }
+}
+
+export function mapProfile(r: Row): Profile {
+  return {
+    id: String(r.id), email: String(r.email ?? ''), role: (r.role as Profile['role']) ?? 'affiliate',
+    fullName: str(r, 'full_name'), status: (r.status as Profile['status']) ?? 'pending',
+    affiliateCode: str(r, 'affiliate_code'), trafficSource: str(r, 'traffic_source'),
+    vertical: str(r, 'vertical'), geo: str(r, 'geo'), volume: str(r, 'volume'),
+    paymentMethod: str(r, 'payment_method'), paymentDetails: str(r, 'payment_details'),
+    company: str(r, 'company'), createdAt: str(r, 'created_at'),
+  }
+}
+
+export function mapPayout(r: Row): PayoutRequest {
+  return {
+    id: String(r.id), affiliateCode: String(r.affiliate_code ?? ''), amount: num(r, 'amount') ?? 0,
+    currency: String(r.currency ?? 'USD'), status: (r.status as PayoutRequest['status']) ?? 'requested',
+    method: str(r, 'method'), createdAt: String(r.created_at ?? ''),
+  }
+}
+
+export function mapTicket(r: Row): SupportTicket {
+  return {
+    id: String(r.id), userId: str(r, 'user_id'), subject: String(r.subject ?? ''),
+    message: String(r.message ?? ''), status: (r.status as SupportTicket['status']) ?? 'open',
+    createdAt: String(r.created_at ?? ''),
+  }
+}
+
 export async function getOffers(): Promise<Offer[]> {
-  if (!isSupabaseConfigured || !supabase) return demoOffers
+  if (!isSupabaseConfigured || !supabase) return getDemoState().offers
   const { data, error } = await supabase.from('offers').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
-  return data as Offer[]
+  return (data as Row[]).map(mapOffer)
 }
 
 export async function getOffer(id: string): Promise<Offer | undefined> {
@@ -38,22 +115,22 @@ export async function getOffer(id: string): Promise<Offer | undefined> {
 }
 
 export async function getCampaigns(): Promise<Campaign[]> {
-  if (!isSupabaseConfigured || !supabase) return demoCampaigns
+  if (!isSupabaseConfigured || !supabase) return getDemoState().campaigns
   const { data, error } = await supabase.from('campaigns').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
-  return data as Campaign[]
+  return (data as Row[]).map(mapCampaign)
 }
 
 export async function getClicks(filters: ReportFilters = {}): Promise<Click[]> {
   if (!isSupabaseConfigured || !supabase) {
-    return demoClicks.filter(
+    return getDemoState().clicks.filter(
       (c) =>
-        inRange(c.created_at, filters) &&
-        (!filters.offerId || c.offer_id === filters.offerId) &&
+        inRange(c.createdAt, filters) &&
+        (!filters.offerId || c.offerId === filters.offerId) &&
         (!filters.country || c.country === filters.country) &&
         (!filters.device || c.device === filters.device) &&
         (!filters.source || c.source === filters.source) &&
-        (!filters.affiliateCode || c.affiliate_code === filters.affiliateCode),
+        (!filters.affiliateCode || c.affiliateCode === filters.affiliateCode),
     )
   }
   let q = supabase.from('clicks').select('*').order('created_at', { ascending: false }).limit(500)
@@ -62,44 +139,44 @@ export async function getClicks(filters: ReportFilters = {}): Promise<Click[]> {
   if (filters.device) q = q.eq('device', filters.device)
   const { data, error } = await q
   if (error || !data) return []
-  return (data as Click[]).filter((c) => inRange(c.created_at, filters))
+  return (data as Row[]).map(mapClick).filter((c) => inRange(c.createdAt, filters))
 }
 
 export async function getConversions(filters: ReportFilters = {}): Promise<Conversion[]> {
   if (!isSupabaseConfigured || !supabase) {
-    return demoConversions.filter(
+    return getDemoState().conversions.filter(
       (c) =>
-        inRange(c.created_at, filters) &&
-        (!filters.offerId || c.offer_id === filters.offerId) &&
-        (!filters.affiliateCode || c.affiliate_code === filters.affiliateCode),
+        inRange(c.createdAt, filters) &&
+        (!filters.offerId || c.offerId === filters.offerId) &&
+        (!filters.affiliateCode || c.affiliateCode === filters.affiliateCode),
     )
   }
   let q = supabase.from('conversions').select('*').order('created_at', { ascending: false }).limit(500)
   if (filters.offerId) q = q.eq('offer_id', filters.offerId)
   const { data, error } = await q
   if (error || !data) return []
-  return (data as Conversion[]).filter((c) => inRange(c.created_at, filters))
+  return (data as Row[]).map(mapConversion).filter((c) => inRange(c.createdAt, filters))
 }
 
 export async function getProfiles(): Promise<Profile[]> {
-  if (!isSupabaseConfigured || !supabase) return demoProfiles
+  if (!isSupabaseConfigured || !supabase) return getDemoState().profiles
   const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
-  return data as Profile[]
+  return (data as Row[]).map(mapProfile)
 }
 
 export async function getPayouts(): Promise<PayoutRequest[]> {
-  if (!isSupabaseConfigured || !supabase) return demoPayouts
+  if (!isSupabaseConfigured || !supabase) return getDemoState().payouts
   const { data, error } = await supabase.from('payout_requests').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
-  return data as PayoutRequest[]
+  return (data as Row[]).map(mapPayout)
 }
 
 export async function getTickets(): Promise<SupportTicket[]> {
-  if (!isSupabaseConfigured || !supabase) return demoTickets
+  if (!isSupabaseConfigured || !supabase) return getDemoState().tickets
   const { data, error } = await supabase.from('support_tickets').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
-  return data as SupportTicket[]
+  return (data as Row[]).map(mapTicket)
 }
 
 export function computeStats(clicks: Click[], conversions: Conversion[]): Stats {
@@ -107,7 +184,7 @@ export function computeStats(clicks: Click[], conversions: Conversion[]): Stats 
   const revenue = approved.reduce((s, c) => s + c.payout, 0)
   return {
     clicks: clicks.length,
-    unique_clicks: new Set(clicks.map((c) => c.click_id)).size,
+    uniqueClicks: new Set(clicks.map((c) => c.clickId)).size,
     conversions: conversions.length,
     approved: approved.length,
     rejected: conversions.filter((c) => c.status === 'rejected').length,

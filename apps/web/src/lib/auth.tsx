@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { supabase, isSupabaseConfigured } from './supabase'
 import { demoProfiles } from './demo-data'
+import { logAudit, updateDemo } from './demo-store'
 import type { Profile, Role } from './types'
 
 export interface AuthUser {
@@ -31,7 +32,7 @@ const Ctx = createContext<AuthCtx | null>(null)
 const DEMO_KEY = 'affilayer-demo-session'
 
 function demoToUser(p: Profile): AuthUser {
-  return { id: p.id, email: p.email, role: p.role, fullName: p.full_name, status: p.status, affiliateCode: p.affiliate_code }
+  return { id: p.id, email: p.email, role: p.role, fullName: p.fullName, status: p.status, affiliateCode: p.affiliateCode }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -59,9 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: s.user.id,
         email: s.user.email ?? '',
         role: (p?.role ?? 'affiliate') as Role,
-        fullName: p?.full_name,
+        fullName: p?.fullName,
         status: p?.status ?? 'pending',
-        affiliateCode: p?.affiliate_code,
+        affiliateCode: p?.affiliateCode,
       })
       setLoading(false)
     })
@@ -106,6 +107,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const next = { ...user, ...p, status: p.status ?? 'pending' } as AuthUser
         localStorage.setItem(DEMO_KEY, JSON.stringify(next))
         setUser(next)
+        // Demo mode: persist the application so it shows up in the admin
+        // Compliance (KYC) queue. In Supabase mode the profile row is
+        // created by the database trigger / admin flow instead.
+        if (!isSupabaseConfigured) {
+          updateDemo((s) => {
+            const existing = s.profiles.find((pr) => pr.id === user.id)
+            const profile: Profile = {
+              id: user.id,
+              email: user.email,
+              role: (p.role as Role) ?? user.role,
+              fullName: p.fullName ?? next.fullName,
+              status: 'pending',
+              affiliateCode: p.affiliateCode ?? user.affiliateCode,
+              trafficSource: p.trafficSource,
+              vertical: p.vertical,
+              geo: p.geo,
+              volume: p.volume,
+              paymentMethod: p.paymentMethod,
+              paymentDetails: p.paymentDetails,
+              company: p.company,
+              createdAt: new Date().toISOString(),
+            }
+            if (existing) Object.assign(existing, profile)
+            else s.profiles.unshift(profile)
+          })
+          logAudit(user.email, 'application.submit', 'profile', user.id, `Onboarding application submitted (${next.role}).`)
+        }
       },
     }),
     [user, loading],

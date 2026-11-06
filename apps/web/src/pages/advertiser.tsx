@@ -4,6 +4,8 @@ import { Card, Empty, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
 import { getCampaigns, getClicks, getConversions, getOffers, getProfiles, getStats } from '../lib/data'
 import { demoDailySeries } from '../lib/demo-data'
+import { logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
+import { useAuth } from '../lib/auth'
 import type { Campaign, Offer, PayoutModel } from '../lib/types'
 import { ReportFiltersForm } from './affiliate'
 import type { ReportFilters } from '../lib/data'
@@ -26,7 +28,7 @@ export function AdvertiserDashboard() {
       </div>
       <Card title="Clicks — last 7 days (demo sample)"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
       <Card title="Your offers">
-        {offers.map((o) => <div key={o.id} className="flex justify-between border-b border-slate-100 py-2 text-sm last:border-0"><span>{o.name}</span><span>{o.status} · {o.payout_model} ${o.payout}</span></div>)}
+        {offers.map((o) => <div key={o.id} className="flex justify-between border-b border-slate-100 py-2 text-sm last:border-0"><span>{o.name}</span><span>{o.status} · {o.payoutModel} ${o.payout}</span></div>)}
       </Card>
     </div>
   )
@@ -48,16 +50,42 @@ export function AdvertiserCampaigns() {
 }
 
 export function AdvertiserCreateOffer() {
+  const { user } = useAuth()
+  const { settings } = useDemoState()
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
     name: '', description: '', vertical: 'Finance', countries: 'US, GB', devices: 'desktop, mobile',
     trafficSources: 'SEO, Content', conversionType: 'Signup', payoutModel: 'CPA' as PayoutModel,
-    payout: '', currency: 'USD', capDaily: '', capTotal: '', landingUrl: '', creatives: '',
+    payout: '', currency: settings.defaultCurrency, capDaily: '', capTotal: '', landingUrl: '', creatives: '',
     approvalRequired: true,
   })
   const set = (k: keyof typeof form) => (e: { target: { value: string; checked?: boolean } }) =>
     setForm((f) => ({ ...f, [k]: k === 'approvalRequired' ? Boolean(e.target.checked) : e.target.value }))
-  const submit = (e: FormEvent) => { e.preventDefault(); setSaved(true) }
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    const payout = Number(form.payout)
+    if (!Number.isFinite(payout) || payout < 0) { setError('Payout must be a number of 0 or more.'); return }
+    let landing: URL
+    try { landing = new URL(form.landingUrl) } catch { setError('Landing URL must be a valid URL.'); return }
+    if (landing.protocol !== 'https:' && landing.protocol !== 'http:') { setError('Landing URL must start with http:// or https://.'); return }
+    const split = (v: string) => v.split(',').map((x) => x.trim()).filter(Boolean)
+    const offer: Offer = {
+      id: newId('offer'), name: form.name.trim(), description: form.description.trim(),
+      vertical: form.vertical.trim(), countries: split(form.countries), devices: split(form.devices),
+      trafficSources: split(form.trafficSources), conversionType: form.conversionType.trim(),
+      payoutModel: form.payoutModel, payout, currency: form.currency.trim() || settings.defaultCurrency,
+      capDaily: form.capDaily === '' ? null : Number(form.capDaily),
+      capTotal: form.capTotal === '' ? null : Number(form.capTotal),
+      landingUrl: form.landingUrl.trim(), creatives: split(form.creatives),
+      approvalRequired: form.approvalRequired, status: 'active', advertiserId: user?.id,
+      createdAt: new Date().toISOString(),
+    }
+    updateDemo((s) => { s.offers.unshift(offer) })
+    logAudit(user?.email ?? 'advertiser', 'offer.create', 'offer', offer.id, `Offer "${offer.name}" created (${offer.payoutModel} $${offer.payout} ${offer.currency}).`)
+    setError('')
+    setSaved(true)
+  }
   return (
     <Card title="Create offer">
       <form onSubmit={submit} className="space-y-3">
@@ -83,7 +111,8 @@ export function AdvertiserCreateOffer() {
         </div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.approvalRequired} onChange={set('approvalRequired')} /> Approval required for affiliates</label>
         <button className={btnCls}>Create offer</button>
-        {saved && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Offer saved (demo mode: stored locally only, not sent to a backend).</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {saved && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Offer created — it now appears in the offer marketplace (demo mode: stored in this browser only).</p>}
       </form>
     </Card>
   )
@@ -97,7 +126,7 @@ export function AdvertiserAffiliates() {
       {profiles.length === 0 ? <Empty text="No affiliates yet." /> : (
         <table className="w-full text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Name</th><th>Email</th><th>Code</th><th>Status</th></tr></thead>
-          <tbody>{profiles.map((p) => <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.full_name ?? '—'}</td><td>{p.email}</td><td className="font-mono">{p.affiliate_code ?? '—'}</td><td>{p.status}</td></tr>)}</tbody>
+          <tbody>{profiles.map((p) => <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.fullName ?? '—'}</td><td>{p.email}</td><td className="font-mono">{p.affiliateCode ?? '—'}</td><td>{p.status}</td></tr>)}</tbody>
         </table>
       )}
     </Card>
@@ -112,7 +141,7 @@ export function AdvertiserConversions() {
       {convs.length === 0 ? <Empty text="No conversions yet." /> : (
         <table className="w-full text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Click ID</th><th>Offer</th><th>Payout</th><th>Status</th></tr></thead>
-          <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.created_at.slice(0, 10)}</td><td className="font-mono">{c.click_id ?? '—'}</td><td>{c.offer_id}</td><td>${c.payout.toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
+          <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.createdAt.slice(0, 10)}</td><td className="font-mono">{c.clickId ?? '—'}</td><td>{c.offerId}</td><td>${c.payout.toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
         </table>
       )}
       <p className="mt-3 text-xs text-slate-400">Status changes go through approve/reject functions with ledger state-transition checks; this UI is read-only in the MVP.</p>

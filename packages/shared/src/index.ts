@@ -34,6 +34,18 @@ export interface Offer {
   trafficSources?: string[];
   /** Max clicks (cap). Undefined = uncapped. */
   cap?: number;
+  /** Daily click/conversion cap (offer-level, separate from `cap`). */
+  capDaily?: number | null;
+  /** Total cap over the offer lifetime. */
+  capTotal?: number | null;
+  /** Business vertical, e.g. 'Finance'. */
+  vertical?: string;
+  /** Conversion definition, e.g. 'Signup', 'Purchase', 'Lead'. */
+  conversionType?: string;
+  /** Affiliates must apply and be approved before promoting. */
+  approvalRequired?: boolean;
+  /** Creative asset URLs. */
+  creatives?: string[];
   description?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -46,6 +58,7 @@ export interface Campaign {
   status: 'draft' | 'active' | 'paused' | 'ended';
   budget?: number;
   currency: string;
+  description?: string;
   startDate?: string;
   endDate?: string;
   createdAt?: string;
@@ -110,6 +123,50 @@ export interface PayoutRequest {
   method?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+/** A user profile (auth user + role + onboarding details). */
+export interface Profile {
+  id: string;
+  email: string;
+  role: Role;
+  fullName?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'suspended';
+  affiliateCode?: string;
+  trafficSource?: string;
+  vertical?: string;
+  geo?: string;
+  volume?: string;
+  paymentMethod?: string;
+  paymentDetails?: string;
+  company?: string;
+  /** Human-review note from the last approve / reject / suspend decision. */
+  reviewNote?: string;
+  createdAt?: string;
+}
+
+/** A support ticket. */
+export interface SupportTicket {
+  id: string;
+  userId?: string;
+  subject: string;
+  message: string;
+  status: 'open' | 'in_progress' | 'closed';
+  createdAt: string;
+}
+
+/** Aggregated reporting numbers (server-side aggregation in production). */
+export interface Stats {
+  clicks: number;
+  uniqueClicks: number;
+  conversions: number;
+  approved: number;
+  rejected: number;
+  pending: number;
+  revenue: number;
+  commission: number;
+  epc: number;
+  cr: number;
 }
 
 export type TrackingStep = 'click' | 'conversion' | 'postback' | 'payout';

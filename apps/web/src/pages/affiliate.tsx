@@ -4,11 +4,12 @@ import { Link, useParams } from 'react-router-dom'
 import { Card, Empty, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
-import { getClicks, getConversions, getOffers, getPayouts, getStats, getTickets } from '../lib/data'
+import { getClicks, getConversions, getOffers, getStats } from '../lib/data'
 import type { ReportFilters } from '../lib/data'
 import { demoDailySeries } from '../lib/demo-data'
-import { trackingLink } from '../lib/types'
-import type { Click, Conversion, Offer, PayoutRequest, SupportTicket } from '../lib/types'
+import { logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
+import { trackingLink } from '../lib/tracking'
+import type { Click, Conversion, Offer } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
 const btnCls = 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white'
@@ -47,7 +48,7 @@ export function AffiliateDashboard() {
       <Card title="Active offers">
         {offers.filter((o) => o.status === 'active').map((o) => (
           <div key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
-            <span>{o.name} — {o.payout_model} ${o.payout} {o.currency}</span>
+            <span>{o.name} — {o.payoutModel} ${o.payout} {o.currency}</span>
             <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-blue-700">View →</Link>
           </div>
         ))}
@@ -77,7 +78,7 @@ export function AffiliateOffers() {
             {filtered.map((o) => (
               <tr key={o.id} className="border-t border-slate-100">
                 <td className="py-2 font-medium">{o.name}</td><td>{o.vertical}</td>
-                <td>{o.payout_model} ${o.payout} {o.currency}</td><td>{o.countries.join(', ')}</td><td>{o.status}</td>
+                <td>{o.payoutModel} ${o.payout} {o.currency}</td><td>{(o.countries ?? []).join(', ')}</td><td>{o.status}</td>
                 <td><Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-blue-700">View</Link></td>
               </tr>
             ))}
@@ -90,28 +91,37 @@ export function AffiliateOffers() {
 
 export function AffiliateOfferDetail() {
   const { id } = useParams()
+  const { user } = useAuth()
+  const { applications } = useDemoState()
   const [offer, setOffer] = useState<Offer | undefined>()
-  const [applied, setApplied] = useState(false)
+  const code = user?.affiliateCode ?? 'AFF-DEMO-001'
   useEffect(() => { if (id) getOffers().then((os) => setOffer(os.find((o) => o.id === id))) }, [id])
   if (!offer) return <Card><Empty text="Offer not found." /></Card>
+  const applied = applications.some((a) => a.offerId === offer.id && a.affiliateCode === code)
+  const apply = () => {
+    updateDemo((s) => {
+      s.applications.push({ id: newId('app'), offerId: offer.id, affiliateCode: code, status: offer.approvalRequired ? 'pending' : 'approved', createdAt: new Date().toISOString() })
+    })
+    logAudit(user?.email ?? code, 'offer.apply', 'offer', offer.id, `${code} applied to "${offer.name}"${offer.approvalRequired ? ' (needs approval)' : ' (auto-approved)'}.`)
+  }
   return (
     <Card title={offer.name}>
       <p className="text-sm text-slate-600">{offer.description}</p>
       <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
         <div><dt className="text-slate-500">Vertical</dt><dd>{offer.vertical}</dd></div>
-        <div><dt className="text-slate-500">Conversion</dt><dd>{offer.conversion_type}</dd></div>
-        <div><dt className="text-slate-500">Payout</dt><dd>{offer.payout_model} ${offer.payout} {offer.currency}</dd></div>
-        <div><dt className="text-slate-500">Countries</dt><dd>{offer.countries.join(', ')}</dd></div>
-        <div><dt className="text-slate-500">Devices</dt><dd>{offer.devices.join(', ')}</dd></div>
-        <div><dt className="text-slate-500">Traffic sources</dt><dd>{offer.traffic_sources.join(', ')}</dd></div>
-        <div><dt className="text-slate-500">Caps</dt><dd>Daily {offer.cap_daily ?? '—'} · Total {offer.cap_total ?? '—'}</dd></div>
-        <div><dt className="text-slate-500">Approval required</dt><dd>{offer.approval_required ? 'Yes' : 'No'}</dd></div>
-        <div><dt className="text-slate-500">Landing URL</dt><dd className="break-all">{offer.landing_url}</dd></div>
+        <div><dt className="text-slate-500">Conversion</dt><dd>{offer.conversionType}</dd></div>
+        <div><dt className="text-slate-500">Payout</dt><dd>{offer.payoutModel} ${offer.payout} {offer.currency}</dd></div>
+        <div><dt className="text-slate-500">Countries</dt><dd>{(offer.countries ?? []).join(', ')}</dd></div>
+        <div><dt className="text-slate-500">Devices</dt><dd>{(offer.devices ?? []).join(', ')}</dd></div>
+        <div><dt className="text-slate-500">Traffic sources</dt><dd>{(offer.trafficSources ?? []).join(', ')}</dd></div>
+        <div><dt className="text-slate-500">Caps</dt><dd>Daily {offer.capDaily ?? '—'} · Total {offer.capTotal ?? '—'}</dd></div>
+        <div><dt className="text-slate-500">Approval required</dt><dd>{offer.approvalRequired ? 'Yes' : 'No'}</dd></div>
+        <div><dt className="text-slate-500">Landing URL</dt><dd className="break-all">{offer.landingUrl}</dd></div>
         <div><dt className="text-slate-500">Status</dt><dd>{offer.status}</dd></div>
       </dl>
       {applied
         ? <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Application submitted. You will be notified when the advertiser reviews it.</p>
-        : <button className={`${btnCls} mt-4`} onClick={() => setApplied(true)}>{offer.approval_required ? 'Apply for this offer' : 'Join this offer'}</button>}
+        : <button className={`${btnCls} mt-4`} onClick={apply}>{offer.approvalRequired ? 'Apply for this offer' : 'Join this offer'}</button>}
       <Link to="/app/affiliate/tracking-links" className="ml-3 text-sm font-semibold text-blue-700">Generate tracking link →</Link>
     </Card>
   )
@@ -125,7 +135,7 @@ export function AffiliateMyCampaigns() {
       <p className="mb-3 text-sm text-slate-500">Offers you have joined or been approved for. In demo mode this lists active offers as a sample.</p>
       {approved.length === 0 ? <Empty text="No campaigns yet. Browse offers and apply." /> : approved.map((o) => (
         <div key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
-          <span>{o.name} — {o.payout_model} ${o.payout} {o.currency}</span>
+          <span>{o.name} — {o.payoutModel} ${o.payout} {o.currency}</span>
           <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-blue-700">View</Link>
         </div>
       ))}
@@ -204,8 +214,8 @@ export function AffiliateReports() {
   }, [filters])
   const byOffer = useMemo(() => {
     const m = new Map<string, { clicks: number; convs: number }>()
-    clicks.forEach((c) => m.set(c.offer_id, { clicks: (m.get(c.offer_id)?.clicks ?? 0) + 1, convs: m.get(c.offer_id)?.convs ?? 0 }))
-    convs.forEach((c) => m.set(c.offer_id, { clicks: m.get(c.offer_id)?.clicks ?? 0, convs: (m.get(c.offer_id)?.convs ?? 0) + 1 }))
+    clicks.forEach((c) => m.set(c.offerId, { clicks: (m.get(c.offerId)?.clicks ?? 0) + 1, convs: m.get(c.offerId)?.convs ?? 0 }))
+    convs.forEach((c) => m.set(c.offerId, { clicks: m.get(c.offerId)?.clicks ?? 0, convs: (m.get(c.offerId)?.convs ?? 0) + 1 }))
     return [...m.entries()]
   }, [clicks, convs])
   return (
@@ -232,20 +242,35 @@ export function AffiliateReports() {
 }
 
 export function AffiliatePostbacks() {
+  const { user } = useAuth()
+  const { postbacks } = useDemoState()
+  const code = user?.affiliateCode ?? 'AFF-DEMO-001'
   const [url, setUrl] = useState('')
-  const [saved, setSaved] = useState<string[]>([])
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
+  const mine = postbacks.filter((p) => p.affiliateCode === code)
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (url) { setSaved((s) => [...s, url]); setUrl('') }
+    if (!url.trim()) return
+    let parsed: URL
+    try { parsed = new URL(url.trim()) } catch { setError('Enter a valid URL starting with http:// or https://.'); return }
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') { setError('Postback URL must start with http:// or https://.'); return }
+    updateDemo((s) => { s.postbacks.push({ id: newId('pb'), affiliateCode: code, url: url.trim(), createdAt: new Date().toISOString() }) })
+    logAudit(user?.email ?? code, 'postback.save', 'postback', code, `Postback URL registered for ${code}.`)
+    setUrl('')
+    setError('')
+    setSaved(true)
   }
   return (
     <Card title="Postbacks">
       <p className="mb-3 text-sm text-slate-500">Register a postback URL. Supported macros: {'{click_id}'} {'{conversion_id}'} {'{payout}'} {'{currency}'} {'{status}'} {'{sub1}'}. The tracking service calls it when a conversion is recorded.</p>
       <form onSubmit={submit} className="flex gap-2">
-        <input className={`${inputCls} flex-1`} placeholder="https://example.com/postback?click_id={click_id}&payout={payout}" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <input className={`${inputCls} flex-1`} type="url" required placeholder="https://example.com/postback?click_id={click_id}&payout={payout}" value={url} onChange={(e) => setUrl(e.target.value)} />
         <button className={btnCls}>Save</button>
       </form>
-      {saved.length === 0 ? <p className="mt-4 text-sm text-slate-500">No postbacks configured.</p> : saved.map((u) => <p key={u} className="mt-2 break-all rounded-lg bg-slate-50 px-3 py-2 text-sm font-mono">{u}</p>)}
+      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {saved && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Postback saved (demo mode: stored in this browser only).</p>}
+      {mine.length === 0 ? <p className="mt-4 text-sm text-slate-500">No postbacks configured.</p> : mine.map((u) => <p key={u.id} className="mt-2 break-all rounded-lg bg-slate-50 px-3 py-2 text-sm font-mono">{u.url}</p>)}
       <p className="mt-4 text-xs text-slate-400">Demo mode: postbacks are stored locally only and are not sent anywhere.</p>
     </Card>
   )
@@ -266,7 +291,7 @@ export function AffiliateEarnings() {
         {convs.length === 0 ? <Empty text="No conversions yet." /> : (
           <table className="w-full text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Offer</th><th>Payout</th><th>Status</th></tr></thead>
-            <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.created_at.slice(0, 10)}</td><td>{c.offer_id}</td><td>${c.payout.toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
+            <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.createdAt.slice(0, 10)}</td><td>{c.offerId}</td><td>${c.payout.toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
           </table>
         )}
       </Card>
@@ -275,24 +300,54 @@ export function AffiliateEarnings() {
 }
 
 export function AffiliatePayouts() {
-  const { data: payouts } = useLoad(getPayouts, [] as PayoutRequest[])
+  const { user } = useAuth()
+  const { payouts, settings, conversions, profiles } = useDemoState()
+  const code = user?.affiliateCode ?? 'AFF-DEMO-001'
+  const mine = payouts.filter((p) => p.affiliateCode === code)
   const [amount, setAmount] = useState('')
   const [requested, setRequested] = useState(false)
+  const [error, setError] = useState('')
+  const approvedBalance = conversions
+    .filter((c) => c.affiliateCode === code && c.status === 'approved')
+    .reduce((s, c) => s + c.payout, 0)
+  const method = profiles.find((p) => p.affiliateCode === code)?.paymentMethod ?? 'Bank transfer'
+  const request = (e: FormEvent) => {
+    e.preventDefault()
+    const value = Number(amount)
+    if (!Number.isFinite(value) || value <= 0) { setError('Enter an amount greater than 0.'); return }
+    if (value < settings.minPayout) { setError(`Minimum payout is $${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}.`); return }
+    if (value > approvedBalance) { setError(`Amount exceeds your approved balance of $${approvedBalance.toFixed(2)}.`); return }
+    updateDemo((s) => {
+      s.payouts.unshift({
+        id: newId('pay'), affiliateCode: code, amount: value, currency: settings.defaultCurrency,
+        status: 'requested', method, createdAt: new Date().toISOString(),
+      })
+    })
+    logAudit(user?.email ?? code, 'payout.request', 'payout', code, `Payout requested: $${value.toFixed(2)} ${settings.defaultCurrency}.`)
+    setAmount('')
+    setError('')
+    setRequested(true)
+  }
   return (
     <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Stat label="Approved balance" value={`$${approvedBalance.toFixed(2)}`} />
+        <Stat label="Minimum payout" value={`$${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}`} />
+      </div>
       <Card title="Request a payout">
-        <form onSubmit={(e: FormEvent) => { e.preventDefault(); setRequested(true) }} className="flex gap-2">
-          <input className={inputCls} type="number" min="0" step="0.01" placeholder="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <form onSubmit={request} className="flex gap-2">
+          <input className={inputCls} type="number" min="0" step="0.01" placeholder={`Amount (${settings.defaultCurrency})`} value={amount} onChange={(e) => setAmount(e.target.value)} />
           <button className={btnCls}>Request payout</button>
         </form>
+        {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         {requested && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Payout request submitted for review.</p>}
         <p className="mt-3 text-xs text-slate-400">Payouts are calculated from approved commissions in the ledger. Demo mode: requests are not sent anywhere.</p>
       </Card>
       <Card title="Payout history">
-        {payouts.length === 0 ? <Empty text="No payouts yet." /> : (
+        {mine.length === 0 ? <Empty text="No payouts yet." /> : (
           <table className="w-full text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
-            <tbody>{payouts.map((p) => <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.created_at.slice(0, 10)}</td><td>${p.amount.toFixed(2)} {p.currency}</td><td>{p.method}</td><td>{p.status}</td></tr>)}</tbody>
+            <tbody>{mine.map((p) => <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.createdAt.slice(0, 10)}</td><td>${p.amount.toFixed(2)} {p.currency}</td><td>{p.method ?? '—'}</td><td>{p.status}</td></tr>)}</tbody>
           </table>
         )}
       </Card>
@@ -317,14 +372,28 @@ export function AffiliateProfile() {
 }
 
 export function AffiliateTickets() {
-  const { data: tickets } = useLoad(getTickets, [] as SupportTicket[])
+  const { user } = useAuth()
+  const { tickets } = useDemoState()
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [sent, setSent] = useState(false)
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    updateDemo((s) => {
+      s.tickets.unshift({
+        id: newId('ticket'), userId: user?.id, subject: subject.trim(), message: message.trim(),
+        status: 'open', createdAt: new Date().toISOString(),
+      })
+    })
+    logAudit(user?.email ?? 'affiliate', 'ticket.create', 'ticket', subject.trim(), `Support ticket opened: "${subject.trim()}".`)
+    setSent(true)
+    setSubject('')
+    setMessage('')
+  }
   return (
     <div className="space-y-4">
       <Card title="New ticket">
-        <form onSubmit={(e: FormEvent) => { e.preventDefault(); setSent(true); setSubject(''); setMessage('') }} className="space-y-3">
+        <form onSubmit={submit} className="space-y-3">
           <input className={`${inputCls} w-full`} placeholder="Subject" required value={subject} onChange={(e) => setSubject(e.target.value)} />
           <textarea className={`${inputCls} w-full`} rows={4} placeholder="Describe the issue…" required value={message} onChange={(e) => setMessage(e.target.value)} />
           <button className={btnCls}>Submit ticket</button>

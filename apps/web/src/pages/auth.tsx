@@ -46,7 +46,7 @@ export function Login() {
                   onClick={() => { signInDemo(p.id); navigate('/app') }}
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50"
                 >
-                  {p.full_name} — {p.role} ({p.status})
+                  {p.fullName} — {p.role} ({p.status})
                 </button>
               ))}
             </div>
@@ -125,15 +125,15 @@ export function Onboarding() {
   const submit = (e: FormEvent) => {
     e.preventDefault()
     setOnboarding({
-      full_name: form.fullName,
+      fullName: form.fullName,
       role: form.role as Role,
       company: form.company,
-      traffic_source: form.trafficSource,
+      trafficSource: form.trafficSource,
       vertical: form.vertical,
       geo: form.geo,
       volume: form.volume,
-      payment_method: form.paymentMethod,
-      payment_details: form.paymentDetails,
+      paymentMethod: form.paymentMethod,
+      paymentDetails: form.paymentDetails,
       status: 'pending',
     })
     navigate('/pending')
