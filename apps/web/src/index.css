@@ -3,3 +3,78 @@
 body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+
+/* Public-site accent: orange-to-yellow gradient headings + pill buttons. */
+.grad-text {
+  background: linear-gradient(90deg, #fb923c 0%, #facc15 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pill-btn {
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #f97316 0%, #eab308 100%);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  display: inline-block;
+  transition: filter 0.15s ease;
+}
+.pill-btn:hover {
+  filter: brightness(1.1);
+}
+
+.pill-btn-outline {
+  border-radius: 9999px;
+  border: 1px solid #475569;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  display: inline-block;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.pill-btn-outline:hover {
+  border-color: #f97316;
+  background-color: rgba(249, 115, 22, 0.08);
+}
+
+/* Faint geometric line art for the public hero. */
+.hero-lines {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, black 30%, transparent 75%);
+}
+
+/* Rotating vertical word in the hero headline. */
+@keyframes rotator-word {
+  0%, 18% { opacity: 1; transform: translateY(0); }
+  25%, 93% { opacity: 0; transform: translateY(-0.6em); }
+  100% { opacity: 0; transform: translateY(0.6em); }
+}
+.rotator-word {
+  display: inline-block;
+  animation: rotator-word 3.5s ease-in-out infinite;
+}
+
+/* Dark form fields with an orange edge (public contact form). */
+.dark-field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #334155;
+  border-left: 3px solid #f97316;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+.dark-field::placeholder {
+  color: #64748b;
+}
+.dark-field:focus {
+  outline: none;
+  border-color: #f97316;
+}

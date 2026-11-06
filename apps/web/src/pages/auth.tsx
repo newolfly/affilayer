@@ -16,6 +16,7 @@ export function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [product, setProduct] = useState<'cpa' | 'smartlink'>('cpa')
   const [error, setError] = useState('')
 
   const submit = async (e: FormEvent) => {
@@ -29,6 +30,24 @@ export function Login() {
     <PublicLayout>
       <div className="mx-auto max-w-md rounded-xl bg-white p-6 text-slate-900">
         <h1 className="text-xl font-bold">Log in</h1>
+        <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
+          <button
+            type="button"
+            onClick={() => setProduct('cpa')}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold ${product === 'cpa' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
+          >CPA offers</button>
+          <button
+            type="button"
+            onClick={() => setProduct('smartlink')}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold ${product === 'smartlink' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
+          >SmartLink</button>
+        </div>
+        <p className="mt-3 text-sm text-slate-500">
+          {product === 'cpa'
+            ? 'Sign in to browse offers, generate tracking links and follow your earnings.'
+            : 'Sign in to manage your SmartLink and see which offer each click was routed to.'}
+          {' '}One account unlocks both products.
+        </p>
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         <form onSubmit={submit} className="mt-4 space-y-3">
           <div><label className={labelCls}>Email</label><input className={inputCls} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
@@ -60,15 +79,36 @@ export function Login() {
 export function Register() {
   const { signUp, signInDemo } = useAuth()
   const navigate = useNavigate()
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [role, setRole] = useState<Role>('affiliate')
+  const [accountType, setAccountType] = useState('Individual')
+  const [country, setCountry] = useState('')
+  const [messenger, setMessenger] = useState('')
+  const [messengerId, setMessengerId] = useState('')
+  const [company, setCompany] = useState('')
+  const [website, setWebsite] = useState('')
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    const r = await signUp(email, password, role)
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return
+    }
+    const r = await signUp(email, password, role, {
+      fullName: `${firstName} ${lastName}`.trim(),
+      accountType,
+      country,
+      messenger,
+      messengerId,
+      company,
+      website,
+    })
     if (r.error) setError(r.error)
     else setDone(true)
   }
@@ -77,6 +117,11 @@ export function Register() {
     <PublicLayout>
       <div className="mx-auto max-w-md rounded-xl bg-white p-6 text-slate-900">
         <h1 className="text-xl font-bold">Create an account</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          {role === 'advertiser'
+            ? 'Advertiser registration is shorter — we ask for your company and website so we can verify you.'
+            : 'Affiliate registration — tell us who you are and how you run traffic.'}
+        </p>
         {done ? (
           <div className="mt-4">
             <p className="text-sm text-slate-600">Account created. Complete onboarding to submit your application for approval.</p>
@@ -85,14 +130,46 @@ export function Register() {
         ) : (
           <form onSubmit={submit} className="mt-4 space-y-3">
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={labelCls}>First name</label><input className={inputCls} required value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
+              <div><label className={labelCls}>Last name</label><input className={inputCls} required value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
+            </div>
             <div><label className={labelCls}>Email</label><input className={inputCls} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
             <div><label className={labelCls}>Password</label><input className={inputCls} type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+            <div><label className={labelCls}>Confirm password</label><input className={inputCls} type="password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} /></div>
             <div>
               <label className={labelCls}>I am registering as</label>
               <select className={inputCls} value={role} onChange={(e) => setRole(e.target.value as Role)}>
                 <option value="affiliate">Affiliate</option>
                 <option value="advertiser">Advertiser</option>
               </select>
+            </div>
+            <div>
+              <label className={labelCls}>I am</label>
+              <select className={inputCls} value={accountType} onChange={(e) => setAccountType(e.target.value)}>
+                <option>Individual</option>
+                <option>Team</option>
+                <option>Company</option>
+              </select>
+            </div>
+            {role === 'advertiser' && (
+              <>
+                <div><label className={labelCls}>Company</label><input className={inputCls} required value={company} onChange={(e) => setCompany(e.target.value)} /></div>
+                <div><label className={labelCls}>Website</label><input className={inputCls} type="url" placeholder="https://…" required value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
+              </>
+            )}
+            <div><label className={labelCls}>Country</label><input className={inputCls} required placeholder="e.g. United States" value={country} onChange={(e) => setCountry(e.target.value)} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Messenger (optional)</label>
+                <select className={inputCls} value={messenger} onChange={(e) => setMessenger(e.target.value)}>
+                  <option value="">None</option>
+                  <option>Telegram</option>
+                  <option>WhatsApp</option>
+                  <option>Skype</option>
+                </select>
+              </div>
+              <div><label className={labelCls}>Messenger ID</label><input className={inputCls} placeholder="@username" value={messengerId} onChange={(e) => setMessengerId(e.target.value)} /></div>
             </div>
             <button className={btnCls}>Create account</button>
             {isDemoMode && (

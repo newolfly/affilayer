@@ -22,7 +22,7 @@ interface AuthCtx {
   loading: boolean
   isDemo: boolean
   signIn: (email: string, password: string) => Promise<{ error?: string }>
-  signUp: (email: string, password: string, role: Role) => Promise<{ error?: string }>
+  signUp: (email: string, password: string, role: Role, meta?: Record<string, string>) => Promise<{ error?: string }>
   signInDemo: (profileId: string) => void
   signOut: () => Promise<void>
   setOnboarding: (p: Partial<Profile>) => void
@@ -84,9 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.location.href = '/app'
         return {}
       },
-      signUp: async (email, password, role) => {
+      signUp: async (email, password, role, meta) => {
         if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured — use the demo role-picker below.' }
-        const { error } = await supabase.auth.signUp({ email, password, options: { data: { role } } })
+        const { error } = await supabase.auth.signUp({ email, password, options: { data: { role, ...(meta ?? {}) } } })
         if (error) return { error: error.message }
         return {}
       },

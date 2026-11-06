@@ -6,7 +6,7 @@ import { isDemoMode } from '../lib/data'
 export function Logo() {
   return (
     <Link to="/" className="flex items-center gap-2 font-bold text-lg text-white">
-      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">A</span>
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-yellow-500 text-white">A</span>
       AffiLayer
     </Link>
   )
@@ -14,9 +14,12 @@ export function Logo() {
 
 const publicLinks = [
   { to: '/about', label: 'About' },
+  { to: '/advantages', label: 'Advantages' },
   { to: '/advertisers', label: 'Advertisers' },
   { to: '/affiliates', label: 'Affiliates' },
   { to: '/how-it-works', label: 'How it works' },
+  { to: '/blog', label: 'Blog' },
+  { to: '/faq', label: 'FAQ' },
   { to: '/contact', label: 'Contact' },
 ]
 
@@ -46,13 +49,45 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       </header>
       <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
       <footer className="border-t border-slate-800">
-        <div className="mx-auto flex max-w-6xl flex-wrap gap-4 justify-between px-4 py-6 text-sm text-slate-400">
-          <span>© 2026 AffiLayer. All rights reserved.</span>
-          <span className="flex gap-4">
-            <Link to="/terms" className="hover:text-white">Terms</Link>
-            <Link to="/privacy" className="hover:text-white">Privacy</Link>
-            <Link to="/contact" className="hover:text-white">Contact</Link>
-          </span>
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm text-slate-400 md:grid-cols-4">
+          <div>
+            <Logo />
+            <p className="mt-3">A CPA affiliate network. Direct offers and SmartLink, with tracking and a ledger you can audit.</p>
+            <Link to="/register" className="pill-btn mt-4">Join AffiLayer</Link>
+          </div>
+          <div>
+            <p className="font-semibold text-white">Company</p>
+            <ul className="mt-3 space-y-2">
+              <li><Link to="/about" className="hover:text-white">About</Link></li>
+              <li><Link to="/advantages" className="hover:text-white">Advantages</Link></li>
+              <li><Link to="/faq" className="hover:text-white">FAQ</Link></li>
+              <li><Link to="/blog" className="hover:text-white">Blog</Link></li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold text-white">Product</p>
+            <ul className="mt-3 space-y-2">
+              <li><Link to="/affiliates" className="hover:text-white">For affiliates</Link></li>
+              <li><Link to="/advertisers" className="hover:text-white">For advertisers</Link></li>
+              <li><Link to="/how-it-works" className="hover:text-white">How it works</Link></li>
+              <li><Link to="/login" className="hover:text-white">Log in</Link></li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold text-white">Info</p>
+            <ul className="mt-3 space-y-2">
+              <li><Link to="/terms" className="hover:text-white">Terms</Link></li>
+              <li><Link to="/privacy" className="hover:text-white">Privacy</Link></li>
+              <li><Link to="/contact" className="hover:text-white">Contact</Link></li>
+            </ul>
+            <p className="mt-4 text-xs text-slate-500">Operated by MarketSync Global LLC, New Mexico, USA.</p>
+          </div>
+        </div>
+        <div className="border-t border-slate-800">
+          <div className="mx-auto flex max-w-6xl flex-wrap gap-4 justify-between px-4 py-4 text-xs text-slate-500">
+            <span>© 2026 AffiLayer. All rights reserved.</span>
+            <span>support@affilayer.com</span>
+          </div>
         </div>
       </footer>
     </div>

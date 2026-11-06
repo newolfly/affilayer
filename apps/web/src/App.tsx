@@ -9,12 +9,16 @@ import type { Role } from './lib/types'
 // so the initial bundle only carries the router, layout and auth.
 const Home = lazy(() => import('./pages/public').then((m) => ({ default: m.Home })))
 const About = lazy(() => import('./pages/public').then((m) => ({ default: m.About })))
+const Advantages = lazy(() => import('./pages/public').then((m) => ({ default: m.Advantages })))
 const AdvertisersPage = lazy(() => import('./pages/public').then((m) => ({ default: m.AdvertisersPage })))
 const AffiliatesPage = lazy(() => import('./pages/public').then((m) => ({ default: m.AffiliatesPage })))
 const HowItWorks = lazy(() => import('./pages/public').then((m) => ({ default: m.HowItWorks })))
+const Faq = lazy(() => import('./pages/public').then((m) => ({ default: m.Faq })))
 const Contact = lazy(() => import('./pages/public').then((m) => ({ default: m.Contact })))
 const Terms = lazy(() => import('./pages/public').then((m) => ({ default: m.Terms })))
 const Privacy = lazy(() => import('./pages/public').then((m) => ({ default: m.Privacy })))
+const Blog = lazy(() => import('./pages/blog').then((m) => ({ default: m.Blog })))
+const BlogPost = lazy(() => import('./pages/blog').then((m) => ({ default: m.BlogPost })))
 const Login = lazy(() => import('./pages/auth').then((m) => ({ default: m.Login })))
 const Register = lazy(() => import('./pages/auth').then((m) => ({ default: m.Register })))
 const Onboarding = lazy(() => import('./pages/auth').then((m) => ({ default: m.Onboarding })))
@@ -116,9 +120,13 @@ export default function App() {
           {/* Public */}
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/advantages" element={<Advantages />} />
           <Route path="/advertisers" element={<AdvertisersPage />} />
           <Route path="/affiliates" element={<AffiliatesPage />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/faq" element={<Faq />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
