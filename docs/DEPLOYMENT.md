@@ -1,16 +1,55 @@
 # Deployment guide — AffiLayer MVP
 
 Nothing in this repo deploys itself. Every step below is manual and explicit.
-No step here has been run against any Cloudflare account, Supabase project, or
-GitHub remote.
+
+## LIVE STATUS — 7 Nov 2026 (deploy in progress, Supabase deferred)
+
+- **Domain:** `affilayer.com` — Cloudflare zone exists (Free plan, Zone ID
+  `17c94ce53fca917182d3fd91512eb811`); nameservers at Namecheap already point
+  to `olof.ns.cloudflare.com` + `teresa.ns.cloudflare.com` and have propagated.
+  The zone will flip Pending → Active once Cloudflare verifies it.
+- **Current state:** https://affilayer.com/ shows Cloudflare **522** — the
+  imported apex A record still points at the old Namecheap parking IP
+  (`192.64.119.13`) and `www` at `parkingpage.namecheap.com`. Nothing is
+  deployed yet. The 522 clears when the Pages deploy + DNS fix below are done.
+- **Web app:** built and ready in `apps/web/dist` with
+  `VITE_TRACKING_URL=https://go.affilayer.com` baked in (demo mode — no
+  Supabase env vars). Deploy: `wrangler pages deploy apps/web/dist
+  --project-name affilayer-web`, then attach `affilayer.com` + `www` as custom
+  domains. Pages setup replaces the stale apex A record and www parking CNAME.
+- **Tracking Worker:** ported and verified in `services/tracking-worker/`
+  (`npm test` — 17/17 smoke checks pass; `wrangler deploy --dry-run` clean).
+  Deploy: `wrangler deploy` (Worker `affilayer-tracking`, route
+  `go.affilayer.com` from `wrangler.toml`), then `wrangler secret put
+  POSTBACK_SECRET` (value in `~/.affilayer-secrets`, chmod 600, never in the
+  repo). Store is in-memory per isolate — ephemeral, same as the Fastify dev
+  default. The Fastify service in `services/tracking/` is untouched as the
+  Node reference implementation (and the durable-Postgres option).
+- **BLOCKED ON AUTH (single blocker):** `wrangler login` timed out waiting for
+  the OAuth code — no browser was available to open the auth URL. To finish:
+  run `wrangler login` on the build machine, open the printed OAuth URL in a
+  browser, sign in as `sojbahmmed@gmail.com` and authorize; the
+  `localhost:8976` callback completes on the build machine. Then run the
+  deploy commands above. Alternative: create a scoped API token in the
+  Cloudflare dashboard (Pages:Edit, Workers:Edit, Zone:Edit, DNS:Edit on the
+  affilayer.com zone) and save it as `CLOUDFLARE_API_TOKEN`.
+- **Supabase:** explicitly deferred — no project created, no migrations applied.
+- **GitHub:** push to `newolfly/affilayer` is BLOCKED (403 — the
+  Sojib-programmer token cannot write to the newolfly repo). Do not retry
+  without fixing access (add Sojib-programmer as collaborator, or push from a
+  machine signed in as newolfly).
+- **Do NOT touch:** Private Email MX/SPF records, Namecheap beyond what is
+  already done, any paid feature.
 
 ## 0. Prerequisites
 
 - Node.js 20+, npm 10+
 - A Cloudflare account (for Pages + DNS)
 - A Supabase project (create at supabase.com — free tier is enough for the MVP)
-- A host for the tracking service (any Node host: VPS, Railway, Fly.io, or a
-  Cloudflare Worker is **not** suitable — the service is plain Fastify/Node)
+- A host for the tracking service — either the Cloudflare Worker port
+  (`services/tracking-worker/`, in-memory store, ephemeral per isolate) or any
+  Node host for the Fastify service (VPS, Railway, Fly.io) with optional
+  Postgres for durable state
 - Domain `affilayer.com` (owned; Namecheap) + subdomain `go.affilayer.com`
 
 ## 1. Supabase — database first
@@ -47,11 +86,23 @@ Collect for the web app:
 
 ## 2. Tracking service — `go.affilayer.com`
 
+Two implementations, same routes and behavior. Pick one:
+
+### A — Cloudflare Worker (recommended for the MVP)
+
 ```bash
-cd services/tracking
+cd services/tracking-worker
 npm install
 npm run build
+npm test            # 17 smoke checks, no account needed
+npx wrangler deploy            # Worker affilayer-tracking, route go.affilayer.com
+npx wrangler secret put POSTBACK_SECRET
 ```
+
+Store is in-memory per isolate — ephemeral. Do not treat Worker stats as
+financial truth for production volume; use option B with Postgres for that.
+
+### B — Fastify on a Node host (durable option)
 
 Environment on the host:
 
@@ -111,8 +162,15 @@ Pages environment variables (dashboard → Settings → Environment variables):
 | `VITE_TRACKING_URL` | `https://go.affilayer.com` |
 
 Then add the custom domain in Pages → Custom domains: `affilayer.com`
-(and `www.affilayer.com` if wanted) and follow Cloudflare's DNS prompts.
-The apex domain currently has no Pages project attached — this deploy creates it.
+(and `www.affilayer.com`) and follow Cloudflare's DNS prompts. Attaching the
+custom domain replaces the stale apex A record (old parking IP) and the www
+parking CNAME — verify afterwards that apex + www no longer resolve to the
+parking IP.
+
+> Note: Vite inlines env at build time. The 7 Nov 2026 build already has
+> `VITE_TRACKING_URL=https://go.affilayer.com` baked in. For future rebuilds,
+> set `VITE_TRACKING_URL` in Pages → Settings → Environment variables before
+> rebuilding (demo mode: leave the Supabase vars unset).
 
 ## 4. DNS summary (Cloudflare)
 

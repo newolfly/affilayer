@@ -1,0 +1,17 @@
+name = "affilayer-tracking"
+main = "src/index.ts"
+compatibility_date = "2026-11-06"
+workers_dev = true
+upload_source_maps = true
+
+# Custom hostname: go.affilayer.com (zone affilayer.com).
+# Deploying with this route attaches the Worker to that hostname and
+# Cloudflare provisions the DNS record for it automatically.
+[[routes]]
+pattern = "go.affilayer.com"
+zone_id = "17c94ce53fca917182d3fd91512eb811"
+
+# Secret (set with: wrangler secret put POSTBACK_SECRET).
+# HMAC key for POST /conversion. Never put a real value here.
+# [vars]
+# POSTBACK_SECRET = ""
