@@ -2,6 +2,17 @@
 
 Nothing in this repo deploys itself. Every step below is manual and explicit.
 
+## LIVE STATUS — 7 Nov 2026 ~19:57 +06 (JOB 4 DEPLOYED LIVE — MAIN SITE + DOCS; docs.affilayer.com CERT STILL PROVISIONING)
+
+- **Deployed 19:56 +06 (token was still alive — checked 19:56, 200 OK):** Pages `affilayer-web`, deployment `b6cab269` (124 files, 113 uploaded); Pages `affilayer-docs` (new project, created 19:56, deployment `3f5e9880`, 7 files). Custom domain `docs.affilayer.com` attached to `affilayer-docs` via the API 19:56 (domain id `89cf5248-95ff-48f2-ba23-19d844072b1b`, status `initializing` → `pending` at 19:58; certificate/DNS provisioning in progress — recheck in a few minutes).
+- **Live verification by curl 19:57 +06 (main site, all 200):** `/` 36,048 B; `/geo/br` 36,196 B; `/partner` 21,604 B; `/white-label` 22,926 B; `/advertise` 25,067 B; `/sitemap.xml` 7,122 B (**50 URLs**); `/advantages` serves the new art node "Auditable tracking"; `go.affilayer.com/health` `{"ok":true}` (11 B). **Note:** Cloudflare's Email Address Obfuscation rewrites plain emails in served HTML (`mailto:partner@affilayer.com` → `[email protected]` + decode script) — the address is still shown correctly in browsers; toggle in Cloudflare → Scrape Shield if plain mailto links are wanted.
+- **Live verification by curl 19:58 +06 (docs, via `affilayer-docs.pages.dev`, all 200):** `/` 3,602 B ("AffiLayer Docs", all 5 nav links); `/tracking` 4,904 B ("SmartLink" ×3); `/api`, `/getting-started`, `/postbacks`, `/payouts` all 200 after the clean-URL redirect (Pages 308s `/x.html` → `/x` — normal). The deployment-specific URL `3f5e9880.affilayer-docs.pages.dev` returns empty (rc 52) from this VM only — VM egress proxy quirk; the canonical `affilayer-docs.pages.dev` hostname serves fine.
+- **Job 4 changes (this build):** (as built 19:55, commit `17655db` — see the 19:55 entry below for the full list.)
+- **Tests: 28/28 pass** (`npm test`: 11 tracking + 17 shared). `tsc --noEmit` clean.
+- **Browser (visual) check still owed:** per-page illustrations + highlights on several pages, the three new pages, docs site on `docs.affilayer.com` once its certificate activates, loader on navy.
+- **Cloudflare token used for these deploys expires ~20:01 +06, NO refresh token** — any further deploy needs another phone authorization.
+- Worker, Supabase, DNS untouched (except the auto-provisioned docs.affilayer.com domain record, created by the Pages API).
+
 ## LIVE STATUS — 7 Nov 2026 ~19:55 +06 (JOB 4 BUILT + VERIFIED ON DISK — DEPLOY WAITING ON FRESH PHONE AUTHORIZATION)
 
 - **NOT deployed yet.** Job 4 build is complete and verified on disk (see below); the live site still serves the job-3 build (deployment `e8a7889f`). The Cloudflare access token from the 19:01 +06 exchange expires ~20:01 +06 with NO refresh token, and it was expired by the time the build finished — expected. **Next step: Sojib re-authorizes on his phone (fresh PKCE URL, same flow as 19:01 +06), then run BOTH deploys:** (1) `wrangler pages deploy apps/web/dist --project-name affilayer-web` and (2) `wrangler pages deploy apps/docs --project-name affilayer-docs` (new Pages project; attach `docs.affilayer.com` via the API afterwards — `POST /accounts/{acct}/pages/projects/affilayer-docs/domains {"name": "docs.affilayer.com"}`), then verify by curl (`/` + `/geo/br` + `/partner` + `/sitemap.xml` 50 URLs on the main site; `/` + `/api.html` on docs.affilayer.com; `go.affilayer.com/health`).
