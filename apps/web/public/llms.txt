@@ -1,0 +1,38 @@
+# AffiLayer
+
+> AffiLayer is a new global CPA affiliate network. Advertisers publish offers
+> with a defined payout and conversion action; affiliates promote those offers
+> and earn commission on attributed conversions. Tracking is full-funnel with a
+> unique click ID per click, and commissions sit in an append-only ledger that
+> moves through pending, approved, rejected or reversed states. Payouts are
+> manual and admin-approved, Net30 by default. SmartLink is one link that
+> routes each visitor to an eligible offer for their country and device using
+> clear deterministic rules — no AI optimisation, no guaranteed earnings.
+> Operated by MarketSync Global LLC, New Mexico, USA. Contact:
+> support@affilayer.com. The network is new and the offer catalogue is small
+> while advertisers are onboarded offer by offer. The web app currently runs
+> in demo mode while the Supabase backend is being connected.
+
+## Pages
+
+- [Home](https://affilayer.com/): what AffiLayer is, direct offers, SmartLink, benefits
+- [About](https://affilayer.com/about): the network, its operator, and its three principles
+- [Advantages](https://affilayer.com/advantages): what AffiLayer does differently
+- [For advertisers](https://affilayer.com/advertisers): publish offers, approve affiliates, control spend
+- [For affiliates](https://affilayer.com/affiliates): browse offers, tracking links, SmartLink, payouts
+- [How it works](https://affilayer.com/how-it-works): signup to payout in six steps
+- [FAQ](https://affilayer.com/faq): joining, traffic rules, payouts
+- [Blog](https://affilayer.com/blog): launch notes and notes on affiliate marketing
+- [Contact](https://affilayer.com/contact): general enquiries
+- [Terms](https://affilayer.com/terms): Terms of Service
+- [Privacy](https://affilayer.com/privacy): Privacy Policy
+
+## Key facts
+
+- Payout models: CPA, CPL, CPS, CPC
+- Verticals: Dating, Finance, Gaming, Sweepstakes, Nutra, iGaming
+- Payout schedule: manual and admin-approved, Net30 by default
+- Tracking link format: /c/{affiliate_code}/{offer_id}, up to five sub-parameters
+- Applications reviewed by the team, typically within 2 business days
+- No bonus or referral program at launch
+- Chat traffic and incentivised traffic are not accepted

@@ -1,12 +1,40 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAuth } from '../lib/auth'
 import { isDemoMode } from '../lib/data'
 
+/** Fades + rises its children into view the first time they scroll on screen.
+ *  No-op for users with prefers-reduced-motion (see index.css). */
+export function Reveal({ children, className = '', delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true)
+          obs.disconnect()
+        }
+      },
+      { threshold: 0.12 },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+  return (
+    <div ref={ref} className={`reveal${visible ? ' is-visible' : ''} ${className}`} style={delay ? { transitionDelay: `${delay}ms` } : undefined}>
+      {children}
+    </div>
+  )
+}
+
 export function Logo() {
   return (
-    <Link to="/" className="flex items-center gap-2 font-bold text-lg text-white">
-      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-yellow-500 text-white">A</span>
+    <Link to="/" className="flex items-center gap-2.5 font-bold text-lg text-white">
+      <img src="/logo-mark.svg" alt="AffiLayer" className="h-8 w-8" width={32} height={32} />
       AffiLayer
     </Link>
   )

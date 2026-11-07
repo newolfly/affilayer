@@ -1,0 +1,82 @@
+# AffiLayer — full reference
+
+> AffiLayer is a new global CPA affiliate network, operated by MarketSync
+> Global LLC, a registered company in New Mexico, USA. It opened on
+> 7 November 2026. The network is deliberately small at launch: a focused
+> offer catalogue, a tracking engine the team can explain, and applications
+> and conversions reviewed by hand. Contact: support@affilayer.com.
+
+## What AffiLayer is
+
+AffiLayer connects advertisers who need customers with affiliates who can
+reach them. Advertisers publish offers with a stated payout model (CPA, CPL,
+CPS or CPC), allowed countries, devices and traffic sources, and daily and
+total caps. Affiliates browse the marketplace, apply where approval is
+required, and generate tracking links with up to five sub-parameters.
+
+SmartLink is one tracking link for all of an affiliate's traffic. Each visitor
+is routed to an eligible offer based on their country and device, using clear
+deterministic rules. It does not use AI optimisation and it does not guarantee
+earnings. It pays exactly like the offer the visitor was routed to.
+
+## Tracking and money
+
+- Every click gets a unique click ID with country, device, referrer and
+  sub-parameters, and stays linked to its conversion.
+- Conversions are signed, deduplicated by idempotency key, and recorded as
+  pending until reviewed.
+- Commissions move through pending, approved, rejected or reversed states,
+  with a record of each change, in an append-only commission ledger.
+- Payouts are manual and admin-approved. The default schedule is Net30:
+  approved commissions become payable 30 days after the end of the month in
+  which they were approved.
+- Payout methods and minimum thresholds are shown in the account dashboard;
+  no fixed list is published because methods depend on country and setup.
+- The network does not run traffic itself, does not buy traffic on behalf of
+  either side, and does not promise results. Performance depends on the offer,
+  the audience and the traffic.
+
+## Rules
+
+- Fraudulent traffic of any kind is prohibited: bots, misleading creatives,
+  forced clicks, and incentivised traffic that misrepresents the offer.
+- Chat traffic and incentivised traffic are not accepted.
+- Advertisers can restrict traffic sources, GEOs and devices per offer.
+- No bonus or referral program at launch.
+
+## Status (honest)
+
+- Live: direct CPA offers, SmartLink, full-funnel tracking, commission ledger,
+  manual admin-approved payouts, application review.
+- In progress: the Supabase backend that turns demo-mode writes into stored
+  records is still being connected; the offer catalogue is small while
+  advertisers are onboarded offer by offer.
+- The web app currently runs in demo mode (sample data shown where Supabase
+  is not configured).
+
+## Pages
+
+- Home — https://affilayer.com/
+- About — https://affilayer.com/about
+- Advantages — https://affilayer.com/advantages
+- For advertisers — https://affilayer.com/advertisers
+- For affiliates — https://affilayer.com/affiliates
+- How it works — https://affilayer.com/how-it-works
+- FAQ — https://affilayer.com/faq
+- Blog — https://affilayer.com/blog
+- Launch post — https://affilayer.com/blog/affilayer-is-live
+- Contact — https://affilayer.com/contact
+- Terms — https://affilayer.com/terms
+- Privacy — https://affilayer.com/privacy
+
+## FAQ (short answers)
+
+- What is AffiLayer? A CPA affiliate network: advertisers publish offers,
+  affiliates promote them and earn commission on attributed conversions.
+- Which verticals? Dating, Finance, Gaming, Sweepstakes, Nutra, iGaming.
+- How long does approval take? Typically within 2 business days.
+- How and when do I get paid? Manual, admin-approved payouts; Net30 default.
+- What traffic is not allowed? Bots, misleading creatives, forced clicks,
+  incentivised traffic, chat traffic, and any source an offer restricts.
+- Is there a minimum payout? Thresholds are set in account settings and shown
+  on the payouts page.

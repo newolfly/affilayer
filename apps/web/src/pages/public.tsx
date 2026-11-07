@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { PublicLayout } from '../components/layout'
+import { PublicLayout, Reveal } from '../components/layout'
+import { FAQ_GROUPS } from '../lib/faq-data'
 
 const VERTICALS = ['Dating', 'Finance', 'Gaming', 'Sweepstakes', 'Nutra', 'iGaming']
 
@@ -24,6 +25,7 @@ function Hero() {
   return (
     <section className="relative overflow-hidden py-16 text-center md:py-20">
       <div className="hero-lines pointer-events-none absolute inset-0" aria-hidden />
+      <div className="hero-glow" aria-hidden />
       <div className="relative">
         <p className="text-sm font-semibold uppercase tracking-widest text-orange-400">A new CPA network — now open</p>
         <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-bold leading-tight text-white md:text-6xl">
@@ -50,7 +52,8 @@ function Hero() {
 function ProductCards() {
   return (
     <section className="mt-4 grid gap-4 md:grid-cols-2">
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+      <Reveal>
+      <div className="lift h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-orange-400">CPA offers</p>
         <h2 className="mt-2 text-2xl font-bold text-white">Direct offers, clear payouts</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
@@ -61,7 +64,9 @@ function ProductCards() {
         </p>
         <Link to="/affiliates" className="pill-btn mt-5">Browse offers →</Link>
       </div>
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+      </Reveal>
+      <Reveal delay={100}>
+      <div className="lift h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-orange-400">SmartLink</p>
         <h2 className="mt-2 text-2xl font-bold text-white">One link, every eligible offer</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
@@ -72,6 +77,7 @@ function ProductCards() {
         </p>
         <Link to="/how-it-works" className="pill-btn mt-5">How SmartLink works →</Link>
       </div>
+      </Reveal>
     </section>
   )
 }
@@ -118,19 +124,23 @@ export function BenefitsSection() {
         Here is what we actually do for affiliates and advertisers.
       </p>
       <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {BENEFITS.map((b) => (
-          <div key={b.t} className="rounded-xl bg-white p-5 text-slate-900">
+        {BENEFITS.map((b, i) => (
+          <Reveal key={b.t} delay={(i % 3) * 80}>
+          <div className="lift h-full rounded-xl bg-white p-5 text-slate-900">
             <h3 className="font-semibold">{b.t}</h3>
             <p className="mt-2 text-sm text-slate-600">{b.d}</p>
           </div>
+          </Reveal>
         ))}
-        <div className="flex flex-col justify-between rounded-xl border border-orange-500/40 bg-orange-500/10 p-5">
+        <Reveal delay={160}>
+        <div className="lift flex h-full flex-col justify-between rounded-xl border border-orange-500/40 bg-orange-500/10 p-5">
           <div>
             <h3 className="font-semibold text-white">Ready to start?</h3>
             <p className="mt-2 text-sm text-slate-300">Create an account, complete onboarding, and apply to your first offer.</p>
           </div>
           <Link to="/register" className="pill-btn mt-4 self-start">Create an account</Link>
         </div>
+        </Reveal>
       </div>
     </section>
   )
@@ -154,7 +164,7 @@ export function ContactForm() {
   }
 
   return (
-    <section className="mt-14">
+    <Reveal className="mt-14">
       <h2 className="text-center text-3xl font-bold text-white">
         Talk to <span className="grad-text">us</span>
       </h2>
@@ -179,7 +189,7 @@ export function ContactForm() {
           <button className="pill-btn w-full">Send message</button>
         </form>
       )}
-    </section>
+    </Reveal>
   )
 }
 
@@ -207,7 +217,8 @@ export function Advantages() {
       </p>
       <BenefitsSection />
       <section className="mt-14 grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <Reveal>
+        <div className="lift h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
           <h2 className="text-xl font-bold text-white">For affiliates</h2>
           <p className="mt-2 text-sm text-slate-300">
             Direct offers and one SmartLink for everything else. Track every click,
@@ -215,7 +226,9 @@ export function Advantages() {
           </p>
           <Link to="/register" className="pill-btn mt-4">Join as an affiliate</Link>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        </Reveal>
+        <Reveal delay={100}>
+        <div className="lift h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
           <h2 className="text-xl font-bold text-white">For advertisers</h2>
           <p className="mt-2 text-sm text-slate-300">
             Publish offers with your own caps and traffic rules, approve the
@@ -224,6 +237,7 @@ export function Advantages() {
           </p>
           <Link to="/register" className="pill-btn mt-4">Join as an advertiser</Link>
         </div>
+        </Reveal>
       </section>
     </PublicLayout>
   )
@@ -289,7 +303,7 @@ export function AdvertisersPage() {
           ['See attributed conversions', 'Each conversion is linked to the click that produced it, with payout, currency and status.'],
           ['Control spend', 'Caps limit volume per offer. The commission ledger records what is pending, approved and payable — and nothing becomes payable without review.'],
         ].map(([t, d]) => (
-          <div key={t} className="rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div>
+          <Reveal key={t}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div></Reveal>
         ))}
       </div>
       <Link to="/register" className="pill-btn mt-6">Register as an advertiser</Link>
@@ -316,7 +330,7 @@ export function AffiliatesPage() {
           ['Follow your numbers', 'Reports break clicks and conversions down by date, offer, country, device and source.'],
           ['Get paid from the ledger', 'Earnings are calculated from approved conversions in the commission ledger. Request a payout when your balance is payable. Payouts are manual and admin-approved, Net30 by default.'],
         ].map(([t, d]) => (
-          <div key={t} className="rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div>
+          <Reveal key={t}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div></Reveal>
         ))}
       </div>
       <Link to="/register" className="pill-btn mt-6">Register as an affiliate</Link>
@@ -340,100 +354,13 @@ export function HowItWorks() {
       </h1>
       <div className="mt-6 space-y-4">
         {steps.map(([t, d]) => (
-          <div key={t} className="rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div>
+          <Reveal key={t}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div></Reveal>
         ))}
       </div>
       <Link to="/register" className="pill-btn mt-6">Create an account</Link>
     </PublicLayout>
   )
 }
-
-const FAQ_GROUPS: { group: string; items: { q: string; a: string }[] }[] = [
-  {
-    group: 'General',
-    items: [
-      {
-        q: 'What is AffiLayer?',
-        a: 'AffiLayer is a CPA affiliate network. Advertisers publish offers with a defined payout and conversion action; affiliates promote those offers and earn commission on attributed conversions. We also provide SmartLink, a single link that routes each visitor to an eligible offer for their country and device.',
-      },
-      {
-        q: 'Which verticals do you work with?',
-        a: 'Our catalogue covers Dating, Finance, Gaming, Sweepstakes, Nutra and iGaming. The exact offers available depend on the advertisers currently on the network — the marketplace in your dashboard always shows the live list.',
-      },
-      {
-        q: 'What is SmartLink?',
-        a: 'SmartLink is one tracking link for all of your traffic. Each visitor is routed to an eligible offer based on their country and device, using clear deterministic rules. It does not use AI optimisation and it does not guarantee earnings — it simply matches traffic to offers it is allowed to run.',
-      },
-      {
-        q: 'How do I get access to offers?',
-        a: 'Create an account, complete onboarding, and wait for approval. Once approved, you can browse the marketplace. Some offers are open; others require you to apply, and the advertiser approves you before you can generate a tracking link.',
-      },
-    ],
-  },
-  {
-    group: 'About your account',
-    items: [
-      {
-        q: 'How do I register?',
-        a: 'Use the registration form and choose whether you are joining as an affiliate or an advertiser, then complete onboarding with your profile, traffic source, vertical, GEO and payment details.',
-      },
-      {
-        q: 'How long does approval take?',
-        a: 'Applications are reviewed by our team, typically within 2 business days. You can check your status on the approval page at any time.',
-      },
-      {
-        q: 'Why was my application declined?',
-        a: 'Common reasons are an incomplete profile, a traffic source we cannot verify, or a mismatch with the verticals and GEOs we currently serve. The decision message on your approval page says what to fix, and you can re-apply after updating your profile.',
-      },
-      {
-        q: 'When do my statistics and payments appear?',
-        a: 'Clicks appear in your reports as they are recorded. Conversions appear as pending once attributed, and move to approved, rejected or reversed after review. Earnings become payable only from approved conversions in the commission ledger.',
-      },
-      {
-        q: 'How does SmartLink pay out?',
-        a: 'SmartLink pays exactly like the offer the visitor was routed to — same payout model, same amount, same review process. There is no separate SmartLink rate.',
-      },
-      {
-        q: 'Are there bonuses or a referral program?',
-        a: 'Not yet. We do not run a bonus or referral program at launch. If one is introduced, the terms will be published here first.',
-      },
-    ],
-  },
-  {
-    group: 'Finance',
-    items: [
-      {
-        q: 'How and when do I get paid?',
-        a: 'Payouts are manual and admin-approved. The default schedule is Net30: approved commissions become payable 30 days after the end of the month in which they were approved. You request a payout from your dashboard when your balance is payable, and our team processes it after review.',
-      },
-      {
-        q: 'Which payout methods are available?',
-        a: 'The payout methods available to your account are shown in your dashboard payment profile. We do not publish a fixed list here because methods depend on your country and account setup.',
-      },
-      {
-        q: 'Is there a minimum payout?',
-        a: 'Minimum payout thresholds are set in your account settings and shown on the payouts page before you request a payout. Balances below the threshold stay in your account until they reach it.',
-      },
-    ],
-  },
-  {
-    group: 'Traffic rules',
-    items: [
-      {
-        q: 'What traffic is not allowed?',
-        a: 'Fraudulent traffic of any kind is prohibited: bots, misleading creatives, forced clicks, and incentivised traffic that misrepresents the offer. Each offer also lists its own allowed traffic sources, countries and devices — those rules apply on top of the network rules.',
-      },
-      {
-        q: 'Can I use chat or incentivised traffic?',
-        a: 'No. Chat traffic and incentivised traffic are not accepted on AffiLayer, and conversions from them will be rejected on review.',
-      },
-      {
-        q: 'Are some traffic types restricted per advertiser?',
-        a: 'Yes. Advertisers can restrict traffic sources, GEOs and devices per offer. Check the offer details before you promote it — running a restricted source is grounds for conversion rejection.',
-      },
-    ],
-  },
-]
 
 export function Faq() {
   return (
@@ -450,10 +377,12 @@ export function Faq() {
           <h2 className="text-xl font-bold text-white">{g.group}</h2>
           <div className="mt-4 space-y-3">
             {g.items.map((item) => (
-              <details key={item.q} className="rounded-xl bg-white p-5 text-slate-900">
+              <Reveal key={item.q}>
+              <details className="lift rounded-xl bg-white p-5 text-slate-900">
                 <summary className="cursor-pointer font-semibold">{item.q}</summary>
                 <p className="mt-2 text-sm text-slate-600">{item.a}</p>
               </details>
+              </Reveal>
             ))}
           </div>
         </section>

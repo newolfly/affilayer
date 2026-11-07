@@ -31,6 +31,18 @@ Nothing in this repo deploys itself. Every step below is manual and explicit.
   route binding for go.affilayer.com in the dashboard (Workers & Pages →
   affilayer-tracking → Settings → Triggers/Routes) — the DNS record alone
   does not prove the route is active.
+- **Polish + SEO + AI-search package DONE 7 Nov ~16:30 +06 (local, NOT deployed):**
+  logo (layered-A mark, `apps/web/public/logo*.svg`, `favicon.*`, `og-image.png`),
+  build-time prerendering of all 12 public routes (`npm run build:live` in
+  `apps/web` — build + `scripts/prerender.py`; dist/ is gitignored, so the
+  deploy step must run `build:live`, not plain `build`), robots.txt,
+  sitemap.xml, per-page titles/meta/canonical/OG, JSON-LD (Organization,
+  WebSite, FAQPage, BlogPosting), `llms.txt` + `llms-full.txt`, scroll-reveal
+  + hover-lift polish with `prefers-reduced-motion` support. Verified: tests
+  28/28, build clean (largest chunk 254 kB, no warnings), all 14 URL forms
+  HTTP 200 with correct titles on `vite preview`, React boots over
+  prerendered HTML. **Deploy pending (parent):** `wrangler pages deploy
+  apps/web/dist --project-name affilayer-web` after `npm run build:live`.
 - **Auth note:** the OAuth access token obtained 7 Nov ~07:53 (in
   `~/workspace/.oauth/tokens.json`) expired ~08:53; **the stored refresh_token
   was REJECTED 7 Nov 16:00 (`invalid_grant`)** — API access needs a fresh

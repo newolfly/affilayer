@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { AppLayout } from './components/layout'
 import { useAuth, roleHome } from './lib/auth'
+import { RouteSeo } from './lib/seo'
 import type { Role } from './lib/types'
 
 // Route sections are code-split: each page module becomes its own chunk,
@@ -115,6 +116,7 @@ const adminNav = [
 export default function App() {
   return (
     <BrowserRouter>
+      <RouteSeo />
       <Suspense fallback={<p className="p-8 text-slate-500">Loading…</p>}>
         <Routes>
           {/* Public */}
