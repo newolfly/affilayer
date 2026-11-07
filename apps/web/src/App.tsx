@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
-import { AppLayout } from './components/layout'
+import { AppLayout, PageLoader } from './components/layout'
 import type { DashboardNavItem } from './components/layout'
 import { useAuth, roleHome } from './lib/auth'
 import { RouteSeo } from './lib/seo'
@@ -63,7 +63,7 @@ const AdminTickets = lazy(() => import('./pages/admin').then((m) => ({ default: 
 
 function RequireAuth({ roles, children }: { roles: Role[]; children: ReactNode }) {
   const { user, loading } = useAuth()
-  if (loading) return <p className="p-8 text-slate-500">Loading…</p>
+  if (loading) return <PageLoader />
   if (!user) return <Navigate to="/login" replace />
   if (user.status === 'pending') return <Navigate to="/pending" replace />
   if (!roles.includes(user.role)) return <Navigate to={roleHome(user.role)} replace />
@@ -72,7 +72,7 @@ function RequireAuth({ roles, children }: { roles: Role[]; children: ReactNode }
 
 function AppHome() {
   const { user, loading } = useAuth()
-  if (loading) return <p className="p-8 text-slate-500">Loading…</p>
+  if (loading) return <PageLoader />
   if (!user) return <Navigate to="/login" replace />
   return <Navigate to={roleHome(user.role)} replace />
 }
@@ -130,7 +130,7 @@ export default function App() {
       <LocaleProvider>
       <SkipLink />
       <RouteSeo />
-      <Suspense fallback={<p className="p-8 text-[#8A97A8]">Loading…</p>}>
+      <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public */}
           <Route path="/" element={<Home />} />

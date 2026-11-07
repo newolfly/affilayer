@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { PublicLayout, Reveal } from '../components/layout'
+import { PublicLayout, Reveal, Slogan } from '../components/layout'
 import { POSTS } from '../lib/blog-data'
+import { useT } from '../lib/i18n'
 
 
 
 const CATEGORIES = ['All', 'Launch Notes', 'AdTech Insights', 'News']
 
 export function Blog() {
+  const t = useT()
   const [tab, setTab] = useState('All')
   const shown = tab === 'All' ? POSTS : POSTS.filter((p) => p.category === tab)
   return (
@@ -15,6 +17,7 @@ export function Blog() {
       <h1 className="text-3xl font-bold text-white md:text-4xl">
         AffiLayer <span className="grad-text">blog</span>
       </h1>
+      <Slogan className="mt-4">{t('blog.slogan')}</Slogan>
       <p className="mt-4 max-w-3xl text-slate-300">
         Launch notes and plain notes on affiliate marketing — what we built, what
         changed, and what we learned running the network.
@@ -24,8 +27,8 @@ export function Blog() {
           <button
             key={c}
             onClick={() => setTab(c)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              tab === c ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 text-[#0B1220]' : 'border border-slate-600 text-slate-300'
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              tab === c ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 text-[#0B1220]' : 'border border-slate-600 text-slate-300 hover:border-amber-400 hover:text-white'
             }`}
           >
             {c}
@@ -45,11 +48,11 @@ export function Blog() {
             <article className="lift h-full rounded-xl bg-white p-6 text-slate-900">
               <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">{p.category}</p>
               <h2 className="mt-2 text-lg font-bold">
-                <Link to={`/blog/${p.slug}`} className="hover:text-amber-400">{p.title}</Link>
+                <Link to={`/blog/${p.slug}`} className="transition-colors hover:text-amber-400">{p.title}</Link>
               </h2>
               <p className="mt-2 text-sm text-slate-600">{p.excerpt}</p>
               <p className="mt-3 text-xs text-slate-400">{p.date} · {p.author}</p>
-              <Link to={`/blog/${p.slug}`} className="mt-3 inline-block font-semibold text-amber-400">Read more →</Link>
+              <Link to={`/blog/${p.slug}`} className="mt-3 inline-block font-semibold text-amber-400 transition-colors hover:text-amber-300">Read more →</Link>
             </article>
             </Reveal>
           ))}
@@ -67,6 +70,7 @@ export function Blog() {
 }
 
 export function BlogPost() {
+  const t = useT()
   const { slug } = useParams()
   const post = POSTS.find((p) => p.slug === slug)
   if (!post) {
@@ -88,6 +92,7 @@ export function BlogPost() {
       <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-amber-400">{post.category}</p>
       <h1 className="mt-2 max-w-3xl text-3xl font-bold text-white md:text-4xl">{post.title}</h1>
       <p className="mt-3 text-sm text-slate-400">{post.date} · {post.author}</p>
+      <Slogan className="mt-4">{t('blog.post.slogan')}</Slogan>
       <div className="mt-6 space-y-4 rounded-xl bg-white p-6 text-slate-700">
         {post.body.map((para, i) => (
           <p key={i}>{para}</p>

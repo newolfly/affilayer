@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { PublicLayout, Reveal } from '../components/layout'
+import { PublicLayout, Reveal, Slogan } from '../components/layout'
 import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
 import { FAQ_GROUPS } from '../lib/faq-data'
@@ -132,6 +132,7 @@ function Hero() {
         <p className="mx-auto mt-5 max-w-2xl text-slate-300">
           {t('home.sub')}
         </p>
+        <Slogan className="mx-auto mt-5 max-w-2xl text-center">{t('home.slogan')}</Slogan>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link to="/register" className="pill-btn">{t('home.ctaAffiliate')}</Link>
           <Link to="/register" className="pill-btn-outline">{t('home.ctaAdvertiser')}</Link>
@@ -323,11 +324,13 @@ export function Home() {
 }
 
 export function Advantages() {
+  const t = useT()
   return (
     <PublicLayout>
       <h1 className="text-center text-3xl font-bold text-white md:text-4xl">
         What AffiLayer does <span className="grad-text">differently</span>
       </h1>
+      <Slogan className="mx-auto mt-4 max-w-2xl text-center">{t('advantages.slogan')}</Slogan>
       <p className="mx-auto mt-4 max-w-2xl text-center text-slate-300">
         Most networks ask you to trust their numbers. We built AffiLayer so you can
         check them: auditable tracking, an append-only commission ledger, and
@@ -362,11 +365,13 @@ export function Advantages() {
 }
 
 export function About() {
+  const t = useT()
   return (
     <PublicLayout>
       <h1 className="text-3xl font-bold text-white md:text-4xl">
         About <span className="grad-text">AffiLayer</span>
       </h1>
+      <Slogan className="mt-4">{t('about.slogan')}</Slogan>
       <p className="mt-4 max-w-3xl text-slate-300">
         AffiLayer is a new global CPA affiliate network. We are deliberately small
         right now: a focused offer catalogue, a tracking engine we can explain, and
@@ -410,6 +415,7 @@ export function AdvertisersPage() {
       <h1 className="text-3xl font-bold text-white md:text-4xl">
         {t('adv.h1a')} <span className="grad-text">{t('adv.h1b')}</span>
       </h1>
+      <Slogan className="mt-4">{t('adv.slogan')}</Slogan>
       <p className="mt-4 max-w-3xl text-slate-300">
         {t('adv.intro')}
       </p>
@@ -439,6 +445,7 @@ export function AffiliatesPage() {
       <h1 className="text-3xl font-bold text-white md:text-4xl">
         {t('aff.h1a')} <span className="grad-text">{t('aff.h1b')}</span>
       </h1>
+      <Slogan className="mt-4">{t('aff.slogan')}</Slogan>
       <p className="mt-4 max-w-3xl text-slate-300">
         {t('aff.intro')}
       </p>
@@ -499,6 +506,7 @@ export function HowItWorks() {
       <h1 className="text-3xl font-bold text-white md:text-4xl">
         {t('how.h1a')} <span className="grad-text">{t('how.h1b')}</span>
       </h1>
+      <Slogan className="mt-4">{t('how.slogan')}</Slogan>
       <div className="mt-6 space-y-4">
         {[1, 2, 3, 4, 5, 6].map((n) => (
           <Reveal key={n}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t(`how.step.${n}.t` as `how.step.${1 | 2 | 3 | 4 | 5 | 6}.t`)}</h2><p className="mt-1 text-sm text-slate-600">{t(`how.step.${n}.d` as `how.step.${1 | 2 | 3 | 4 | 5 | 6}.d`)}</p></div></Reveal>
@@ -510,11 +518,13 @@ export function HowItWorks() {
 }
 
 export function Faq() {
+  const t = useT()
   return (
     <PublicLayout>
       <h1 className="text-3xl font-bold text-white md:text-4xl">
         Frequently asked <span className="grad-text">questions</span>
       </h1>
+      <Slogan className="mt-4">{t('faq.slogan')}</Slogan>
       <p className="mt-4 max-w-3xl text-slate-300">
         Straight answers about joining, running traffic, and getting paid. If your
         question is not here, use the contact form on the home page.
@@ -539,11 +549,13 @@ export function Faq() {
 }
 
 export function Contact() {
+  const t = useT()
   return (
     <PublicLayout>
       <h1 className="text-3xl font-bold text-white md:text-4xl">
         Contact <span className="grad-text">us</span>
       </h1>
+      <Slogan className="mt-4">{t('contact.slogan')}</Slogan>
       <p className="mt-4 max-w-3xl text-slate-300">
         For support, use the ticket system inside your account once you are
         registered. For general enquiries, email{' '}
@@ -559,9 +571,11 @@ export function Contact() {
 }
 
 export function Terms() {
+  const t = useT()
   return (
     <PublicLayout>
       <h1 className="text-3xl font-bold text-white">Terms of Service</h1>
+      <Slogan className="mt-4">{t('terms.slogan')}</Slogan>
       <p className="mt-2 text-sm text-slate-400">
         Operated by MarketSync Global LLC, New Mexico, USA. Last updated: November 2026.
       </p>
@@ -578,9 +592,11 @@ export function Terms() {
 }
 
 export function Privacy() {
+  const t = useT()
   return (
     <PublicLayout>
       <h1 className="text-3xl font-bold text-white">Privacy Policy</h1>
+      <Slogan className="mt-4">{t('privacy.slogan')}</Slogan>
       <p className="mt-2 text-sm text-slate-400">
         Operated by MarketSync Global LLC, New Mexico, USA. Last updated: November 2026.
       </p>

@@ -24,9 +24,22 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <title>AffiLayer — Global CPA Affiliate Network</title>
     <noscript><style>.reveal { opacity: 1 !important; transform: none !important; }</style></noscript>
+    <style>
+      /* First-paint branded loader inside #root — React replaces it on mount. */
+      @keyframes affilayer-boot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+      @keyframes affilayer-boot-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="min-height:100vh;background:#070D1A;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:ui-sans-serif,system-ui,sans-serif">
+        <img src="/logo-mark.svg" alt="AffiLayer" width="48" height="48" style="animation:affilayer-boot-pulse 1.4s ease-in-out infinite" />
+        <p style="margin-top:16px;font-size:18px;font-weight:700;color:#ffffff">AffiLayer</p>
+        <div style="margin-top:24px;height:6px;width:192px;border-radius:9999px;background:#1E2A3F;overflow:hidden">
+          <div style="height:100%;width:50%;border-radius:9999px;background:linear-gradient(90deg,#D97706,#F59E0B,#FBBF24);animation:affilayer-boot-sweep 1.2s ease-in-out infinite"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

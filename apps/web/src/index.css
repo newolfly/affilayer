@@ -26,10 +26,12 @@ body {
   font-weight: 600;
   padding: 0.75rem 1.5rem;
   display: inline-block;
-  transition: filter 0.15s ease;
+  transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 .pill-btn:hover {
   filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);
 }
 
 .pill-btn-outline {
@@ -39,11 +41,12 @@ body {
   font-weight: 600;
   padding: 0.75rem 1.5rem;
   display: inline-block;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 }
 .pill-btn-outline:hover {
   border-color: #F59E0B;
   background-color: rgba(245, 158, 11, 0.08);
+  transform: translateY(-1px);
 }
 
 /* Visible keyboard focus — gold outline, never removed. */
@@ -155,6 +158,15 @@ body {
     transition: none;
     transform: none !important;
   }
+  .page-switch-bar,
+  .loader-mark,
+  .loader-bar-fill,
+  .skeleton {
+    animation: none;
+  }
+  .nav-link::after {
+    transition: none;
+  }
 }
 
 /* Rotating vertical word in the hero headline. Crossfade: the outgoing
@@ -226,4 +238,103 @@ body {
   border-color: #F59E0B;
   outline: 2px solid #FBBF24;
   outline-offset: 2px;
+}
+
+/* Page slogans: one per public page — brand + page message + audience.
+ * Gold gradient text (via .grad-text), semibold, always honest. */
+.slogan {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+
+/* Branded loading screen (Suspense fallback + auth loading states).
+ * Navy + gold "A" mark, a sweeping gold bar, and skeleton lines that
+ * mimic a page header — no fake progress percentages. */
+@keyframes loader-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.94); }
+}
+.loader-mark {
+  animation: loader-pulse 1.4s ease-in-out infinite;
+}
+@keyframes loader-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.loader-bar-fill {
+  background: linear-gradient(90deg, #D97706, #F59E0B, #FBBF24);
+  animation: loader-sweep 1.2s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+.skeleton {
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, #111C30 25%, #1E2A3F 50%, #111C30 75%);
+  background-size: 400px 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+
+/* Page switching: a gold bar sweeps across the top on every route change,
+ * on top of the fade/slide (see PageTransition). Purely visual — it never
+ * blocks navigation and is pointer-events: none. */
+@keyframes switch-sweep {
+  from { transform: scaleX(0); opacity: 1; }
+  70% { transform: scaleX(1); opacity: 1; }
+  to { transform: scaleX(1); opacity: 0; }
+}
+.page-switch-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 50;
+  pointer-events: none;
+  background: linear-gradient(90deg, #D97706, #F59E0B, #FBBF24);
+  transform-origin: left;
+  animation: switch-sweep 0.5s ease-out both;
+}
+
+/* Shared hover language — gold, no layout shift (transform only). */
+
+/* Header nav links: gold underline slides in on hover; stays on the
+ * active page (NavLink sets aria-current="page"). */
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, #D97706, #F59E0B, #FBBF24);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s ease;
+}
+.nav-link:hover::after,
+.nav-link[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+/* Footer links turn gold on hover. */
+.footer-link {
+  transition: color 0.15s ease;
+}
+.footer-link:hover {
+  color: #FBBF24;
+}
+
+/* Dashboard table rows: faint gold tint on hover. */
+table tbody tr {
+  transition: background-color 0.15s ease;
+}
+table tbody tr:hover {
+  background-color: rgba(245, 158, 11, 0.06);
 }

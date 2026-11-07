@@ -36,14 +36,45 @@ export function Reveal({ children, className = '', delay = 0 }: { children: Reac
   )
 }
 
-/** Light fade/slide on every route change. Keyed by pathname so the
- *  animation replays when the route changes; disabled under
- *  prefers-reduced-motion (see index.css). */
+/** Branded page switch: fade/slide plus a gold bar that sweeps across the
+ *  top of the viewport on every route change. Keyed by pathname so the
+ *  animation replays; purely visual, never blocks navigation; disabled
+ *  under prefers-reduced-motion (see index.css). */
 export function PageTransition({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   return (
     <div key={pathname} className="page-in">
+      <div className="page-switch-bar" aria-hidden="true" />
       {children}
+    </div>
+  )
+}
+
+/** One slogan per public page — brand + page message + audience, in gold.
+ *  Slogans are honest by rule: no stats, no invented claims. */
+export function Slogan({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <p className={`slogan grad-text ${className}`}>{children}</p>
+}
+
+/** Branded loading screen: navy + gold "A" mark, a sweeping gold bar and
+ *  skeleton lines that mimic a page header. No fake progress percentages.
+ *  Used as the Suspense fallback for lazy page chunks and for auth loading
+ *  states, so the site never shows a bare "Loading…" line. */
+export function PageLoader() {
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-16" role="status" aria-label="Loading AffiLayer">
+      <img src="/logo-mark.svg" alt="" className="loader-mark h-12 w-12" width={48} height={48} />
+      <p className="mt-4 text-lg font-bold text-white">AffiLayer</p>
+      <div className="loader-bar mt-6 h-1.5 w-48 overflow-hidden rounded-full bg-[#1E2A3F]" aria-hidden="true">
+        <div className="loader-bar-fill h-full w-1/2 rounded-full" />
+      </div>
+      <div className="mt-8 w-full max-w-2xl space-y-3" aria-hidden="true">
+        <div className="skeleton h-8 w-2/3" />
+        <div className="skeleton h-4 w-full" />
+        <div className="skeleton h-4 w-5/6" />
+        <div className="skeleton h-4 w-4/6" />
+      </div>
+      <span className="sr-only">Loading…</span>
     </div>
   )
 }
@@ -75,7 +106,7 @@ export function LanguageSwitcher() {
           to={target(l.code)}
           aria-current={l.code === locale ? 'true' : undefined}
           className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
-            l.code === locale ? 'bg-[#1E2A3F] text-white' : 'text-slate-400 hover:text-white'
+            l.code === locale ? 'bg-[#1E2A3F] text-white' : 'text-slate-400 hover:text-amber-300'
           }`}
         >
           {l.short}
@@ -127,7 +158,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               <NavLink
                 key={l.to}
                 to={l.to}
-                className={({ isActive }) => `whitespace-nowrap text-sm transition-colors ${isActive ? 'font-semibold text-white' : 'text-slate-300 hover:text-white'}`}
+                className={({ isActive }) => `nav-link whitespace-nowrap text-sm transition-colors ${isActive ? 'font-semibold text-white' : 'text-slate-300 hover:text-white'}`}
               >
                 {l.label}
               </NavLink>
@@ -183,7 +214,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-6xl px-4 pt-10">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {trustItems.map((item) => (
-              <div key={item.text} className="flex items-start gap-3 rounded-xl border border-slate-800 bg-[#111C30]/60 p-4">
+              <div key={item.text} className="lift flex items-start gap-3 rounded-xl border border-slate-800 bg-[#111C30]/60 p-4">
                 <span className="rounded-lg bg-amber-500/15 p-2 text-amber-400">
                   <Icon name={item.icon} className="h-5 w-5" />
                 </span>
@@ -209,19 +240,19 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           <div>
             <p className="font-semibold text-white">{t('footer.company')}</p>
             <ul className="mt-3 space-y-2">
-              <li><Link to="/about" className="hover:text-white">{t('nav.about')}</Link></li>
-              <li><Link to="/advantages" className="hover:text-white">{t('nav.advantages')}</Link></li>
-              <li><Link to="/faq" className="hover:text-white">{t('nav.faq')}</Link></li>
-              <li><Link to="/blog" className="hover:text-white">{t('nav.blog')}</Link></li>
+              <li><Link to="/about" className="footer-link">{t('nav.about')}</Link></li>
+              <li><Link to="/advantages" className="footer-link">{t('nav.advantages')}</Link></li>
+              <li><Link to="/faq" className="footer-link">{t('nav.faq')}</Link></li>
+              <li><Link to="/blog" className="footer-link">{t('nav.blog')}</Link></li>
             </ul>
           </div>
           <div>
             <p className="font-semibold text-white">{t('footer.product')}</p>
             <ul className="mt-3 space-y-2">
-              <li><Link to={localizePath('/affiliates', locale)} className="hover:text-white">{t('nav.affiliates')}</Link></li>
-              <li><Link to={localizePath('/advertisers', locale)} className="hover:text-white">{t('nav.advertisers')}</Link></li>
-              <li><Link to={localizePath('/how-it-works', locale)} className="hover:text-white">{t('nav.how')}</Link></li>
-              <li><Link to="/login" className="hover:text-white">{t('nav.login')}</Link></li>
+              <li><Link to={localizePath('/affiliates', locale)} className="footer-link">{t('nav.affiliates')}</Link></li>
+              <li><Link to={localizePath('/advertisers', locale)} className="footer-link">{t('nav.advertisers')}</Link></li>
+              <li><Link to={localizePath('/how-it-works', locale)} className="footer-link">{t('nav.how')}</Link></li>
+              <li><Link to="/login" className="footer-link">{t('nav.login')}</Link></li>
             </ul>
           </div>
           <div>
@@ -229,7 +260,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             <ul className="mt-3 space-y-2">
               {COUNTRIES.slice(0, 4).map((c) => (
                 <li key={c.code}>
-                  <Link to={localizePath(`/geo/${c.code}`, locale)} className="hover:text-white">{c.name[locale]}</Link>
+                  <Link to={localizePath(`/geo/${c.code}`, locale)} className="footer-link">{c.name[locale]}</Link>
                 </li>
               ))}
               <li><Link to={localizePath('/geo', locale)} className="font-semibold text-amber-400 hover:text-amber-300">{t('footer.allCountries')}</Link></li>
@@ -238,9 +269,9 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           <div>
             <p className="font-semibold text-white">{t('footer.info')}</p>
             <ul className="mt-3 space-y-2">
-              <li><Link to="/terms" className="hover:text-white">Terms</Link></li>
-              <li><Link to="/privacy" className="hover:text-white">Privacy</Link></li>
-              <li><Link to="/contact" className="hover:text-white">{t('nav.contact')}</Link></li>
+              <li><Link to="/terms" className="footer-link">Terms</Link></li>
+              <li><Link to="/privacy" className="footer-link">Privacy</Link></li>
+              <li><Link to="/contact" className="footer-link">{t('nav.contact')}</Link></li>
             </ul>
             <p className="mt-4 text-xs text-[#8A97A8]">{t('trust.operated')}.</p>
           </div>
@@ -267,7 +298,7 @@ export function DemoBanner() {
 
 export function Card({ title, icon, children, className = '' }: { title?: string; icon?: IconName; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-xl bg-white p-5 shadow-sm ${className}`}>
+    <section className={`lift rounded-xl bg-white p-5 shadow-sm ${className}`}>
       {title && (
         <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-900">
           {icon && <span className="text-amber-700"><Icon name={icon} className="h-5 w-5" /></span>}
@@ -281,7 +312,7 @@ export function Card({ title, icon, children, className = '' }: { title?: string
 
 export function Stat({ label, value, sub, icon }: { label: string; value: string; sub?: string; icon?: IconName }) {
   return (
-    <div className="relative overflow-hidden rounded-xl bg-white p-5 shadow-sm">
+    <div className="lift relative overflow-hidden rounded-xl bg-white p-5 shadow-sm">
       <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400" aria-hidden />
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm text-slate-500">{label}</p>
@@ -359,7 +390,7 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
         <aside className="hidden w-56 shrink-0 md:block">
           <nav className="sticky top-[68px] space-y-1 rounded-xl bg-white p-3 shadow-sm" aria-label="Dashboard">
             {nav.map((n) => (
-              <NavLink key={n.to} to={n.to} end className={({ isActive }) => `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-amber-100 font-semibold text-[#0B1220] shadow-[inset_4px_0_0_#F59E0B]' : 'text-slate-700 hover:bg-slate-100'}`}>
+              <NavLink key={n.to} to={n.to} end className={({ isActive }) => `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-amber-100 font-semibold text-[#0B1220] shadow-[inset_4px_0_0_#F59E0B]' : 'text-slate-700 hover:bg-slate-100 hover:text-amber-700'}`}>
                 <Icon name={n.icon} className="h-4 w-4 shrink-0" />
                 {n.label}
               </NavLink>

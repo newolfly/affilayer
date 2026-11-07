@@ -189,6 +189,23 @@ const en = {
   'geo.faq.3.a': 'Each offer states the countries it accepts up front, so you only promote where the advertiser wants traffic. Browse the marketplace by country, vertical, device and payout model.',
   'geo.faq.4.q': 'Which languages does AffiLayer support?',
   'geo.faq.4.a': 'The site is available in English, Spanish and Portuguese. The dashboards are in English for now.',
+
+  // Page slogans — one per public page: brand + page message + audience.
+  // Honest only: no stats, no invented claims.
+  'home.slogan': 'One network. Every click tracked, every commission accounted for.',
+  'about.slogan': 'A small network built on open books, not big promises.',
+  'advantages.slogan': 'What we do differently is simple: you can check our work.',
+  'adv.slogan': 'Customers you can explain. Spend you can control.',
+  'aff.slogan': 'Your traffic, your links, your ledger.',
+  'how.slogan': 'Six steps from sign-up to payout — nothing hidden in between.',
+  'faq.slogan': 'Straight answers, before you even ask.',
+  'blog.slogan': 'Notes from building a network in the open.',
+  'blog.post.slogan': 'Day one, in our own words.',
+  'contact.slogan': 'A real person answers.',
+  'terms.slogan': 'The rules, in plain words.',
+  'privacy.slogan': 'Your data stays yours. We do not sell it.',
+  'geo.index.slogan': 'One network, every country, the same open books.',
+  'geo.page.slogan': 'In {country}: the same tracking, the same ledger, the same honest payout.',
 } as const
 
 export type DictKey = keyof typeof en
@@ -378,6 +395,22 @@ const es: Record<DictKey, string> = {
   'geo.faq.3.a': 'Cada oferta indica desde el principio los países que acepta, así que solo promocionas donde el anunciante quiere tráfico. Explora el mercado por país, vertical, dispositivo y modelo de pago.',
   'geo.faq.4.q': '¿Qué idiomas admite AffiLayer?',
   'geo.faq.4.a': 'El sitio está disponible en inglés, español y portugués. Los paneles están en inglés por ahora.',
+
+  // Page slogans — one per public page: brand + page message + audience.
+  'home.slogan': 'Una red. Cada clic registrado, cada comisión contabilizada.',
+  'about.slogan': 'Una red pequeña construida sobre libros abiertos, no grandes promesas.',
+  'advantages.slogan': 'Lo que hacemos diferente es simple: puedes comprobar nuestro trabajo.',
+  'adv.slogan': 'Clientes que puedes explicar. Gasto que puedes controlar.',
+  'aff.slogan': 'Tu tráfico, tus enlaces, tu libro contable.',
+  'how.slogan': 'Seis pasos desde el registro hasta el pago: nada oculto en el medio.',
+  'faq.slogan': 'Respuestas directas, antes de que preguntes.',
+  'blog.slogan': 'Notas de construir una red en abierto.',
+  'blog.post.slogan': 'El primer día, en nuestras propias palabras.',
+  'contact.slogan': 'Una persona real responde.',
+  'terms.slogan': 'Las reglas, en palabras sencillas.',
+  'privacy.slogan': 'Tus datos siguen siendo tuyos. No los vendemos.',
+  'geo.index.slogan': 'Una red, todos los países, los mismos libros abiertos.',
+  'geo.page.slogan': 'En {country}: el mismo seguimiento, el mismo libro contable, el mismo pago honesto.',
 }
 
 const pt: Record<DictKey, string> = {
@@ -565,6 +598,22 @@ const pt: Record<DictKey, string> = {
   'geo.faq.3.a': 'Cada oferta indica desde o início os países que aceita, para que você só promova onde o anunciante deseja tráfego. Explore o mercado por país, vertical, dispositivo e modelo de pagamento.',
   'geo.faq.4.q': 'Quais idiomas a AffiLayer oferece?',
   'geo.faq.4.a': 'O site está disponível em inglês, espanhol e português. Os painéis estão em inglês por enquanto.',
+
+  // Page slogans — one per public page: brand + page message + audience.
+  'home.slogan': 'Uma rede. Cada clique registrado, cada comissão contabilizada.',
+  'about.slogan': 'Uma rede pequena construída sobre livros abertos, não grandes promessas.',
+  'advantages.slogan': 'O que fazemos de diferente é simples: você pode conferir nosso trabalho.',
+  'adv.slogan': 'Clientes que você pode explicar. Gastos que você pode controlar.',
+  'aff.slogan': 'Seu tráfego, seus links, seu livro-razão.',
+  'how.slogan': 'Seis passos do cadastro ao pagamento — nada escondido no meio.',
+  'faq.slogan': 'Respostas diretas, antes mesmo de você perguntar.',
+  'blog.slogan': 'Notas da construção de uma rede às claras.',
+  'blog.post.slogan': 'Dia um, em nossas próprias palavras.',
+  'contact.slogan': 'Uma pessoa real responde.',
+  'terms.slogan': 'As regras, em palavras simples.',
+  'privacy.slogan': 'Seus dados continuam seus. Não os vendemos.',
+  'geo.index.slogan': 'Uma rede, todos os países, os mesmos livros abertos.',
+  'geo.page.slogan': 'Em {country}: o mesmo rastreamento, o mesmo livro-razão, o mesmo pagamento honesto.',
 }
 
 /** TypeScript enforces that every language carries exactly the EN keys. */

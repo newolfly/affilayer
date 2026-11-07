@@ -2,6 +2,20 @@
 
 Nothing in this repo deploys itself. Every step below is manual and explicit.
 
+## LIVE STATUS — 7 Nov 2026 ~19:37 +06 (JOB 3: LOADING + SWITCHING + HOVER + SLOGANS DEPLOYED LIVE, BROWSER CHECK STILL OWED)
+
+- **Deployed 19:37 +06: Pages `affilayer-web`, deployment `e8a7889f` (103 files, new build)** — fresh `vite build` + full `prerender.py` run (47/47 routes, 0 zero-byte files in dist/). New assets: JS `index--lUy2n7T.js`, CSS `index-COawd8zK.css`.
+- **Job 3 changes (this build):**
+  - **Loading:** branded `PageLoader` (`src/components/layout.tsx`) — navy + gold "A" mark, sweeping gold bar, skeleton lines, no fake percentages. It is the `Suspense` fallback for lazy page chunks and the auth loading state (replaces the bare "Loading…" lines). A matching static loader sits inside `#root` in `apps/web/index.html` so the very first paint is branded, not blank — React replaces it on mount.
+  - **Page switching:** `PageTransition` now adds a gold bar that sweeps across the top of the viewport on every route change (`page-switch-bar`, 0.5s), on top of the existing fade/slide. Purely visual, never blocks navigation, `pointer-events: none`, disabled under `prefers-reduced-motion`.
+  - **Hover:** shared gold hover language, transform-only (no layout shift) — gold underline slide on desktop nav links (stays on the active page), pill buttons lift + gold glow, footer links turn gold, trust cards + dashboard `Card`/`Stat` lift, dashboard sidebar nav turns gold on hover, dashboard table rows get a faint gold tint, language switcher + blog category buttons + blog links get gold hovers.
+  - **Slogans:** one per public page, gold (`Slogan` component + `.slogan` in `src/index.css`), honest only — no stats, no invented claims. EN/ES/PT keys in `src/lib/i18n-dict.ts` (`home/about/advantages/adv/aff/how/faq/blog/blog.post/contact/terms/privacy/geo.index/geo.page.slogan`); EN-only pages use the same dict keys. Full list: Home "One network. Every click tracked, every commission accounted for." · About "A small network built on open books, not big promises." · Advantages "What we do differently is simple: you can check our work." · Advertisers "Customers you can explain. Spend you can control." · Affiliates "Your traffic, your links, your ledger." · How it works "Six steps from sign-up to payout — nothing hidden in between." · FAQ "Straight answers, before you even ask." · Blog "Notes from building a network in the open." · Launch post "Day one, in our own words." · Contact "A real person answers." · Terms "The rules, in plain words." · Privacy "Your data stays yours. We do not sell it." · Geo index "One network, every country, the same open books." · Country pages "In {country}: the same tracking, the same ledger, the same honest payout." (all translated to ES/PT).
+- **Live verification by curl 19:37 +06 (all 200):** `/` 35,558 B (home slogan live); `/geo/br` 32,773 B (country slogan live); `/es/` 36,187 B; `/sitemap.xml` 6,699 B (47 URLs); `go.affilayer.com/health` `{"ok":true}` (11 B).
+- **Tests: 28/28 pass** (`npm test`: 11 tracking + 17 shared). `tsc --noEmit` clean.
+- **Browser (visual) check still owed:** loading screen on a slow chunk load / first paint, gold bar on a page switch, hover states (nav underline, button lift, card lift, footer links), and two or three slogans in gold.
+- **Cloudflare token used for this deploy expires ~20:01 +06, NO refresh token** — any further deploy needs another phone authorization.
+- Worker, Supabase, DNS untouched.
+
 ## LIVE STATUS — 7 Nov 2026 ~19:28 +06 (ROTATOR CROSSFADE + HEADER SPACING PATCH DEPLOYED LIVE, BROWSER CHECK STILL OWED)
 
 - **Deployed 19:27 +06: Pages `affilayer-web`, deployment `6c57d03b` (103 files, new build)** — fresh `vite build` (VITE_TRACKING_URL=https://go.affilayer.com) + full prerender, 47/47 routes, 0 zero-byte files in dist. New assets: JS `index-DpwtQAa4.js`, CSS `index-O94aIlsY.css`.
