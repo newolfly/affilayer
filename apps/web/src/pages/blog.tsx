@@ -25,7 +25,7 @@ export function Blog() {
             key={c}
             onClick={() => setTab(c)}
             className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              tab === c ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : 'border border-slate-600 text-slate-300'
+              tab === c ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 text-[#0B1220]' : 'border border-slate-600 text-slate-300'
             }`}
           >
             {c}
@@ -33,7 +33,7 @@ export function Blog() {
         ))}
       </div>
       {shown.length === 0 ? (
-        <div className="mt-10 rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center">
+        <div className="mt-10 rounded-xl border border-slate-800 bg-[#111C30]/60 p-8 text-center">
           <p className="font-semibold text-white">No posts yet in {tab}.</p>
           <p className="mt-2 text-sm text-slate-400">Launch notes are coming soon — check back, or start with the post below.</p>
           <Link to="/blog" onClick={() => setTab('All')} className="pill-btn mt-4">See all posts</Link>
@@ -43,21 +43,21 @@ export function Blog() {
           {shown.map((p) => (
             <Reveal key={p.slug}>
             <article className="lift h-full rounded-xl bg-white p-6 text-slate-900">
-              <p className="text-xs font-semibold uppercase tracking-widest text-orange-600">{p.category}</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">{p.category}</p>
               <h2 className="mt-2 text-lg font-bold">
-                <Link to={`/blog/${p.slug}`} className="hover:text-orange-600">{p.title}</Link>
+                <Link to={`/blog/${p.slug}`} className="hover:text-amber-400">{p.title}</Link>
               </h2>
               <p className="mt-2 text-sm text-slate-600">{p.excerpt}</p>
               <p className="mt-3 text-xs text-slate-400">{p.date} · {p.author}</p>
-              <Link to={`/blog/${p.slug}`} className="mt-3 inline-block font-semibold text-orange-600">Read more →</Link>
+              <Link to={`/blog/${p.slug}`} className="mt-3 inline-block font-semibold text-amber-400">Read more →</Link>
             </article>
             </Reveal>
           ))}
         </div>
       )}
-      <aside className="mt-10 rounded-xl border border-slate-800 bg-slate-900/60 p-6">
+      <aside className="mt-10 rounded-xl border border-slate-800 bg-[#111C30]/60 p-6">
         <h2 className="font-semibold text-white">Featured</h2>
-        <Link to="/blog/affilayer-is-live" className="mt-2 block font-semibold text-orange-400 hover:text-orange-300">
+        <Link to="/blog/affilayer-is-live" className="mt-2 block font-semibold text-amber-400 hover:text-amber-300">
           AffiLayer is live: what the network offers on day one
         </Link>
         <p className="mt-1 text-sm text-slate-400">7 November 2026 · AffiLayer team</p>
@@ -85,7 +85,7 @@ export function BlogPost() {
         <Link to="/blog" className="hover:text-white">Blog</Link> {' / '}
         <span className="text-slate-300">{post.title}</span>
       </nav>
-      <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-orange-400">{post.category}</p>
+      <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-amber-400">{post.category}</p>
       <h1 className="mt-2 max-w-3xl text-3xl font-bold text-white md:text-4xl">{post.title}</h1>
       <p className="mt-3 text-sm text-slate-400">{post.date} · {post.author}</p>
       <div className="mt-6 space-y-4 rounded-xl bg-white p-6 text-slate-700">

@@ -12,7 +12,7 @@ import { trackingLink } from '../lib/tracking'
 import type { Click, Conversion, Offer } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
-const btnCls = 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white'
+const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2 text-sm font-semibold text-[#0B1220]'
 
 function useLoad<T>(fn: () => Promise<T>, initial: T) {
   const [data, setData] = useState<T>(initial)
@@ -50,7 +50,7 @@ export function AffiliateDashboard() {
         {offers.filter((o) => o.status === 'active').map((o) => (
           <div key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
             <span>{o.name} — {o.payoutModel} ${o.payout} {o.currency}</span>
-            <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-blue-700">View →</Link>
+            <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View →</Link>
           </div>
         ))}
       </Card>
@@ -80,7 +80,7 @@ export function AffiliateOffers() {
               <tr key={o.id} className="border-t border-slate-100">
                 <td className="py-2 font-medium">{o.name}</td><td>{o.vertical}</td>
                 <td>{o.payoutModel} ${o.payout} {o.currency}</td><td>{(o.countries ?? []).join(', ')}</td><td>{o.status}</td>
-                <td><Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-blue-700">View</Link></td>
+                <td><Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View</Link></td>
               </tr>
             ))}
           </tbody>
@@ -123,7 +123,7 @@ export function AffiliateOfferDetail() {
       {applied
         ? <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Application submitted. You will be notified when the advertiser reviews it.</p>
         : <button className={`${btnCls} mt-4`} onClick={apply}>{offer.approvalRequired ? 'Apply for this offer' : 'Join this offer'}</button>}
-      <Link to="/app/affiliate/tracking-links" className="ml-3 text-sm font-semibold text-blue-700">Generate tracking link →</Link>
+      <Link to="/app/affiliate/tracking-links" className="ml-3 text-sm font-semibold text-amber-700">Generate tracking link →</Link>
     </Card>
   )
 }
@@ -137,7 +137,7 @@ export function AffiliateMyCampaigns() {
       {approved.length === 0 ? <Empty text="No campaigns yet. Browse offers and apply." /> : approved.map((o) => (
         <div key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
           <span>{o.name} — {o.payoutModel} ${o.payout} {o.currency}</span>
-          <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-blue-700">View</Link>
+          <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View</Link>
         </div>
       ))}
     </Card>
@@ -367,7 +367,7 @@ export function AffiliateProfile() {
         <div><dt className="text-slate-500">Status</dt><dd>{user?.status}</dd></div>
         <div><dt className="text-slate-500">Affiliate code</dt><dd className="font-mono">{user?.affiliateCode ?? '—'}</dd></div>
       </dl>
-      <Link to="/onboarding" className="mt-4 inline-block font-semibold text-blue-700 text-sm">Edit onboarding details →</Link>
+      <Link to="/onboarding" className="mt-4 inline-block font-semibold text-amber-700 text-sm">Edit onboarding details →</Link>
     </Card>
   )
 }

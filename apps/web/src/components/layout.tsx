@@ -75,7 +75,7 @@ export function LanguageSwitcher() {
           to={target(l.code)}
           aria-current={l.code === locale ? 'true' : undefined}
           className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
-            l.code === locale ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+            l.code === locale ? 'bg-[#1E2A3F] text-white' : 'text-slate-400 hover:text-white'
           }`}
         >
           {l.short}
@@ -118,8 +118,8 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     { icon: 'file', text: t('trust.ledger') },
   ]
   return (
-    <div className="min-h-screen bg-[#0B1220] text-slate-200">
-      <header className={`sticky top-0 z-40 border-b border-slate-800 bg-[#0B1220]/90 backdrop-blur transition-shadow ${scrolled ? 'shadow-lg shadow-black/30' : ''}`}>
+    <div className="min-h-screen bg-[#070D1A] text-slate-200">
+      <header className={`sticky top-0 z-40 border-b border-slate-800 bg-[#070D1A]/90 backdrop-blur transition-shadow ${scrolled ? 'shadow-lg shadow-black/30' : ''}`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Logo />
           <nav className="hidden gap-6 lg:flex" aria-label="Main">
@@ -183,8 +183,8 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-6xl px-4 pt-10">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {trustItems.map((item) => (
-              <div key={item.text} className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-                <span className="rounded-lg bg-orange-500/15 p-2 text-orange-400">
+              <div key={item.text} className="flex items-start gap-3 rounded-xl border border-slate-800 bg-[#111C30]/60 p-4">
+                <span className="rounded-lg bg-amber-500/15 p-2 text-amber-400">
                   <Icon name={item.icon} className="h-5 w-5" />
                 </span>
                 <p className="text-sm leading-snug text-slate-300">{item.text}</p>
@@ -193,11 +193,11 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           </div>
           <p className="mt-4 text-center text-sm text-slate-400">
             {t('footer.honest')}{' '}
-            <Link to={localizePath('/how-it-works', locale)} className="font-semibold text-orange-400 hover:text-orange-300">{t('footer.honest.how')}</Link>
+            <Link to={localizePath('/how-it-works', locale)} className="font-semibold text-amber-400 hover:text-amber-300">{t('footer.honest.how')}</Link>
             {' '}·{' '}
-            <Link to="/faq" className="font-semibold text-orange-400 hover:text-orange-300">{t('footer.honest.faq')}</Link>
+            <Link to="/faq" className="font-semibold text-amber-400 hover:text-amber-300">{t('footer.honest.faq')}</Link>
             {' '}·{' '}
-            <a href="mailto:support@affilayer.com" className="font-semibold text-orange-400 hover:text-orange-300">support@affilayer.com</a>
+            <a href="mailto:support@affilayer.com" className="font-semibold text-amber-400 hover:text-amber-300">support@affilayer.com</a>
           </p>
         </div>
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm text-slate-400 md:grid-cols-3 lg:grid-cols-5">
@@ -232,7 +232,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                   <Link to={localizePath(`/geo/${c.code}`, locale)} className="hover:text-white">{c.name[locale]}</Link>
                 </li>
               ))}
-              <li><Link to={localizePath('/geo', locale)} className="font-semibold text-orange-400 hover:text-orange-300">{t('footer.allCountries')}</Link></li>
+              <li><Link to={localizePath('/geo', locale)} className="font-semibold text-amber-400 hover:text-amber-300">{t('footer.allCountries')}</Link></li>
             </ul>
           </div>
           <div>
@@ -242,11 +242,11 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               <li><Link to="/privacy" className="hover:text-white">Privacy</Link></li>
               <li><Link to="/contact" className="hover:text-white">{t('nav.contact')}</Link></li>
             </ul>
-            <p className="mt-4 text-xs text-slate-500">{t('trust.operated')}.</p>
+            <p className="mt-4 text-xs text-[#8A97A8]">{t('trust.operated')}.</p>
           </div>
         </div>
         <div className="border-t border-slate-800">
-          <div className="mx-auto flex max-w-6xl flex-wrap gap-4 justify-between px-4 py-4 text-xs text-slate-500">
+          <div className="mx-auto flex max-w-6xl flex-wrap gap-4 justify-between px-4 py-4 text-xs text-[#8A97A8]">
             <span>{t('footer.rights')}</span>
             <span>support@affilayer.com</span>
           </div>
@@ -270,7 +270,7 @@ export function Card({ title, icon, children, className = '' }: { title?: string
     <section className={`rounded-xl bg-white p-5 shadow-sm ${className}`}>
       {title && (
         <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-900">
-          {icon && <span className="text-orange-600"><Icon name={icon} className="h-5 w-5" /></span>}
+          {icon && <span className="text-amber-700"><Icon name={icon} className="h-5 w-5" /></span>}
           {title}
         </h2>
       )}
@@ -282,11 +282,11 @@ export function Card({ title, icon, children, className = '' }: { title?: string
 export function Stat({ label, value, sub, icon }: { label: string; value: string; sub?: string; icon?: IconName }) {
   return (
     <div className="relative overflow-hidden rounded-xl bg-white p-5 shadow-sm">
-      <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 to-yellow-400" aria-hidden />
+      <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400" aria-hidden />
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm text-slate-500">{label}</p>
         {icon && (
-          <span className="rounded-lg bg-orange-500/10 p-1.5 text-orange-600">
+          <span className="rounded-lg bg-amber-500/10 p-1.5 text-amber-700">
             <Icon name={icon} className="h-4 w-4" />
           </span>
         )}
@@ -306,7 +306,7 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
   const initial = (user?.email ?? 'A').trim().charAt(0).toUpperCase()
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
-      <header className="sticky top-0 z-40 bg-[#0B1220] text-white shadow-md shadow-black/20">
+      <header className="sticky top-0 z-40 bg-[#070D1A] text-white shadow-md shadow-black/20">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <button
@@ -322,11 +322,11 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
           </div>
           <div className="flex items-center gap-3 text-sm">
             <span className="hidden items-center gap-2 sm:flex">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-yellow-400 text-sm font-bold text-white" aria-hidden>
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-sm font-bold text-[#0B1220]" aria-hidden>
                 {initial}
               </span>
               <span className="text-slate-300">{user?.email}</span>
-              <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold capitalize text-orange-300">{user?.role.replace('_', ' ')}</span>
+              <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold capitalize text-amber-300">{user?.role.replace('_', ' ')}</span>
             </span>
             <button
               onClick={async () => { await signOut(); navigate('/login') }}
@@ -359,7 +359,7 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
         <aside className="hidden w-56 shrink-0 md:block">
           <nav className="sticky top-[68px] space-y-1 rounded-xl bg-white p-3 shadow-sm" aria-label="Dashboard">
             {nav.map((n) => (
-              <NavLink key={n.to} to={n.to} end className={({ isActive }) => `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-orange-50 font-semibold text-orange-700' : 'text-slate-700 hover:bg-slate-100'}`}>
+              <NavLink key={n.to} to={n.to} end className={({ isActive }) => `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-amber-100 font-semibold text-[#0B1220] shadow-[inset_4px_0_0_#F59E0B]' : 'text-slate-700 hover:bg-slate-100'}`}>
                 <Icon name={n.icon} className="h-4 w-4 shrink-0" />
                 {n.label}
               </NavLink>
@@ -418,7 +418,7 @@ export function FirstSteps({ role }: { role: 'affiliate' | 'advertiser' }) {
   }
   const doneCount = steps.filter((_, i) => i === 0 ? user?.status === 'approved' : !!checked[i]).length
   return (
-    <Card title="First steps" icon="compass" className="border-orange-500/30">
+    <Card title="First steps" icon="compass" className="border-amber-500/30">
       <p className="text-sm text-slate-600">
         {doneCount} of {steps.length} done — your path to your first {role === 'affiliate' ? 'payout' : 'customer'}.
         {isDemoMode ? ' Demo checklist — progress is stored in this browser only.' : ' Progress is stored in this browser.'}
@@ -433,7 +433,7 @@ export function FirstSteps({ role }: { role: 'affiliate' | 'advertiser' }) {
                 onClick={() => toggle(i)}
                 aria-pressed={done}
                 aria-label={`Mark "${s.label}" as ${done ? 'not done' : 'done'}`}
-                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${done ? 'border-orange-500 bg-orange-500 text-white' : 'border-slate-300 text-transparent hover:border-orange-400'}`}
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${done ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-300 text-transparent hover:border-amber-400'}`}
               >
                 <Icon name="check" className="h-3.5 w-3.5" />
               </button>
@@ -441,7 +441,7 @@ export function FirstSteps({ role }: { role: 'affiliate' | 'advertiser' }) {
                 <p className={`text-sm font-semibold ${done ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{i + 1}. {s.label}</p>
                 <p className="text-xs text-slate-500">{s.desc}</p>
               </div>
-              <Link to={s.to} className="shrink-0 text-sm font-semibold text-orange-600 hover:text-orange-700">
+              <Link to={s.to} className="shrink-0 text-sm font-semibold text-amber-700 hover:text-amber-800">
                 Go <Icon name="arrow-right" className="inline h-3.5 w-3.5" />
               </Link>
             </li>

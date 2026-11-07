@@ -43,8 +43,8 @@ function HeroIllustration() {
       <svg viewBox="0 0 640 250" className="w-full" fill="none">
         <defs>
           <linearGradient id="hero-grad" x1="0" y1="0" x2="640" y2="0" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#f97316" />
-            <stop offset="1" stopColor="#eab308" />
+            <stop stopColor="#D97706" />
+            <stop offset="1" stopColor="#FBBF24" />
           </linearGradient>
         </defs>
         <g className="hero-layer" style={layer(5)} opacity="0.5">
@@ -52,7 +52,7 @@ function HeroIllustration() {
             <circle key={i} cx={40 + i * 70} cy={i % 2 === 0 ? 28 : 222} r="2" fill="#475569" />
           ))}
         </g>
-        <g className="hero-layer" style={layer(9)} stroke="#334155" strokeWidth="1.5">
+        <g className="hero-layer" style={layer(9)} stroke="#1E2A3F" strokeWidth="1.5">
           <line x1="118" y1="72" x2="272" y2="112" />
           <line x1="118" y1="182" x2="272" y2="140" />
           <line x1="522" y1="72" x2="368" y2="112" />
@@ -63,28 +63,28 @@ function HeroIllustration() {
         </g>
         <g className="hero-layer" style={layer(15)} fontFamily="inherit" fontSize="13" fontWeight="700" fill="#e2e8f0" textAnchor="middle">
           <g>
-            <rect x="48" y="48" width="140" height="48" rx="12" fill="#0f172a" stroke="#334155" />
+            <rect x="48" y="48" width="140" height="48" rx="12" fill="#111C30" stroke="#1E2A3F" />
             <text x="118" y="77">CPA offer</text>
           </g>
           <g>
-            <rect x="48" y="158" width="140" height="48" rx="12" fill="#0f172a" stroke="#334155" />
+            <rect x="48" y="158" width="140" height="48" rx="12" fill="#111C30" stroke="#1E2A3F" />
             <text x="118" y="187">CPL offer</text>
           </g>
           <g>
-            <rect x="452" y="48" width="140" height="48" rx="12" fill="#0f172a" stroke="#334155" />
+            <rect x="452" y="48" width="140" height="48" rx="12" fill="#111C30" stroke="#1E2A3F" />
             <text x="522" y="77">CPS offer</text>
           </g>
           <g>
-            <rect x="452" y="158" width="140" height="48" rx="12" fill="#0f172a" stroke="#334155" />
+            <rect x="452" y="158" width="140" height="48" rx="12" fill="#111C30" stroke="#1E2A3F" />
             <text x="522" y="187">SmartLink</text>
           </g>
         </g>
         <g className="hero-layer" style={layer(22)}>
-          <circle cx="320" cy="126" r="52" fill="#0f172a" stroke="url(#hero-grad)" strokeWidth="2.5" />
+          <circle cx="320" cy="126" r="52" fill="#111C30" stroke="url(#hero-grad)" strokeWidth="2.5" />
           <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="5" fill="none">
-            <path d="M320 96 302 152" stroke="#f97316" />
+            <path d="M320 96 302 152" stroke="#D97706" />
             <path d="M320 96 338 152" stroke="#f59e0b" />
-            <path d="M309 133h22" stroke="#eab308" />
+            <path d="M309 133h22" stroke="#FBBF24" />
           </g>
           <text x="320" y="200" textAnchor="middle" fontFamily="inherit" fontSize="12" fontWeight="600" fill="#94a3b8">one tracked path</text>
         </g>
@@ -115,7 +115,7 @@ function Hero() {
       <div className="hero-lines pointer-events-none absolute inset-0" aria-hidden />
       <div className="hero-glow" aria-hidden />
       <div className="relative">
-        <p className="text-sm font-semibold uppercase tracking-widest text-orange-400">{t('home.eyebrow')}</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-amber-400">{t('home.eyebrow')}</p>
         <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-bold leading-tight text-white md:text-6xl">
           {t('home.titleBefore')} <RotatingVertical /> {t('home.titleAfter')}
         </h1>
@@ -126,7 +126,7 @@ function Hero() {
           <Link to="/register" className="pill-btn">{t('home.ctaAffiliate')}</Link>
           <Link to="/register" className="pill-btn-outline">{t('home.ctaAdvertiser')}</Link>
         </div>
-        <p className="mt-4 text-xs text-slate-500">
+        <p className="mt-4 text-xs text-[#8A97A8]">
           {t('home.note')}
         </p>
         <Reveal delay={120}>
@@ -150,19 +150,19 @@ function BrowseByCountry() {
           <Reveal key={c.code} delay={(i % 4) * 80}>
             <Link
               to={localizePath(`/geo/${c.code}`, locale)}
-              className="lift flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-4"
+              className="lift flex items-center justify-between rounded-2xl border border-slate-800 bg-[#111C30]/60 px-5 py-4"
             >
               <span className="flex items-center gap-3 font-semibold text-white">
-                <span className="text-orange-400"><Icon name="globe" className="h-5 w-5" /></span>
+                <span className="text-amber-400"><Icon name="globe" className="h-5 w-5" /></span>
                 {c.name[locale]}
               </span>
-              <Icon name="arrow-right" className="h-4 w-4 text-orange-400" />
+              <Icon name="arrow-right" className="h-4 w-4 text-amber-400" />
             </Link>
           </Reveal>
         ))}
       </div>
       <p className="mt-6 text-center">
-        <Link to={localizePath('/geo', locale)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-400 hover:text-orange-300">
+        <Link to={localizePath('/geo', locale)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-400 hover:text-amber-300">
           {t('browse.all')} <Icon name="arrow-right" className="h-4 w-4" />
         </Link>
       </p>
@@ -176,8 +176,8 @@ function ProductCards() {
   return (
     <section className="mt-4 grid gap-4 md:grid-cols-2">
       <Reveal>
-      <div className="lift h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-orange-400">{t('home.cardOffers.kicker')}</p>
+      <div className="lift h-full rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">{t('home.cardOffers.kicker')}</p>
         <h2 className="mt-2 text-2xl font-bold text-white">{t('home.cardOffers.title')}</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
           {t('home.cardOffers.body')}
@@ -186,8 +186,8 @@ function ProductCards() {
       </div>
       </Reveal>
       <Reveal delay={100}>
-      <div className="lift h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-orange-400">{t('home.cardSmart.kicker')}</p>
+      <div className="lift h-full rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">{t('home.cardSmart.kicker')}</p>
         <h2 className="mt-2 text-2xl font-bold text-white">{t('home.cardSmart.title')}</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
           {t('home.cardSmart.body')}
@@ -220,7 +220,7 @@ export function BenefitsSection() {
         {benefits.map((b, i) => (
           <Reveal key={b.t} delay={(i % 3) * 80}>
           <div className="lift h-full rounded-xl bg-white p-5 text-slate-900">
-            <span className="inline-flex rounded-lg bg-orange-500/10 p-2 text-orange-600">
+            <span className="inline-flex rounded-lg bg-amber-500/10 p-2 text-amber-700">
               <Icon name={b.icon} className="h-5 w-5" />
             </span>
             <h3 className="mt-3 font-semibold">{b.t}</h3>
@@ -229,7 +229,7 @@ export function BenefitsSection() {
           </Reveal>
         ))}
         <Reveal delay={160}>
-        <div className="lift flex h-full flex-col justify-between rounded-xl border border-orange-500/40 bg-orange-500/10 p-5">
+        <div className="lift flex h-full flex-col justify-between rounded-xl border border-amber-500/40 bg-amber-500/10 p-5">
           <div>
             <h3 className="font-semibold text-white">{t('home.ready.title')}</h3>
             <p className="mt-2 text-sm text-slate-300">{t('home.ready.body')}</p>
@@ -314,7 +314,7 @@ export function Advantages() {
       <BenefitsSection />
       <section className="mt-14 grid gap-4 md:grid-cols-2">
         <Reveal>
-        <div className="lift h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <div className="lift h-full rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6">
           <h2 className="text-xl font-bold text-white">For affiliates</h2>
           <p className="mt-2 text-sm text-slate-300">
             Direct offers and one SmartLink for everything else. Track every click,
@@ -324,7 +324,7 @@ export function Advantages() {
         </div>
         </Reveal>
         <Reveal delay={100}>
-        <div className="lift h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <div className="lift h-full rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6">
           <h2 className="text-xl font-bold text-white">For advertisers</h2>
           <p className="mt-2 text-sm text-slate-300">
             Publish offers with your own caps and traffic rules, approve the
@@ -452,14 +452,14 @@ export function FunnelSteps({ heading, steps }: {
       <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {steps.map((s, i) => (
           <Reveal key={s.t} delay={(i % 3) * 80}>
-          <div className="lift relative h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <div className="lift relative h-full rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6">
             <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-yellow-400 text-sm font-bold text-white" aria-hidden>{s.n}</span>
-              <span className="text-orange-400"><Icon name={s.icon} className="h-5 w-5" /></span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-sm font-bold text-[#0B1220]" aria-hidden>{s.n}</span>
+              <span className="text-amber-400"><Icon name={s.icon} className="h-5 w-5" /></span>
             </div>
             <h3 className="mt-3 text-lg font-bold text-white">{s.t}</h3>
             <p className="mt-1 text-sm text-slate-300">{s.d}</p>
-            <Link to={s.to} className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-400 hover:text-orange-300">
+            <Link to={s.to} className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-400 hover:text-amber-300">
               {s.cta} <Icon name="arrow-right" className="h-4 w-4" />
             </Link>
           </div>
@@ -529,7 +529,7 @@ export function Contact() {
         the form below.
       </p>
       <ContactForm />
-      <p className="mt-8 text-center text-sm text-slate-500">
+      <p className="mt-8 text-center text-sm text-[#8A97A8]">
         Include your account email and, for tracking questions, the click ID from your link.
       </p>
     </PublicLayout>

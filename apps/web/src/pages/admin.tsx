@@ -11,7 +11,7 @@ import { useAuth } from '../lib/auth'
 import type { Campaign, Offer, PayoutRequest, Profile } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
-const btnCls = 'rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50'
+const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-3 py-1.5 text-sm font-semibold text-[#0B1220] disabled:opacity-50'
 const ghostCls = 'rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50'
 const dangerCls = 'rounded-lg border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50'
 

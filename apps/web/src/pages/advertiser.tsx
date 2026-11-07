@@ -12,7 +12,7 @@ import type { ReportFilters } from '../lib/data'
 
 const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
 const labelCls = 'mb-1 block text-sm font-medium text-slate-700'
-const btnCls = 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white'
+const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2 text-sm font-semibold text-[#0B1220]'
 
 export function AdvertiserDashboard() {
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, revenue: 0 })

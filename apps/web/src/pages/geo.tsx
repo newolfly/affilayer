@@ -24,13 +24,13 @@ export function GeoIndex() {
           <Reveal key={c.code} delay={(i % 4) * 80}>
             <Link
               to={localizePath(`/geo/${c.code}`, locale)}
-              className="lift block h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6"
+              className="lift block h-full rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6"
             >
-              <span className="inline-flex rounded-lg bg-orange-500/10 p-2 text-orange-400">
+              <span className="inline-flex rounded-lg bg-amber-500/10 p-2 text-amber-400">
                 <Icon name="globe" className="h-5 w-5" />
               </span>
               <h2 className="mt-3 text-lg font-bold text-white">{c.name[locale]}</h2>
-              <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-400">
+              <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-400">
                 {t('geo.index.explore')}
                 <Icon name="arrow-right" className="h-4 w-4" />
               </span>
@@ -98,7 +98,7 @@ export function GeoPage() {
         {[1, 2, 3, 4].map((n) => (
           <Reveal key={n}>
             <div className="lift flex h-full items-start gap-3 rounded-xl bg-white p-5 text-slate-900">
-              <span className="rounded-lg bg-orange-500/10 p-2 text-orange-600">
+              <span className="rounded-lg bg-amber-500/10 p-2 text-amber-700">
                 <Icon name={BULLET_ICONS[n - 1]} className="h-5 w-5" />
               </span>
               <p className="text-sm leading-relaxed text-slate-700">
@@ -137,7 +137,7 @@ export function GeoPage() {
         <Link to="/register" className="pill-btn-outline">{t('adv.register')}</Link>
         <Link
           to={localizePath('/geo', locale)}
-          className="inline-flex items-center gap-1.5 self-center text-sm font-semibold text-orange-400 hover:text-orange-300"
+          className="inline-flex items-center gap-1.5 self-center text-sm font-semibold text-amber-400 hover:text-amber-300"
         >
           <Icon name="arrow-right" className="h-4 w-4 rotate-180" /> {t('geo.page.all')}
         </Link>

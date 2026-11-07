@@ -38,16 +38,16 @@ MARK = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
     <clipPath id="band-2"><rect x="0" y="24" width="64" height="14" /></clipPath>
     <clipPath id="band-3"><rect x="0" y="40" width="64" height="24" /></clipPath>
   </defs>
-  <use href="#a-strokes" clip-path="url(#band-1)" stroke="#f97316" />
+  <use href="#a-strokes" clip-path="url(#band-1)" stroke="#D97706" />
   <use href="#a-strokes" clip-path="url(#band-2)" stroke="#f59e0b" />
-  <use href="#a-strokes" clip-path="url(#band-3)" stroke="#eab308" />
+  <use href="#a-strokes" clip-path="url(#band-3)" stroke="#FBBF24" />
 </svg>"""
 
 OG_HTML = f"""<!doctype html>
 <html><head><meta charset="utf-8"><style>
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   body {{
-    width: 1200px; height: 630px; background: #0b1220; color: #fff;
+    width: 1200px; height: 630px; background: #070D1A; color: #fff;
     font-family: 'Liberation Sans', Arial, sans-serif; overflow: hidden; position: relative;
   }}
   .grid {{
@@ -61,7 +61,7 @@ OG_HTML = f"""<!doctype html>
   }}
   .glow {{
     position: absolute; width: 640px; height: 640px; right: -140px; top: -220px;
-    background: radial-gradient(circle, rgba(249,115,22,0.28) 0%, rgba(249,115,22,0) 65%);
+    background: radial-gradient(circle, rgba(245,158,11,0.28) 0%, rgba(245,158,11,0) 65%);
   }}
   .inner {{ position: relative; padding: 96px 96px 0 96px; }}
   .lockup {{ display: flex; align-items: center; gap: 28px; }}
@@ -71,7 +71,7 @@ OG_HTML = f"""<!doctype html>
     margin-top: 40px; font-size: 44px; font-weight: bold; line-height: 1.25; color: #e2e8f0;
   }}
   .tag .grad {{
-    background: linear-gradient(90deg, #fb923c 0%, #facc15 100%);
+    background: linear-gradient(90deg, #D97706 0%, #FBBF24 100%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }}
   .foot {{

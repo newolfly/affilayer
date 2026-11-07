@@ -9,9 +9,9 @@ export function BarChart({ data, height = 180 }: { data: { label: string; value:
         const h = (d.value / max) * (height - 30)
         return (
           <g key={d.label}>
-            <rect x={i * bw + 8} y={height - 24 - h} width={bw - 16} height={h} rx={4} fill="#2563eb" />
+            <rect x={i * bw + 8} y={height - 24 - h} width={bw - 16} height={h} rx={4} fill="#D97706" />
             <text x={i * bw + bw / 2} y={height - 8} textAnchor="middle" fontSize="11" fill="#64748b">{d.label}</text>
-            <text x={i * bw + bw / 2} y={height - 30 - h} textAnchor="middle" fontSize="11" fill="#0b1220">{d.value}</text>
+            <text x={i * bw + bw / 2} y={height - 30 - h} textAnchor="middle" fontSize="11" fill="#070D1A">{d.value}</text>
           </g>
         )
       })}
@@ -30,12 +30,12 @@ export function LineChart({ data, height = 180 }: { data: { label: string; value
   const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
   return (
     <svg viewBox={`0 0 ${w} ${height}`} className="w-full" role="img" aria-label="Line chart">
-      <path d={path} fill="none" stroke="#2563eb" strokeWidth="2.5" />
+      <path d={path} fill="none" stroke="#D97706" strokeWidth="2.5" />
       {pts.map((p) => (
         <g key={p.label}>
-          <circle cx={p.x} cy={p.y} r="4" fill="#0b1220" />
+          <circle cx={p.x} cy={p.y} r="4" fill="#070D1A" />
           <text x={p.x} y={height - 8} textAnchor="middle" fontSize="11" fill="#64748b">{p.label}</text>
-          <text x={p.x} y={p.y - 8} textAnchor="middle" fontSize="11" fill="#0b1220">{p.value}</text>
+          <text x={p.x} y={p.y - 8} textAnchor="middle" fontSize="11" fill="#070D1A">{p.value}</text>
         </g>
       ))}
     </svg>

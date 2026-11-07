@@ -26,10 +26,14 @@ Nothing in this repo deploys itself. Every step below is manual and explicit.
   live click `https://go.affilayer.com/c/AFF123/offer-a?sub1=test` returns
   **302 with `?click_id=clk_…`** to the offer landing page. `POSTBACK_SECRET`
   set on the Worker (value only in `~/.affilayer-secrets`, chmod 600).
-- **Auth:** fresh OAuth tokens obtained 7 Nov ~16:40 via Sojib's phone
-  authorization (in `~/workspace/.oauth/tokens.json`, chmod 600; access token
-  expires ~17:41, refresh token present). Same authorization covers Pages +
-  Worker deploys. Token has NO DNS scope — DNS stays a dashboard job.
+- **Brand palette (updated 7 Nov 2026, premium gold):** page `#070D1A`,
+  panels `#0F1B2E`, cards `#111C30`, borders `#1E2A3F`, muted text
+  `#8A97A8`; gold ramp `#D97706 → #F59E0B → #FBBF24` (headings, buttons,
+  logo bands); button text navy `#0B1220` on gold (5.88–11.22:1, WCAG AA).
+  No orange or blue left anywhere in the site; dashboards use navy + gold
+  only. Rebuild after any palette change: `npm run build:live` in `apps/web`,
+  then redeploy Pages; regenerate PNG logo assets with
+  `python3 scripts/render-logo-assets.py`.
 - **Polish + SEO + AI-search package DONE 7 Nov ~16:30 +06 (local, NOT deployed):**
   logo (layered-A mark, `apps/web/public/logo*.svg`, `favicon.*`, `og-image.png`),
   build-time prerendering of all 12 public routes (`npm run build:live` in

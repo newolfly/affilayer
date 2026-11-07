@@ -10,7 +10,7 @@ import type { Role } from '../lib/types'
 
 const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
 const labelCls = 'mb-1 block text-sm font-medium text-slate-700'
-const btnCls = 'w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white'
+const btnCls = 'w-full rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2 text-sm font-semibold text-[#0B1220]'
 
 export function Login() {
   const { signIn, signInDemo } = useAuth()
@@ -55,7 +55,7 @@ export function Login() {
           <div><label className={labelCls}>Password</label><input className={inputCls} type="password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
           <button className={btnCls}>Log in</button>
         </form>
-        <p className="mt-3 text-sm text-slate-500">No account yet? <Link to="/register" className="text-blue-700 font-semibold">Register</Link></p>
+        <p className="mt-3 text-sm text-slate-500">No account yet? <Link to="/register" className="text-amber-700 font-semibold">Register</Link></p>
         {isDemoMode && (
           <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4">
             <p className="text-sm font-semibold text-amber-800">Demo mode — pick a role to sign in (no password, fake data)</p>
@@ -146,9 +146,9 @@ export function Register() {
                   role="radio"
                   aria-checked={role === 'affiliate'}
                   onClick={() => setRole('affiliate')}
-                  className={`rounded-xl border-2 p-3 text-left transition-colors ${role === 'affiliate' ? 'border-orange-500 bg-orange-50' : 'border-slate-200 hover:border-slate-300'}`}
+                  className={`rounded-xl border-2 p-3 text-left transition-colors ${role === 'affiliate' ? 'border-amber-500 bg-amber-100' : 'border-slate-200 hover:border-slate-300'}`}
                 >
-                  <span className="text-orange-600"><Icon name="tag" className="h-5 w-5" /></span>
+                  <span className="text-amber-700"><Icon name="tag" className="h-5 w-5" /></span>
                   <span className="mt-1 block text-sm font-bold">Affiliate</span>
                   <span className="mt-0.5 block text-xs text-slate-500">Run offers, earn commission</span>
                 </button>
@@ -157,9 +157,9 @@ export function Register() {
                   role="radio"
                   aria-checked={role === 'advertiser'}
                   onClick={() => setRole('advertiser')}
-                  className={`rounded-xl border-2 p-3 text-left transition-colors ${role === 'advertiser' ? 'border-orange-500 bg-orange-50' : 'border-slate-200 hover:border-slate-300'}`}
+                  className={`rounded-xl border-2 p-3 text-left transition-colors ${role === 'advertiser' ? 'border-amber-500 bg-amber-100' : 'border-slate-200 hover:border-slate-300'}`}
                 >
-                  <span className="text-orange-600"><Icon name="megaphone" className="h-5 w-5" /></span>
+                  <span className="text-amber-700"><Icon name="megaphone" className="h-5 w-5" /></span>
                   <span className="mt-1 block text-sm font-bold">Advertiser</span>
                   <span className="mt-0.5 block text-xs text-slate-500">Publish offers, buy traffic</span>
                 </button>
@@ -194,9 +194,9 @@ export function Register() {
             </div>
             <button className={btnCls}>Create account</button>
             {isDemoMode && (
-              <p className="text-xs text-slate-500">Demo mode: Supabase is not configured, so registration is simulated — use the demo role-picker on the <Link to="/login" className="text-blue-700">login page</Link> instead, or continue to onboarding after picking a demo role.</p>
+              <p className="text-xs text-slate-500">Demo mode: Supabase is not configured, so registration is simulated — use the demo role-picker on the <Link to="/login" className="text-amber-700">login page</Link> instead, or continue to onboarding after picking a demo role.</p>
             )}
-            <button type="button" onClick={() => { signInDemo('demo-aff-1'); navigate('/onboarding') }} className="w-full text-sm text-blue-700 underline">Demo: continue as Demo Affiliate</button>
+            <button type="button" onClick={() => { signInDemo('demo-aff-1'); navigate('/onboarding') }} className="w-full text-sm text-amber-700 underline">Demo: continue as Demo Affiliate</button>
           </form>
         )}
       </div>

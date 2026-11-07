@@ -10,10 +10,10 @@
     <clipPath id="band-2"><rect x="0" y="24" width="64" height="14" /></clipPath>
     <clipPath id="band-3"><rect x="0" y="40" width="64" height="24" /></clipPath>
   </defs>
-  <rect x="0.5" y="0.5" width="63" height="63" rx="14" fill="#0b1220" stroke="rgba(255,255,255,0.10)" />
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14" fill="#070D1A" stroke="rgba(255,255,255,0.10)" />
   <g transform="translate(11 11) scale(0.65625)">
-    <use href="#a-strokes" clip-path="url(#band-1)" stroke="#f97316" />
+    <use href="#a-strokes" clip-path="url(#band-1)" stroke="#D97706" />
     <use href="#a-strokes" clip-path="url(#band-2)" stroke="#f59e0b" />
-    <use href="#a-strokes" clip-path="url(#band-3)" stroke="#eab308" />
+    <use href="#a-strokes" clip-path="url(#band-3)" stroke="#FBBF24" />
   </g>
 </svg>

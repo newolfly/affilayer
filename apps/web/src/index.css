@@ -4,9 +4,15 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Public-site accent: orange-to-yellow gradient headings + pill buttons. */
+/* Brand palette — premium gold on darker navy.
+ * Page #070D1A · panels #0F1B2E · cards #111C30 · borders #1E2A3F ·
+ * muted text #8A97A8 (6.54:1 on bg, passes WCAG AA) ·
+ * gold ramp #D97706 → #F59E0B → #FBBF24 (button text is navy #0B1220:
+ * 5.88:1 on the darkest stop, 11.22:1 on the brightest — passes AA). */
+
+/* Public-site accent: gold gradient headings + pill buttons. */
 .grad-text {
-  background: linear-gradient(90deg, #fb923c 0%, #facc15 100%);
+  background: linear-gradient(90deg, #D97706 0%, #F59E0B 50%, #FBBF24 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -14,8 +20,8 @@ body {
 
 .pill-btn {
   border-radius: 9999px;
-  background: linear-gradient(90deg, #f97316 0%, #eab308 100%);
-  color: #fff;
+  background: linear-gradient(90deg, #D97706 0%, #F59E0B 50%, #FBBF24 100%);
+  color: #0B1220;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
   display: inline-block;
@@ -27,7 +33,7 @@ body {
 
 .pill-btn-outline {
   border-radius: 9999px;
-  border: 1px solid #475569;
+  border: 1px solid #1E2A3F;
   color: #fff;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
@@ -35,26 +41,32 @@ body {
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 .pill-btn-outline:hover {
-  border-color: #f97316;
-  background-color: rgba(249, 115, 22, 0.08);
+  border-color: #F59E0B;
+  background-color: rgba(245, 158, 11, 0.08);
+}
+
+/* Visible keyboard focus — gold outline, never removed. */
+:focus-visible {
+  outline: 2px solid #FBBF24;
+  outline-offset: 2px;
 }
 
 /* Faint geometric line art for the public hero. */
 .hero-lines {
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+    linear-gradient(rgba(138, 151, 168, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(138, 151, 168, 0.07) 1px, transparent 1px);
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, black 30%, transparent 75%);
   -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, black 30%, transparent 75%);
 }
 
-/* Soft orange glow behind the hero headline. */
+/* Soft gold glow behind the hero headline. */
 .hero-glow {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse 60% 45% at 50% 0%, rgba(249, 115, 22, 0.16), transparent 70%);
+  background: radial-gradient(ellipse 60% 45% at 50% 0%, rgba(245, 158, 11, 0.16), transparent 70%);
 }
 
 /* Scroll-reveal: fades + rises into view once (see Reveal in layout.tsx). */
@@ -68,13 +80,13 @@ body {
   transform: translateY(0);
 }
 
-/* Hover lift for cards: subtle rise + orange edge + shadow. */
+/* Hover lift for cards: subtle rise + gold edge + shadow. */
 .lift {
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .lift:hover {
   transform: translateY(-3px);
-  border-color: rgba(249, 115, 22, 0.55);
+  border-color: rgba(245, 158, 11, 0.55);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 
@@ -141,21 +153,22 @@ body {
   will-change: transform;
 }
 
-/* Dark form fields with an orange edge (public contact form). */
+/* Dark form fields with a gold edge (public contact form). */
 .dark-field {
   width: 100%;
   border-radius: 0.75rem;
-  border: 1px solid #334155;
-  border-left: 3px solid #f97316;
-  background: #0f172a;
+  border: 1px solid #1E2A3F;
+  border-left: 3px solid #D97706;
+  background: #111C30;
   color: #e2e8f0;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
 }
 .dark-field::placeholder {
-  color: #64748b;
+  color: #8A97A8;
 }
 .dark-field:focus {
-  outline: none;
-  border-color: #f97316;
+  border-color: #F59E0B;
+  outline: 2px solid #FBBF24;
+  outline-offset: 2px;
 }
