@@ -37,6 +37,7 @@ const en = {
   'trust.ledger': 'Every commission written to an auditable ledger',
 
   'home.eyebrow': 'A new CPA network — now open',
+  'a11y.skip': 'Skip to main content',
   'home.titleBefore': 'Turn',
   'home.titleAfter': 'traffic into commission.',
   'home.sub': 'AffiLayer connects advertisers who need customers with affiliates who can reach them. Pick a direct offer, or send everything through one SmartLink — every click tracked, every conversion attributed, every commission written to a ledger you can audit.',
@@ -225,6 +226,7 @@ const es: Record<DictKey, string> = {
   'trust.ledger': 'Cada comisión queda escrita en un libro contable auditable',
 
   'home.eyebrow': 'Una nueva red CPA — ya abierta',
+  'a11y.skip': 'Saltar al contenido principal',
   'home.titleBefore': 'Convierte tráfico de',
   'home.titleAfter': 'en comisiones.',
   'home.sub': 'AffiLayer conecta anunciantes que necesitan clientes con afiliados que pueden llegar a ellos. Elige una oferta directa o envía todo a través de un solo SmartLink: cada clic registrado, cada conversión atribuida, cada comisión escrita en un libro contable que puedes auditar.',
@@ -411,6 +413,7 @@ const pt: Record<DictKey, string> = {
   'trust.ledger': 'Cada comissão registrada em um livro-razão auditável',
 
   'home.eyebrow': 'Uma nova rede CPA — já aberta',
+  'a11y.skip': 'Pular para o conteúdo principal',
   'home.titleBefore': 'Transforme tráfego de',
   'home.titleAfter': 'em comissões.',
   'home.sub': 'A AffiLayer conecta anunciantes que precisam de clientes com afiliados que podem alcançá-los. Escolha uma oferta direta ou envie tudo por um único SmartLink: cada clique registrado, cada conversão atribuída, cada comissão registrada em um livro-razão que você pode auditar.',

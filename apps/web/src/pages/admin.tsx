@@ -162,7 +162,7 @@ export function AdminCampaigns() {
             </div>
             <p className="mt-1 text-slate-600">{c.description ?? ''} {c.budget !== undefined ? `· Budget $${c.budget} ${c.currency}` : ''}</p>
             <div className="mt-2 flex gap-2">
-              <input className={inputCls} type="number" min="0" step="0.01" placeholder="New budget" value={editBudget[c.id] ?? ''} onChange={(e) => setEditBudget((x) => ({ ...x, [c.id]: e.target.value }))} />
+              <input className={inputCls} type="number" min="0" step="0.01" placeholder="New budget" aria-label="New budget" value={editBudget[c.id] ?? ''} onChange={(e) => setEditBudget((x) => ({ ...x, [c.id]: e.target.value }))} />
               <button className={ghostCls} disabled={editBudget[c.id] === undefined} onClick={() => saveBudget(c)}>Save budget</button>
             </div>
           </div>
@@ -313,7 +313,7 @@ export function AdminCompliance() {
   const pending = profiles.filter((p) => p.status === 'pending')
   const decided = profiles.filter((p) => p.status !== 'pending')
   const reasonInput = (p: Profile, placeholder: string) => (
-    <input className={`${inputCls} w-full`} placeholder={placeholder} value={reasons[p.id] ?? ''} onChange={(e) => setReasons((r) => ({ ...r, [p.id]: e.target.value }))} />
+    <input className={`${inputCls} w-full`} placeholder={placeholder} aria-label={placeholder} value={reasons[p.id] ?? ''} onChange={(e) => setReasons((r) => ({ ...r, [p.id]: e.target.value }))} />
   )
   return (
     <div className="space-y-4">
@@ -378,7 +378,7 @@ export function AdminAuditLogs() {
     <Card title={`Audit logs (${filtered.length} of ${auditLog.length})`}>
       <p className="mb-3 text-sm text-slate-500">Every action taken in this demo session is recorded here — offer and campaign changes, KYC decisions, payout decisions, suspensions. In a live deployment these entries come from the database audit table instead.</p>
       <div className="mb-4 flex flex-wrap gap-2">
-        <input className={inputCls} placeholder="Search actor, action, detail…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className={inputCls} placeholder="Search actor, action, detail…" aria-label="Search actor, action, detail" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className={inputCls} value={entity} onChange={(e) => setEntity(e.target.value)}>
           <option value="">All entities</option>
           {entities.map((t) => <option key={t}>{t}</option>)}

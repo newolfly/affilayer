@@ -176,7 +176,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           </nav>
         )}
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-10">
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-10">
         <PageTransition>{children}</PageTransition>
       </main>
       <footer className="border-t border-slate-800">
@@ -366,7 +366,7 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
             ))}
           </nav>
         </aside>
-        <main className="min-w-0 flex-1">
+        <main id="main-content" className="min-w-0 flex-1">
           <h1 className="mb-4 text-2xl font-bold">{title}</h1>
           <DemoBanner />
           <PageTransition>

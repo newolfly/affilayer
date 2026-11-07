@@ -66,7 +66,7 @@ export function AffiliateOffers() {
   return (
     <Card title="Offers">
       <div className="mb-4 flex gap-2">
-        <input className={inputCls} placeholder="Search offers…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className={inputCls} placeholder="Search offers…" aria-label="Search offers" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className={inputCls} value={vertical} onChange={(e) => setVertical(e.target.value)}>
           <option value="">All verticals</option>
           {[...new Set(offers.map((o) => o.vertical))].map((v) => <option key={v}>{v}</option>)}
@@ -167,7 +167,7 @@ export function AffiliateTrackingLinks() {
         </div>
         <div className="grid gap-2 sm:grid-cols-5">
           {(Object.keys(subs) as (keyof typeof subs)[]).map((k) => (
-            <input key={k} className={inputCls} placeholder={k} value={subs[k]} onChange={(e) => setSubs((s) => ({ ...s, [k]: e.target.value }))} />
+            <input key={k} className={inputCls} placeholder={k} aria-label={k} value={subs[k]} onChange={(e) => setSubs((s) => ({ ...s, [k]: e.target.value }))} />
           ))}
         </div>
         {url && (
@@ -266,7 +266,7 @@ export function AffiliatePostbacks() {
     <Card title="Postbacks">
       <p className="mb-3 text-sm text-slate-500">Register a postback URL. Supported macros: {'{click_id}'} {'{conversion_id}'} {'{payout}'} {'{currency}'} {'{status}'} {'{sub1}'}. The tracking service calls it when a conversion is recorded.</p>
       <form onSubmit={submit} className="flex gap-2">
-        <input className={`${inputCls} flex-1`} type="url" required placeholder="https://example.com/postback?click_id={click_id}&payout={payout}" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <input className={`${inputCls} flex-1`} type="url" required placeholder="https://example.com/postback?click_id={click_id}&payout={payout}" aria-label="Postback URL" value={url} onChange={(e) => setUrl(e.target.value)} />
         <button className={btnCls}>Save</button>
       </form>
       {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
@@ -337,7 +337,7 @@ export function AffiliatePayouts() {
       </div>
       <Card title="Request a payout">
         <form onSubmit={request} className="flex gap-2">
-          <input className={inputCls} type="number" min="0" step="0.01" placeholder={`Amount (${settings.defaultCurrency})`} value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <input className={inputCls} type="number" min="0" step="0.01" placeholder={`Amount (${settings.defaultCurrency})`} aria-label={`Amount (${settings.defaultCurrency})`} value={amount} onChange={(e) => setAmount(e.target.value)} />
           <button className={btnCls}>Request payout</button>
         </form>
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
@@ -395,8 +395,8 @@ export function AffiliateTickets() {
     <div className="space-y-4">
       <Card title="New ticket">
         <form onSubmit={submit} className="space-y-3">
-          <input className={`${inputCls} w-full`} placeholder="Subject" required value={subject} onChange={(e) => setSubject(e.target.value)} />
-          <textarea className={`${inputCls} w-full`} rows={4} placeholder="Describe the issue…" required value={message} onChange={(e) => setMessage(e.target.value)} />
+          <input className={`${inputCls} w-full`} placeholder="Subject" aria-label="Subject" required value={subject} onChange={(e) => setSubject(e.target.value)} />
+          <textarea className={`${inputCls} w-full`} rows={4} placeholder="Describe the issue…" aria-label="Describe the issue" required value={message} onChange={(e) => setMessage(e.target.value)} />
           <button className={btnCls}>Submit ticket</button>
         </form>
         {sent && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Ticket submitted.</p>}

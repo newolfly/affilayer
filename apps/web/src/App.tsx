@@ -5,7 +5,7 @@ import { AppLayout } from './components/layout'
 import type { DashboardNavItem } from './components/layout'
 import { useAuth, roleHome } from './lib/auth'
 import { RouteSeo } from './lib/seo'
-import { LocaleProvider } from './lib/i18n'
+import { LocaleProvider, useT } from './lib/i18n'
 import type { Role } from './lib/types'
 
 // Route sections are code-split: each page module becomes its own chunk,
@@ -117,12 +117,20 @@ const adminNav: DashboardNavItem[] = [
   { to: '/app/admin/tickets', label: 'Tickets', icon: 'ticket' },
 ]
 
+function SkipLink() {
+  const t = useT()
+  return (
+    <a href="#main-content" className="skip-link">{t('a11y.skip')}</a>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <LocaleProvider>
+      <SkipLink />
       <RouteSeo />
-      <Suspense fallback={<p className="p-8 text-slate-500">Loading…</p>}>
+      <Suspense fallback={<p className="p-8 text-[#8A97A8]">Loading…</p>}>
         <Routes>
           {/* Public */}
           <Route path="/" element={<Home />} />

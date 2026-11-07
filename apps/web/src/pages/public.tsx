@@ -277,10 +277,22 @@ export function ContactForm() {
         </div>
       ) : (
         <form onSubmit={submit} className="mx-auto mt-8 max-w-lg space-y-3">
-          <input className="dark-field" placeholder={t('contact.ph.name')} required value={form.name} onChange={set('name')} />
-          <input className="dark-field" type="email" placeholder={t('contact.ph.email')} required value={form.email} onChange={set('email')} />
-          <input className="dark-field" placeholder={t('contact.ph.subject')} required value={form.subject} onChange={set('subject')} />
-          <textarea className="dark-field" placeholder={t('contact.ph.message')} rows={5} required value={form.message} onChange={set('message')} />
+          <div>
+            <label htmlFor="contact-name" className="mb-1 block text-sm font-semibold text-white">{t('contact.ph.name')}</label>
+            <input id="contact-name" className="dark-field" placeholder={t('contact.ph.name')} required value={form.name} onChange={set('name')} />
+          </div>
+          <div>
+            <label htmlFor="contact-email" className="mb-1 block text-sm font-semibold text-white">{t('contact.ph.email')}</label>
+            <input id="contact-email" className="dark-field" type="email" placeholder={t('contact.ph.email')} required value={form.email} onChange={set('email')} />
+          </div>
+          <div>
+            <label htmlFor="contact-subject" className="mb-1 block text-sm font-semibold text-white">{t('contact.ph.subject')}</label>
+            <input id="contact-subject" className="dark-field" placeholder={t('contact.ph.subject')} required value={form.subject} onChange={set('subject')} />
+          </div>
+          <div>
+            <label htmlFor="contact-message" className="mb-1 block text-sm font-semibold text-white">{t('contact.ph.message')}</label>
+            <textarea id="contact-message" className="dark-field" placeholder={t('contact.ph.message')} rows={5} required value={form.message} onChange={set('message')} />
+          </div>
           <button className="pill-btn w-full">{t('contact.send')}</button>
         </form>
       )}

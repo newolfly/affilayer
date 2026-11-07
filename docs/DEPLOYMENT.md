@@ -2,6 +2,26 @@
 
 Nothing in this repo deploys itself. Every step below is manual and explicit.
 
+## LIVE STATUS — 7 Nov 2026 ~19:40 +06 (DEFECT FIXES + A11Y DEPLOYED LIVE, BROWSER CHECK STILL OWED)
+
+- **Deployed 19:39 +06: Pages `affilayer-web`, deployment `eb53c4b0` (103 files, new build)** — fresh `vite build` + full `prerender.py` run (47/47 routes, Chromium worked this time). New assets: JS `index-C876gXqB.js`, CSS `index-9kmTr0TV.css`, geo chunk `geo-BJv3JPCi.js`.
+- **Root cause of the blank geo pages (defect 1): 0-byte FLAT `.html` files shadowed good `index.html` files.** Cloudflare Pages resolves `/geo/br` to `geo/br.html` before `geo/br/index.html`; the reconstruction had left `geo/br.html`, `geo/fr.html`, `geo/in.html`, `es/affiliates.html`, `es/advertisers.html`, `es/how-it-works.html`, `es/geo.html` (and stray `es/.html`) as 0-byte files, so Pages served 200 with an empty body. The prerendered `index.html` files were fine all along — NOT a hydration crash. Fixed by rebuilding + re-prerendering properly (all flat copies now have real content; 0 zero-byte files in dist/).
+- **Live verification by curl 19:40 +06 (all 200):** `/` 34,614 B; `/geo/br` 31,964, `/geo/fr` 31,957, `/geo/in` 31,978, `/geo/us` 32,177; `/es/affiliates` 22,140, `/es/advertisers` 20,300, `/es/how-it-works` 15,312, `/es/geo` 24,568, `/es/geo/br` 32,552; `/pt/affiliates` 22,165, `/pt/geo/br` 32,567; `/sitemap.xml` 6,699 (47 URLs); `go.affilayer.com/health` `{"ok":true}`; homepage serves the new CSS. **Browser (visual) check still owed:** gold design on `/`, hero rotating word visible, skip link works, mobile rendering.
+- **Defect 2 fix (hero rotating word):** the word was visible only 0–18% of each 3.5s animation cycle (screenshots almost always caught the invisible phase). Keyframes changed in `src/index.css` so the word is visible 0–72% of the cycle. Same component on ES/PT was unaffected.
+- **Accessibility + mobile (this build):** skip link (`Skip to main content`, `a11y.skip` in EN/ES/PT) as first element in `App.tsx` + `id="main-content"` on both `<main>` landmarks (`layout.tsx`); visible `<label>`s on the contact form (`public.tsx`, all 4 fields, all 3 locales); `aria-label`s on 9 placeholder-only dashboard inputs (`affiliate.tsx`, `admin.tsx`); loading-fallback contrast fixed (`text-[#8A97A8]`); touch targets ≥44px on coarse pointers (header buttons, mobile + dashboard nav links); `overflow-x: clip` on body (no horizontal scroll on mobile).
+- **Tests: 28/28 pass** (`npm test`: 11 web + 17 shared). `tsc --noEmit` clean.
+- **Cloudflare token used for this deploy expires ~20:01 +06, NO refresh token** — any further deploy needs another phone authorization.
+- **Commit status:** source fixes are UNCOMMITTED at time of writing (see git status below); the earlier `15a150e` HEAD + helper scripts + this doc update are also uncommitted — commit once the VM EPERM fault allows.
+- Worker, Supabase, DNS untouched.
+
+## LIVE STATUS — 7 Nov 2026 ~18:04 +06 (GOLD BUILD READY LOCALLY, DEPLOY BLOCKED — TOKEN EXPIRED)
+
+- **Gold recolor build DONE locally (commit `15a150e`), dist/ COMPLETE 47/47 as of 7 Nov 18:02 +06** — all 29 missing routes reconstructed and verified on disk (SHA-256 checked, JSON-LD + gold JS `index-I-k8WHqV.js` / CSS `index-COFJ0IWu.css` / theme `#070D1A` present, no pre-gold leftovers, 0 zero-byte files). Method: live-fetch of each route from affilayer.com + gold transform (`scripts/transform-live.py`, `scripts/fetch-live.py`, `scripts/verify-dist.py`) — the normal `npm run build:live` + Chromium prerender path could NOT run: this VM's filesystem returns EPERM on exec writes (0/75 controlled writes succeeded) and Chromium crashes on any page load (SIGTRAP/SIGILL). `muse.write`/`muse.edit` is the only working write path.
+- **DEPLOY ATTEMPTED 7 Nov ~18:04 +06 and FAILED — STOPPED per instructions:** `wrangler pages deploy apps/web/dist --project-name affilayer-web` (wrangler 4.158.0, exit code 1) → `Authentication error [code: 10000]` → `Invalid access token [code: 9109]` on GET /accounts. The OAuth access token in `~/workspace/.oauth/tokens.json` expired ~17:41 +06 and the file holds NO refresh_token — there is no refresh route. **Next step: Sojib must re-authorize (fresh PKCE URL, phone-OAuth, same flow as 16:40 +06), then re-run the wrangler deploy command above, then verify live** (gold logo on `/`, real pages at `/geo/br`, `/es/`, `/pt/affiliates`, `/sitemap.xml` with 47 URLs).
+- **Live site is STILL the pre-gold deploy** (Pages `affilayer-web`, deployment `8a7dbfcc`, 16:42 +06 — verified live 16:45 +06). Nothing broken; the gold site is simply not live yet.
+- **NOT committed:** helper scripts (`transform-live.py`, `fetch-live.py`, `verify-dist.py`), the 29 reconstructed dist files, and this doc update are all on disk UNCOMMITTED — `git status` fails on `.git/index.lock` write (EPERM). Commit them once the VM fault clears (or from another machine). Do NOT push to GitHub (still 403-blocked).
+- **No preview server running; no `vite.config.mjs` created** (`vite.config.ts` stays the source of truth). Worker, Supabase, DNS, and the live Worker route were NOT touched.
+
 ## LIVE STATUS — 7 Nov 2026 ~16:45 +06 (ALL DEPLOYED + VERIFIED LIVE, Supabase deferred)
 
 - **Domain:** `affilayer.com` — Cloudflare zone exists (Free plan, Zone ID
