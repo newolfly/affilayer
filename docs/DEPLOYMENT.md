@@ -2,37 +2,36 @@
 
 Nothing in this repo deploys itself. Every step below is manual and explicit.
 
-## LIVE STATUS — 7 Nov 2026 (deploy in progress, Supabase deferred)
+## LIVE STATUS — 7 Nov 2026 ~15:58 +06 (deployed, Supabase deferred)
 
 - **Domain:** `affilayer.com` — Cloudflare zone exists (Free plan, Zone ID
-  `17c94ce53fca917182d3fd91512eb811`); nameservers at Namecheap already point
-  to `olof.ns.cloudflare.com` + `teresa.ns.cloudflare.com` and have propagated.
-  The zone will flip Pending → Active once Cloudflare verifies it.
-- **Current state:** https://affilayer.com/ shows Cloudflare **522** — the
-  imported apex A record still points at the old Namecheap parking IP
-  (`192.64.119.13`) and `www` at `parkingpage.namecheap.com`. Nothing is
-  deployed yet. The 522 clears when the Pages deploy + DNS fix below are done.
-- **Web app:** built and ready in `apps/web/dist` with
-  `VITE_TRACKING_URL=https://go.affilayer.com` baked in (demo mode — no
-  Supabase env vars). Deploy: `wrangler pages deploy apps/web/dist
-  --project-name affilayer-web`, then attach `affilayer.com` + `www` as custom
-  domains. Pages setup replaces the stale apex A record and www parking CNAME.
-- **Tracking Worker:** ported and verified in `services/tracking-worker/`
-  (`npm test` — 17/17 smoke checks pass; `wrangler deploy --dry-run` clean).
-  Deploy: `wrangler deploy` (Worker `affilayer-tracking`, route
-  `go.affilayer.com` from `wrangler.toml`), then `wrangler secret put
-  POSTBACK_SECRET` (value in `~/.affilayer-secrets`, chmod 600, never in the
-  repo). Store is in-memory per isolate — ephemeral, same as the Fastify dev
-  default. The Fastify service in `services/tracking/` is untouched as the
-  Node reference implementation (and the durable-Postgres option).
-- **BLOCKED ON AUTH (single blocker):** `wrangler login` timed out waiting for
-  the OAuth code — no browser was available to open the auth URL. To finish:
-  run `wrangler login` on the build machine, open the printed OAuth URL in a
-  browser, sign in as `sojbahmmed@gmail.com` and authorize; the
-  `localhost:8976` callback completes on the build machine. Then run the
-  deploy commands above. Alternative: create a scoped API token in the
-  Cloudflare dashboard (Pages:Edit, Workers:Edit, Zone:Edit, DNS:Edit on the
-  affilayer.com zone) and save it as `CLOUDFLARE_API_TOKEN`.
+  `17c94ce53fca917182d3fd91512eb811`); nameservers at Namecheap point to
+  `olof.ns.cloudflare.com` + `teresa.ns.cloudflare.com`; zone status ACTIVE
+  (checked via API 7 Nov ~07:54).
+- **DNS fix DONE 7 Nov ~15:58 +06** (via Cloudflare dashboard, signed in as
+  sojbahmmed@gmail.com): apex A `192.64.119.13` and www CNAME
+  `parkingpage.namecheap.com` DELETED; added, all Proxied, TTL Auto:
+  `affilayer.com` CNAME → `affilayer-web.pages.dev`, `www` CNAME →
+  `affilayer-web.pages.dev`, `go` CNAME →
+  `affilayer-tracking.sojibahmmed.workers.dev`. MX/SPF/mail/autoconfig/
+  autodiscover/SRV records untouched (10 records total).
+- **Web app LIVE:** https://affilayer.com/ loads the AffiLayer homepage
+  (verified 7 Nov 15:58, title "AffiLayer — Global CPA Affiliate Network").
+  Pages project `affilayer-web` deployed 7 Nov ~07:55
+  (https://949914d2.affilayer-web.pages.dev); custom domains
+  `affilayer.com` + `www.affilayer.com` attached via API, were "initializing"
+  at attach time — re-check their status in the Pages dashboard.
+- **Tracking Worker LIVE:** `affilayer-tracking` deployed 7 Nov ~07:53;
+  https://affilayer-tracking.sojibahmmed.workers.dev/health returns
+  `{"ok":true}`; `POSTBACK_SECRET` set on the Worker (value only in
+  `~/.affilayer-secrets`, chmod 600). `go.affilayer.com` DNS now points at the
+  Worker — verify `/health` on go.affilayer.com and run the full click →
+  signed conversion → replay-duplicate → /api/stats E2E check.
+- **Auth note:** the OAuth access token obtained 7 Nov ~07:53 (in
+  `~/workspace/.oauth/tokens.json`) expired ~08:53; refresh it with the stored
+  refresh_token (client_id `54d11594-84e4-41aa-b438-e81b8fa78ee7`, browser UA)
+  before any further API work. The token has NO DNS scope — DNS was done via
+  the dashboard, which needed a fresh emailed 7-digit code each sign-in.
 - **Supabase:** explicitly deferred — no project created, no migrations applied.
 - **GitHub:** push to `newolfly/affilayer` is BLOCKED (403 — the
   Sojib-programmer token cannot write to the newolfly repo). Do not retry
