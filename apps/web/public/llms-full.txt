@@ -89,8 +89,12 @@ worldwide; there is no restricted country list.
 - Blog — https://affilayer.com/blog
 - Launch post — https://affilayer.com/blog/affilayer-is-live
 - Contact — https://affilayer.com/contact
+- Partner — https://affilayer.com/partner
+- White label — https://affilayer.com/white-label
+- Advertise — https://affilayer.com/advertise
 - Terms — https://affilayer.com/terms
 - Privacy — https://affilayer.com/privacy
+- Docs — https://docs.affilayer.com/ (getting started, tracking, postbacks, payouts, API)
 
 ## FAQ (short answers)
 

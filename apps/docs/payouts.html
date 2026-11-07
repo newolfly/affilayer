@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="AffiLayer payouts: how commissions move through pending, approved, rejected and reversed, and how manual admin-approved Net30 payouts work." />
+  <meta name="theme-color" content="#070D1A" />
+  <title>Payouts — AffiLayer Docs</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a class="logo" href="/">Affi<span>Layer</span> Docs</a>
+    <nav class="docs-nav" aria-label="Docs">
+      <a href="/">Docs</a>
+      <a href="/getting-started.html">Getting started</a>
+      <a href="/tracking.html">Tracking</a>
+      <a href="/postbacks.html">Postbacks</a>
+      <a href="/payouts.html" aria-current="page">Payouts</a>
+      <a href="/api.html">API</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <p class="eyebrow">Payouts</p>
+  <h1><span>Payouts</span></h1>
+  <p class="lede">Commissions are earned only on conversions that are approved and not reversed. Payouts are manual and admin-approved — never automatic, never guessed.</p>
+
+  <h2>How a commission becomes payable</h2>
+  <ol class="steps">
+    <li>
+      <strong>Conversion recorded — pending.</strong><br />
+      A conversion arrives through the signed conversion endpoint and is recorded as <code>pending</code>, linked to the click that produced it.
+    </li>
+    <li>
+      <strong>Reviewed.</strong><br />
+      Conversions are reviewed by the network team or the advertiser, and move to <code>approved</code>, <code>rejected</code> or <code>reversed</code>. Every change is recorded.
+    </li>
+    <li>
+      <strong>Entered in the ledger.</strong><br />
+      Approved commissions are written to the append-only commission ledger — the same numbers both sides see.
+    </li>
+    <li>
+      <strong>Payable on Net30.</strong><br />
+      Approved commissions become payable 30 days after the end of the month in which they were approved.
+    </li>
+    <li>
+      <strong>Payout requested and approved.</strong><br />
+      Request a payout from the Payouts page in your dashboard when your balance is payable. A person reviews it before money moves.
+    </li>
+  </ol>
+
+  <h2>Methods and minimums</h2>
+  <p>Payout methods and minimum thresholds are shown in your dashboard. No fixed list is published, because methods depend on country and setup. Your payment profile is collected during onboarding.</p>
+
+  <h2>What we do not do</h2>
+  <ul>
+    <li>No automatic payouts — every payout is reviewed by a person.</li>
+    <li>No promised earnings — performance depends on the offer, the audience and the traffic.</li>
+    <li>No payout totals published — the network is new and the ledger speaks for itself.</li>
+  </ul>
+
+  <h2>Disputes</h2>
+  <p>If a conversion you expected is missing, rejected or reversed, raise a ticket from your dashboard with the click ID. Fraud signals — duplicate click IDs, bot traffic, misleading creatives — can lead to review, rejection of conversions, or account suspension.</p>
+</main>
+<footer>
+  <div class="footer-inner">
+    <span>AffiLayer Docs — operated by MarketSync Global LLC, New Mexico, USA.</span>
+    <span><a href="https://affilayer.com/">affilayer.com</a> · <a href="mailto:support@affilayer.com">support@affilayer.com</a></span>
+  </div>
+</footer>
+</body>
+</html>

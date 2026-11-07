@@ -1,5 +1,6 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { PublicLayout, Reveal, Slogan } from '../components/layout'
+import { PageArt, PageHighlights } from '../components/illustrations'
 import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
 import { useLocale, useT, localizePath } from '../lib/i18n'
@@ -20,6 +21,19 @@ export function GeoIndex() {
       <p className="mx-auto mt-4 max-w-2xl text-center text-slate-300">
         {t('geo.index.sub')}
       </p>
+      <PageArt
+        variant="geo"
+        label="Illustration: the AffiLayer hub connecting eight country pages, one ledger and Net30 payouts"
+        nodes={['8 countries', 'One ledger', 'Net30 payouts', 'One network']}
+        caption="one network, every country"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'search', text: t('geo.bullet.1') },
+          { icon: 'link', text: t('geo.bullet.2') },
+          { icon: 'file', text: t('geo.bullet.3') },
+        ]}
+      />
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {COUNTRIES.map((c, i) => (
           <Reveal key={c.code} delay={(i % 4) * 80}>
@@ -92,6 +106,12 @@ export function GeoPage() {
       </h1>
       <Slogan className="mt-4">{t('geo.page.slogan', { country: name })}</Slogan>
       <p className="mt-4 max-w-3xl text-slate-300">{country.intro[locale]}</p>
+      <PageArt
+        variant="country"
+        label={`Illustration: the AffiLayer hub for ${name} — CPA, CPL and CPS offers, SmartLink and Net30 payouts`}
+        nodes={[name, 'CPA · CPL · CPS', 'SmartLink', 'Net30']}
+        caption={`AffiLayer in ${name}`}
+      />
 
       <h2 className="mt-10 text-2xl font-bold text-white">
         {t('geo.page.what', { country: name })}

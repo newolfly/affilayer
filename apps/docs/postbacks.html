@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="AffiLayer postbacks: server-to-server conversion notifications with macros, HMAC-SHA256 signatures and retries." />
+  <meta name="theme-color" content="#070D1A" />
+  <title>Postbacks — AffiLayer Docs</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a class="logo" href="/">Affi<span>Layer</span> Docs</a>
+    <nav class="docs-nav" aria-label="Docs">
+      <a href="/">Docs</a>
+      <a href="/getting-started.html">Getting started</a>
+      <a href="/tracking.html">Tracking</a>
+      <a href="/postbacks.html" aria-current="page">Postbacks</a>
+      <a href="/payouts.html">Payouts</a>
+      <a href="/api.html">API</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <p class="eyebrow">Postbacks</p>
+  <h1><span>Postbacks</span></h1>
+  <p class="lede">When a conversion is recorded, AffiLayer can notify your server. Postbacks are server-to-server <code>GET</code> requests to a URL you configure, with macros expanded and an HMAC signature you can verify.</p>
+
+  <h2>Setting one up</h2>
+  <p>Set your postback URL in the dashboard, on the Postbacks page of your affiliate account. You can configure a different URL per offer.</p>
+
+  <h2>Macros</h2>
+  <p>These placeholders in your URL are replaced with the conversion's real values:</p>
+  <table>
+    <tr><th>Macro</th><th>Value</th></tr>
+    <tr><td><code>{click_id}</code></td><td>The click ID the conversion is attributed to.</td></tr>
+    <tr><td><code>{conversion_id}</code></td><td>The conversion's own ID.</td></tr>
+    <tr><td><code>{payout}</code></td><td>The conversion payout amount.</td></tr>
+    <tr><td><code>{currency}</code></td><td>The payout currency.</td></tr>
+    <tr><td><code>{status}</code></td><td>The conversion status at the time of the postback (starts as <code>pending</code>).</td></tr>
+    <tr><td><code>{sub1}</code></td><td>The click's <code>sub1</code> value, if one was passed.</td></tr>
+  </table>
+  <p>Example:</p>
+  <pre><code>https://tracker.example/postback?click_id={click_id}&amp;payout={payout}&amp;currency={currency}&amp;status={status}</code></pre>
+
+  <h2>Verifying the signature</h2>
+  <p>Every postback carries a signature header:</p>
+  <pre><code>x-affilayer-signature: &lt;hex&gt;</code></pre>
+  <p>The value is the HMAC-SHA256 of the raw request body, keyed with your postback secret, hex-encoded. An optional <code>sha256=</code> prefix is accepted. To verify, recompute the HMAC over the raw body with your secret and compare the two hex strings in constant time. If the header is missing or does not match, reject the postback.</p>
+  <p>Example verification (Node.js):</p>
+  <pre><code>import { createHmac, timingSafeEqual } from 'node:crypto';
+
+function verifyPostback(secret, rawBody, header) {
+  if (!header) return false;
+  const given = header.startsWith('sha256=') ? header.slice(7) : header;
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  if (given.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(given), Buffer.from(expected));
+}</code></pre>
+
+  <h2>Delivery and retries</h2>
+  <ul>
+    <li>One initial attempt plus up to 3 retries with exponential backoff, on network errors or non-2xx responses.</li>
+    <li>Every delivery attempt is recorded as a postback event, so you can see what was sent, when, and what came back.</li>
+    <li>A failed postback never fails the conversion itself — the conversion is recorded regardless.</li>
+  </ul>
+  <div class="note"><p><strong>Keep your secret secret.</strong> Your postback secret signs every notification. Do not put it in client-side code, public repositories or shared documents.</p></div>
+</main>
+<footer>
+  <div class="footer-inner">
+    <span>AffiLayer Docs — operated by MarketSync Global LLC, New Mexico, USA.</span>
+    <span><a href="https://affilayer.com/">affilayer.com</a> · <a href="mailto:support@affilayer.com">support@affilayer.com</a></span>
+  </div>
+</footer>
+</body>
+</html>

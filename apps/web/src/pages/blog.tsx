@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { PublicLayout, Reveal, Slogan } from '../components/layout'
+import { PageArt, PageHighlights } from '../components/illustrations'
 import { POSTS } from '../lib/blog-data'
 import { useT } from '../lib/i18n'
 
@@ -22,6 +23,19 @@ export function Blog() {
         Launch notes and plain notes on affiliate marketing — what we built, what
         changed, and what we learned running the network.
       </p>
+      <PageArt
+        variant="blog"
+        label="Illustration: the AffiLayer hub connecting launch notes, AdTech insights and news"
+        nodes={['Launch notes', 'AdTech insights', 'News', 'In our own words']}
+        caption="notes from building in the open"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'sparkle', text: 'Launch notes — what we built and what changed, in our own words.' },
+          { icon: 'search', text: 'AdTech insights — plain notes on tracking, attribution and payouts.' },
+          { icon: 'file', text: 'News — new pages, new offers and new countries as they land.' },
+        ]}
+      />
       <div className="mt-6 flex flex-wrap gap-2">
         {CATEGORIES.map((c) => (
           <button
@@ -93,6 +107,12 @@ export function BlogPost() {
       <h1 className="mt-2 max-w-3xl text-3xl font-bold text-white md:text-4xl">{post.title}</h1>
       <p className="mt-3 text-sm text-slate-400">{post.date} · {post.author}</p>
       <Slogan className="mt-4">{t('blog.post.slogan')}</Slogan>
+      <PageArt
+        variant="blog"
+        label={`Illustration: the AffiLayer hub for the post “${post.title}”`}
+        nodes={['Launch notes', 'AdTech insights', 'News', post.category]}
+        caption={post.category}
+      />
       <div className="mt-6 space-y-4 rounded-xl bg-white p-6 text-slate-700">
         {post.body.map((para, i) => (
           <p key={i}>{para}</p>

@@ -28,8 +28,12 @@
 - [FAQ](https://affilayer.com/faq): joining, traffic rules, payouts
 - [Blog](https://affilayer.com/blog): launch notes and notes on affiliate marketing
 - [Contact](https://affilayer.com/contact): general enquiries
+- [Partner](https://affilayer.com/partner): become a network partner
+- [White label](https://affilayer.com/white-label): run your own network under your brand, powered by AffiLayer
+- [Advertise](https://affilayer.com/advertise): advertise with AffiLayer — pay for conversions you have reviewed
 - [Terms](https://affilayer.com/terms): Terms of Service
 - [Privacy](https://affilayer.com/privacy): Privacy Policy
+- [Docs](https://docs.affilayer.com/): getting started, tracking, postbacks, payouts and the API
 
 ## Key facts
 

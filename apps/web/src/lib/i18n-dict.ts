@@ -206,6 +206,22 @@ const en = {
   'privacy.slogan': 'Your data stays yours. We do not sell it.',
   'geo.index.slogan': 'One network, every country, the same open books.',
   'geo.page.slogan': 'In {country}: the same tracking, the same ledger, the same honest payout.',
+
+  'nav.partner': 'Partner',
+  'nav.whitelabel': 'White label',
+  'nav.advertise': 'Advertise',
+  'partner.slogan': 'Partnerships that grow the network, not the fine print.',
+  'whitelabel.slogan': 'Your brand on the front. Our engine underneath.',
+  'advertise.slogan': 'Pay for conversions you have reviewed. Nothing else.',
+  'aff.hl.1': 'Browse direct offers by vertical, country, device and payout model.',
+  'aff.hl.2': 'Generate tracking links with up to five sub-parameters — or send everything through one SmartLink.',
+  'aff.hl.3': 'Approved conversions enter the ledger; payouts are manual, Net30 by default.',
+  'adv.hl.1': 'Publish offers with your own caps, traffic rules and conversion definition.',
+  'adv.hl.2': 'Approve the affiliates who run your offers before they can generate links.',
+  'adv.hl.3': 'Review every attributed conversion before it becomes payable.',
+  'how.hl.1': 'Six steps, nothing hidden: account, approval, offers, clicks, attribution, payout.',
+  'how.hl.2': 'Every click gets a unique click ID that stays linked to its conversion.',
+  'how.hl.3': 'Payouts are manual and admin-approved, Net30 by default.',
 } as const
 
 export type DictKey = keyof typeof en
@@ -411,6 +427,22 @@ const es: Record<DictKey, string> = {
   'privacy.slogan': 'Tus datos siguen siendo tuyos. No los vendemos.',
   'geo.index.slogan': 'Una red, todos los países, los mismos libros abiertos.',
   'geo.page.slogan': 'En {country}: el mismo seguimiento, el mismo libro contable, el mismo pago honesto.',
+
+  'nav.partner': 'Socios',
+  'nav.whitelabel': 'Marca blanca',
+  'nav.advertise': 'Anunciarse',
+  'partner.slogan': 'Alianzas que hacen crecer la red, no la letra pequeña.',
+  'whitelabel.slogan': 'Tu marca al frente. Nuestro motor debajo.',
+  'advertise.slogan': 'Paga solo por las conversiones que hayas revisado. Nada más.',
+  'aff.hl.1': 'Explora ofertas directas por vertical, país, dispositivo y modelo de pago.',
+  'aff.hl.2': 'Genera enlaces de seguimiento con hasta cinco subparámetros, o envía todo por un solo SmartLink.',
+  'aff.hl.3': 'Las conversiones aprobadas entran en el libro contable; los pagos son manuales, Net30 por defecto.',
+  'adv.hl.1': 'Publica ofertas con tus propios límites, reglas de tráfico y definición de conversión.',
+  'adv.hl.2': 'Aprueba a los afiliados que promocionan tus ofertas antes de que puedan generar enlaces.',
+  'adv.hl.3': 'Revisa cada conversión atribuida antes de que se vuelva pagadera.',
+  'how.hl.1': 'Seis pasos, nada oculto: cuenta, aprobación, ofertas, clics, atribución y pago.',
+  'how.hl.2': 'Cada clic recibe un ID único que se mantiene vinculado a su conversión.',
+  'how.hl.3': 'Los pagos son manuales y aprobados por un administrador, Net30 por defecto.',
 }
 
 const pt: Record<DictKey, string> = {
@@ -614,6 +646,22 @@ const pt: Record<DictKey, string> = {
   'privacy.slogan': 'Seus dados continuam seus. Não os vendemos.',
   'geo.index.slogan': 'Uma rede, todos os países, os mesmos livros abertos.',
   'geo.page.slogan': 'Em {country}: o mesmo rastreamento, o mesmo livro-razão, o mesmo pagamento honesto.',
+
+  'nav.partner': 'Parceiros',
+  'nav.whitelabel': 'Marca branca',
+  'nav.advertise': 'Anuncie',
+  'partner.slogan': 'Parcerias que fazem a rede crescer, não as letras miúdas.',
+  'whitelabel.slogan': 'Sua marca na frente. Nosso motor por trás.',
+  'advertise.slogan': 'Pague apenas pelas conversões que você revisou. Nada mais.',
+  'aff.hl.1': 'Explore ofertas diretas por vertical, país, dispositivo e modelo de pagamento.',
+  'aff.hl.2': 'Gere links de rastreamento com até cinco subparâmetros — ou envie tudo por um único SmartLink.',
+  'aff.hl.3': 'As conversões aprovadas entram no livro-razão; os pagamentos são manuais, Net30 por padrão.',
+  'adv.hl.1': 'Publique ofertas com seus próprios limites, regras de tráfego e definição de conversão.',
+  'adv.hl.2': 'Aprove os afiliados que promovem suas ofertas antes que eles possam gerar links.',
+  'adv.hl.3': 'Revise cada conversão atribuída antes que ela se torne pagável.',
+  'how.hl.1': 'Seis passos, nada escondido: conta, aprovação, ofertas, cliques, atribuição e pagamento.',
+  'how.hl.2': 'Cada clique recebe um ID único que permanece vinculado à sua conversão.',
+  'how.hl.3': 'Os pagamentos são manuais e aprovados por um administrador, Net30 por padrão.',
 }
 
 /** TypeScript enforces that every language carries exactly the EN keys. */

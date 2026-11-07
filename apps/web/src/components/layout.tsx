@@ -62,7 +62,7 @@ export function Slogan({ children, className = '' }: { children: ReactNode; clas
  *  states, so the site never shows a bare "Loading…" line. */
 export function PageLoader() {
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-16" role="status" aria-label="Loading AffiLayer">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center bg-[#070D1A] px-4 py-16" role="status" aria-label="Loading AffiLayer">
       <img src="/logo-mark.svg" alt="" className="loader-mark h-12 w-12" width={48} height={48} />
       <p className="mt-4 text-lg font-bold text-white">AffiLayer</p>
       <div className="loader-bar mt-6 h-1.5 w-48 overflow-hidden rounded-full bg-[#1E2A3F]" aria-hidden="true">
@@ -137,6 +137,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     { to: localizePath('/geo', locale), label: t('nav.countries') },
     { to: localizePath('/blog', locale), label: t('nav.blog') },
     { to: localizePath('/faq', locale), label: t('nav.faq') },
+    { to: '/partner', label: t('nav.partner') },
     { to: localizePath('/contact', locale), label: t('nav.contact') },
   ]
   /** Trust signals. Every item is a true, verifiable statement about how
@@ -242,6 +243,9 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             <ul className="mt-3 space-y-2">
               <li><Link to="/about" className="footer-link">{t('nav.about')}</Link></li>
               <li><Link to="/advantages" className="footer-link">{t('nav.advantages')}</Link></li>
+              <li><Link to="/partner" className="footer-link">{t('nav.partner')}</Link></li>
+              <li><Link to="/white-label" className="footer-link">{t('nav.whitelabel')}</Link></li>
+              <li><Link to="/advertise" className="footer-link">{t('nav.advertise')}</Link></li>
               <li><Link to="/faq" className="footer-link">{t('nav.faq')}</Link></li>
               <li><Link to="/blog" className="footer-link">{t('nav.blog')}</Link></li>
             </ul>

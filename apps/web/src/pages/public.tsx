@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { PublicLayout, Reveal, Slogan } from '../components/layout'
+import { PageArt, PageHighlights } from '../components/illustrations'
 import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
 import { FAQ_GROUPS } from '../lib/faq-data'
@@ -336,6 +337,19 @@ export function Advantages() {
         check them: auditable tracking, an append-only commission ledger, and
         approval flows on both sides.
       </p>
+      <PageArt
+        variant="advantages"
+        label="Illustration: the AffiLayer hub connecting auditable tracking, the commission ledger and approval flows"
+        nodes={['Auditable tracking', 'Ledger', 'Approval flows', 'Open records']}
+        caption="what we do differently"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'eye', text: 'Check our work — the numbers you see are the numbers in the ledger.' },
+          { icon: 'users', text: 'Approval on both sides — affiliates apply, advertisers approve, nobody runs blind.' },
+          { icon: 'shield', text: 'No promised results — we promise open records, not earnings.' },
+        ]}
+      />
       <BenefitsSection />
       <section className="mt-14 grid gap-4 md:grid-cols-2">
         <Reveal>
@@ -377,6 +391,19 @@ export function About() {
         right now: a focused offer catalogue, a tracking engine we can explain, and
         a team that reviews applications and conversions by hand.
       </p>
+      <PageArt
+        variant="about"
+        label="Illustration: the AffiLayer hub connecting open books, manual review and the auditable ledger"
+        nodes={['Open books', 'Manual review', 'Auditable ledger', 'Small by choice']}
+        caption="three principles"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'building', text: 'Operated by MarketSync Global LLC, a registered company in New Mexico, USA.' },
+          { icon: 'search', text: 'Tracking you can audit — every click has a unique click ID linked to its conversion.' },
+          { icon: 'file', text: 'A ledger that cannot be silently rewritten — every change is recorded.' },
+        ]}
+      />
       <div className="mt-6 space-y-4 rounded-xl bg-white p-6 text-slate-700">
         <p>
           AffiLayer is operated by <strong>MarketSync Global LLC</strong>, a registered
@@ -419,6 +446,19 @@ export function AdvertisersPage() {
       <p className="mt-4 max-w-3xl text-slate-300">
         {t('adv.intro')}
       </p>
+      <PageArt
+        variant="advertisers"
+        label="Illustration: the AffiLayer hub connecting publishing offers, approving affiliates, attributed conversions and spend control"
+        nodes={[t('adv.card.1.t'), t('adv.card.2.t'), t('adv.card.3.t'), t('adv.card.4.t')]}
+        caption="for advertisers"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'tag', text: t('adv.hl.1') },
+          { icon: 'users', text: t('adv.hl.2') },
+          { icon: 'check', text: t('adv.hl.3') },
+        ]}
+      />
       <div className="mt-6 space-y-4">
         {[1, 2, 3, 4].map((n) => (
           <Reveal key={n}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t(`adv.card.${n}.t` as `adv.card.${1 | 2 | 3 | 4}.t`)}</h2><p className="mt-1 text-sm text-slate-600">{t(`adv.card.${n}.d` as `adv.card.${1 | 2 | 3 | 4}.d`)}</p></div></Reveal>
@@ -449,6 +489,19 @@ export function AffiliatesPage() {
       <p className="mt-4 max-w-3xl text-slate-300">
         {t('aff.intro')}
       </p>
+      <PageArt
+        variant="affiliates"
+        label="Illustration: the AffiLayer hub connecting offers, tracking links, SmartLink and payouts from the ledger"
+        nodes={[t('aff.card.1.t'), t('aff.card.2.t'), t('aff.card.3.t'), t('aff.card.5.t')]}
+        caption="for affiliates"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'tag', text: t('aff.hl.1') },
+          { icon: 'link', text: t('aff.hl.2') },
+          { icon: 'banknote', text: t('aff.hl.3') },
+        ]}
+      />
       <div className="mt-6 space-y-4">
         {[1, 2, 3, 4, 5].map((n) => (
           <Reveal key={n}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t(`aff.card.${n}.t` as `aff.card.${1 | 2 | 3 | 4 | 5}.t`)}</h2><p className="mt-1 text-sm text-slate-600">{t(`aff.card.${n}.d` as `aff.card.${1 | 2 | 3 | 4 | 5}.d`)}</p></div></Reveal>
@@ -507,6 +560,19 @@ export function HowItWorks() {
         {t('how.h1a')} <span className="grad-text">{t('how.h1b')}</span>
       </h1>
       <Slogan className="mt-4">{t('how.slogan')}</Slogan>
+      <PageArt
+        variant="how"
+        label="Illustration: the AffiLayer hub connecting account creation, approval, offers, clicks, attribution and payout"
+        nodes={[t('how.step.1.t'), t('how.step.3.t'), t('how.step.4.t'), t('how.step.6.t')]}
+        caption="six steps, nothing hidden"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'compass', text: t('how.hl.1') },
+          { icon: 'search', text: t('how.hl.2') },
+          { icon: 'banknote', text: t('how.hl.3') },
+        ]}
+      />
       <div className="mt-6 space-y-4">
         {[1, 2, 3, 4, 5, 6].map((n) => (
           <Reveal key={n}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t(`how.step.${n}.t` as `how.step.${1 | 2 | 3 | 4 | 5 | 6}.t`)}</h2><p className="mt-1 text-sm text-slate-600">{t(`how.step.${n}.d` as `how.step.${1 | 2 | 3 | 4 | 5 | 6}.d`)}</p></div></Reveal>
@@ -529,6 +595,19 @@ export function Faq() {
         Straight answers about joining, running traffic, and getting paid. If your
         question is not here, use the contact form on the home page.
       </p>
+      <PageArt
+        variant="faq"
+        label="Illustration: the AffiLayer hub connecting the three questions every new user asks — joining, running traffic, getting paid"
+        nodes={['Joining', 'Running traffic', 'Getting paid', 'Straight answers']}
+        caption="straight answers, before you ask"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'user', text: 'Joining — free to join; applications reviewed by our team, typically within 2 business days.' },
+          { icon: 'link', text: 'Running traffic — direct offers or one SmartLink, every click tracked with a unique click ID.' },
+          { icon: 'banknote', text: 'Getting paid — manual, admin-approved payouts, Net30 by default.' },
+        ]}
+      />
       {FAQ_GROUPS.map((g) => (
         <section key={g.group} className="mt-10">
           <h2 className="text-xl font-bold text-white">{g.group}</h2>
@@ -562,6 +641,19 @@ export function Contact() {
         <span className="font-semibold text-white">{SUPPORT_EMAIL}</span> or use
         the form below.
       </p>
+      <PageArt
+        variant="contact"
+        label="Illustration: the AffiLayer hub connecting email, in-app tickets and a reply from a real person"
+        nodes={['support@affilayer.com', 'In-app tickets', 'A real reply', 'Include your click ID']}
+        caption="a real person answers"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'mail', text: 'Email us — support@affilayer.com. Include your account email so we can find you.' },
+          { icon: 'ticket', text: 'In-app tickets — registered users can raise a ticket from the dashboard.' },
+          { icon: 'search', text: 'Tracking questions — include the click ID from your link so we can look it up.' },
+        ]}
+      />
       <ContactForm />
       <p className="mt-8 text-center text-sm text-[#8A97A8]">
         Include your account email and, for tracking questions, the click ID from your link.
@@ -579,6 +671,19 @@ export function Terms() {
       <p className="mt-2 text-sm text-slate-400">
         Operated by MarketSync Global LLC, New Mexico, USA. Last updated: November 2026.
       </p>
+      <PageArt
+        variant="terms"
+        label="Illustration: the AffiLayer hub connecting the service, commissions and traffic rules"
+        nodes={['The service', 'Commissions', 'Traffic rules', 'Plain words']}
+        caption="the rules, in plain words"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'file', text: 'No guaranteed earnings — the network tracks and administers payouts; it does not promise results.' },
+          { icon: 'banknote', text: 'Commissions on approved conversions only — recorded in the ledger; payouts manual, Net30 by default.' },
+          { icon: 'alert', text: 'Prohibited traffic — incentivised, misleading or bot traffic is not accepted.' },
+        ]}
+      />
       <div className="mt-6 space-y-4 rounded-xl bg-white p-6 text-sm text-slate-700">
         <p><strong>1. The service.</strong> AffiLayer provides tracking, reporting and payout administration for affiliate marketing offers. It does not guarantee traffic, conversions or earnings.</p>
         <p><strong>2. Accounts.</strong> You are responsible for keeping your credentials secure and for activity under your account. Accounts may be suspended for fraud, misleading traffic or breach of these terms.</p>
@@ -600,12 +705,186 @@ export function Privacy() {
       <p className="mt-2 text-sm text-slate-400">
         Operated by MarketSync Global LLC, New Mexico, USA. Last updated: November 2026.
       </p>
+      <PageArt
+        variant="privacy"
+        label="Illustration: the AffiLayer hub connecting account data, tracking data and the promise never to sell personal data"
+        nodes={['Account data', 'Tracking data', 'No sale', 'Your data']}
+        caption="your data stays yours"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'user', text: 'What we collect — account details, and the tracking data needed to run the network.' },
+          { icon: 'eye', text: 'How we use it — tracking, attribution, payouts, fraud prevention and support.' },
+          { icon: 'lock', text: 'No selling — we do not sell personal data.' },
+        ]}
+      />
       <div className="mt-6 space-y-4 rounded-xl bg-white p-6 text-sm text-slate-700">
         <p><strong>1. Data we collect.</strong> Account details you provide (email, name, payment profile), and tracking data needed to operate the network: click IDs, offer IDs, country, device, source and sub-parameters.</p>
         <p><strong>2. How we use it.</strong> To operate tracking and attribution, calculate commissions, process payouts, prevent fraud, and provide support.</p>
         <p><strong>3. Sharing.</strong> Aggregated or attributed performance data is shared with the advertiser or affiliate involved in a given click or conversion. We do not sell personal data.</p>
         <p><strong>4. Retention.</strong> Tracking and ledger records are kept for accounting and audit purposes. You may request deletion of your account data, subject to legal retention requirements.</p>
         <p><strong>5. Contact.</strong> For privacy questions, email {SUPPORT_EMAIL}.</p>
+      </div>
+    </PublicLayout>
+  )
+}
+
+export function Partner() {
+  const t = useT()
+  return (
+    <PublicLayout>
+      <h1 className="text-3xl font-bold text-white md:text-4xl">
+        Become an <span className="grad-text">AffiLayer partner</span>
+      </h1>
+      <Slogan className="mt-4">{t('partner.slogan')}</Slogan>
+      <p className="mt-4 max-w-3xl text-slate-300">
+        AffiLayer grows through partners: networks, platforms, agencies and
+        communities that want to bring their audience — or their advertisers —
+        to a network they can audit. Partnership is a working relationship,
+        not a badge: we agree what each side brings, and we review every
+        application by hand.
+      </p>
+      <PageArt
+        variant="partner"
+        label="Illustration: the AffiLayer hub connecting partners, applications and shared growth"
+        nodes={['Bring your audience', 'Bring your offers', 'Grow together', 'Reviewed by hand']}
+        caption="build with us"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'users', text: 'Bring your audience — introduce affiliates or advertisers from your community or platform.' },
+          { icon: 'tag', text: 'Bring your offers — advertisers and offer owners can publish through the network with their own caps and rules.' },
+          { icon: 'sparkle', text: 'Grow together — we review every partnership application ourselves. Tell us what you have in mind.' },
+        ]}
+      />
+      <h2 className="mt-10 text-2xl font-bold text-white">How partnership starts</h2>
+      <div className="mt-4 space-y-4">
+        {[
+          { n: '1', t: 'Tell us about yourself', d: 'Email partner@affilayer.com or use the contact form — who you are, what you bring, and what you need.' },
+          { n: '2', t: 'We talk it through', d: 'A real person replies, usually within 2 business days, and we agree the shape of the partnership.' },
+          { n: '3', t: 'Start small, grow', d: 'We start with one offer, one audience, or one integration — and grow what works.' },
+        ].map((s) => (
+          <Reveal key={s.n}>
+            <div className="lift flex h-full items-start gap-3 rounded-xl bg-white p-5 text-slate-900">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-sm font-bold text-[#0B1220]" aria-hidden>{s.n}</span>
+              <div>
+                <h3 className="font-semibold">{s.t}</h3>
+                <p className="mt-1 text-sm text-slate-600">{s.d}</p>
+              </div>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+      <p className="mt-6 text-sm text-slate-400">
+        There is no public partner directory yet — partnerships are agreed one by one.
+      </p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <a href="mailto:partner@affilayer.com" className="pill-btn">Email partner@affilayer.com</a>
+        <Link to="/contact" className="pill-btn-outline">Use the contact form</Link>
+      </div>
+    </PublicLayout>
+  )
+}
+
+export function WhiteLabel() {
+  const t = useT()
+  return (
+    <PublicLayout>
+      <h1 className="text-3xl font-bold text-white md:text-4xl">
+        White label <span className="grad-text">AffiLayer</span>
+      </h1>
+      <Slogan className="mt-4">{t('whitelabel.slogan')}</Slogan>
+      <p className="mt-4 max-w-3xl text-slate-300">
+        Run your own affiliate network under your own brand, powered by
+        AffiLayer&apos;s tracking, ledger and payout administration. Your
+        affiliates see your name; the tracking, attribution and commission
+        ledger run on our engine.
+      </p>
+      <PageArt
+        variant="whitelabel"
+        label="Illustration: the AffiLayer hub connecting your brand, our tracking engine and a managed setup"
+        nodes={['Your brand', 'Our engine', 'Managed setup', 'Your affiliates']}
+        caption="your network, your name"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'layers', text: 'Your brand, your domain — your network carries your name and your look. Your affiliates never see AffiLayer.' },
+          { icon: 'search', text: 'Our tracking and ledger — full-funnel click tracking, attributed conversions and an append-only commission ledger.' },
+          { icon: 'users', text: 'Managed setup — we set the network up with you and review applications and payouts the same way we do our own.' },
+        ]}
+      />
+      <h2 className="mt-10 text-2xl font-bold text-white">What it includes</h2>
+      <div className="mt-4 space-y-4">
+        {[
+          { t: 'Tracking links and SmartLink', d: 'Every click gets a unique click ID; mixed traffic routes through one SmartLink with deterministic rules.' },
+          { t: 'Offer and affiliate approval', d: 'Advertisers publish offers with caps and traffic rules; affiliates apply and are approved before they can run them.' },
+          { t: 'Conversion review', d: 'Conversions move through pending, approved, rejected or reversed, with a record of each change.' },
+          { t: 'Manual, admin-approved payouts', d: 'Approved commissions enter the ledger and become payable on a Net30 schedule by default.' },
+          { t: 'Reporting both sides see', d: 'Clicks, conversions, EPC and CR broken down by date, offer, country, device and source.' },
+        ].map((s) => (
+          <Reveal key={s.t}>
+            <div className="lift flex h-full items-start gap-3 rounded-xl bg-white p-5 text-slate-900">
+              <span className="rounded-lg bg-amber-500/10 p-2 text-amber-700"><Icon name="check" className="h-5 w-5" /></span>
+              <div>
+                <h3 className="font-semibold">{s.t}</h3>
+                <p className="mt-1 text-sm text-slate-600">{s.d}</p>
+              </div>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+      <p className="mt-6 text-sm text-slate-400">
+        White-label setups are arranged one by one — there is no self-serve
+        white-label plan yet. Pricing is agreed per setup; write to us to
+        discuss yours.
+      </p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <a href="mailto:partner@affilayer.com" className="pill-btn">Discuss a white-label setup</a>
+        <Link to="/contact" className="pill-btn-outline">Use the contact form</Link>
+      </div>
+    </PublicLayout>
+  )
+}
+
+export function Advertise() {
+  const t = useT()
+  return (
+    <PublicLayout>
+      <h1 className="text-3xl font-bold text-white md:text-4xl">
+        Advertise with <span className="grad-text">AffiLayer</span>
+      </h1>
+      <Slogan className="mt-4">{t('advertise.slogan')}</Slogan>
+      <p className="mt-4 max-w-3xl text-slate-300">
+        AffiLayer puts your offer in front of affiliates who run traffic
+        across many countries and verticals. You set the payout, the caps and
+        the traffic rules — and you approve the affiliates and the conversions
+        before anything becomes payable.
+      </p>
+      <PageArt
+        variant="advertise"
+        label="Illustration: the AffiLayer hub connecting campaigns, audiences and attributed conversions"
+        nodes={['Your campaign', 'Your audience', 'Attribution', 'Reviewed payout']}
+        caption="advertise with AffiLayer"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'settings', text: 'Your rules, your caps — payout model, countries, devices, traffic sources, daily and total caps, all set by you.' },
+          { icon: 'users', text: 'Approve who runs it — review affiliate applications before anyone can generate a tracking link.' },
+          { icon: 'check', text: 'Pay for reviewed conversions — conversions move through pending, approved, rejected or reversed.' },
+        ]}
+      />
+      <FunnelSteps
+        heading="How a campaign works"
+        steps={[
+          { n: '1', t: 'Create an account', d: 'Register as an advertiser and complete onboarding.', to: '/register', cta: 'Register', icon: 'user' },
+          { n: '2', t: 'Publish your offer', d: 'Set the payout model, caps, GEOs and traffic rules.', to: '/app/advertiser/create-offer', cta: 'Create offer', icon: 'plus' },
+          { n: '3', t: 'Approve affiliates', d: 'Review applications before affiliates can run your offer.', to: '/app/advertiser/affiliates', cta: 'Review affiliates', icon: 'users' },
+          { n: '4', t: 'Review conversions', d: 'Approve, reject or reverse attributed conversions.', to: '/app/advertiser/conversions', cta: 'See conversions', icon: 'chart' },
+        ]}
+      />
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link to="/register" className="pill-btn">Register as an advertiser</Link>
+        <a href="mailto:support@affilayer.com" className="pill-btn-outline">Questions? support@affilayer.com</a>
       </div>
     </PublicLayout>
   )

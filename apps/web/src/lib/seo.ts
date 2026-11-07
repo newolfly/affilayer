@@ -166,6 +166,24 @@ const PAGES: Record<string, SeoMeta> = {
       'AffiLayer Privacy Policy. What data we collect, how we use it, and how to contact us. Operated by MarketSync Global LLC, New Mexico, USA.',
     jsonLd: webPage('/privacy', 'Privacy Policy', 'AffiLayer Privacy Policy.'),
   },
+  '/partner': {
+    title: 'Become a Partner | AffiLayer',
+    description:
+      'Partner with AffiLayer: bring your audience or your offers to a CPA network you can audit. Partnerships are agreed one by one and reviewed by hand.',
+    jsonLd: webPage('/partner', 'Become an AffiLayer partner', 'Partner with AffiLayer: bring your audience or your offers to a network you can audit.'),
+  },
+  '/white-label': {
+    title: 'White Label | Run Your Own Network on AffiLayer',
+    description:
+      'White-label AffiLayer: your brand on the front, our tracking engine underneath. Managed setup, arranged one by one — pricing agreed per setup.',
+    jsonLd: webPage('/white-label', 'White label AffiLayer', 'White-label AffiLayer: your brand, our tracking engine, managed setup.'),
+  },
+  '/advertise': {
+    title: 'Advertise with AffiLayer | Pay for Reviewed Conversions',
+    description:
+      'Advertise with AffiLayer: set your payout, caps and traffic rules, approve affiliates, and pay only for conversions you have reviewed.',
+    jsonLd: webPage('/advertise', 'Advertise with AffiLayer', 'Advertise with AffiLayer and pay only for conversions you have reviewed.'),
+  },
 }
 
 function metaFor(pathname: string): SeoMeta {

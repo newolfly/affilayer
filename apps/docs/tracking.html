@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="AffiLayer tracking: tracking links, SmartLink routing, click IDs, what every click records, click lookup and stats." />
+  <meta name="theme-color" content="#070D1A" />
+  <title>Tracking — AffiLayer Docs</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a class="logo" href="/">Affi<span>Layer</span> Docs</a>
+    <nav class="docs-nav" aria-label="Docs">
+      <a href="/">Docs</a>
+      <a href="/getting-started.html">Getting started</a>
+      <a href="/tracking.html" aria-current="page">Tracking</a>
+      <a href="/postbacks.html">Postbacks</a>
+      <a href="/payouts.html">Payouts</a>
+      <a href="/api.html">API</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <p class="eyebrow">Tracking</p>
+  <h1><span>Tracking</span></h1>
+  <p class="lede">Every click gets a unique click ID that stays linked to its conversion. No black box: here is exactly what is recorded and how links work.</p>
+
+  <h2>Tracking links</h2>
+  <p>A tracking link has this format:</p>
+  <pre><code>https://go.affilayer.com/c/{affiliate_code}/{offer_id}</code></pre>
+  <p>When a visitor clicks it, the tracking server records the click and responds with a <code>302</code> redirect to the offer landing page, with the click ID appended as a query parameter:</p>
+  <pre><code>https://offer-landing.example/?click_id=clk_01J…</code></pre>
+  <p>If the offer does not exist, the link returns <code>404 {"error":"offer not found"}</code>.</p>
+
+  <h3>Optional parameters</h3>
+  <table>
+    <tr><th>Parameter</th><th>What it does</th></tr>
+    <tr><td><code>sub1</code> … <code>sub5</code></td><td>Your own sub-parameters, stored with the click for your reporting. Only <code>sub1</code> is also passed through to postbacks.</td></tr>
+    <tr><td><code>source</code></td><td>Traffic source label, stored with the click.</td></tr>
+    <tr><td><code>device</code></td><td>Device hint, stored with the click.</td></tr>
+    <tr><td><code>country</code></td><td>Country hint, used when the visitor's country cannot be detected.</td></tr>
+  </table>
+
+  <h2>SmartLink</h2>
+  <p>One link for mixed or unsegmented traffic:</p>
+  <pre><code>https://go.affilayer.com/s/{smartlink_code}</code></pre>
+  <p>SmartLink picks one eligible offer for the visitor, deterministically, from their country and device (and the <code>country</code>, <code>device</code> and <code>source</code> query hints when given), then redirects with the same <code>302</code> and <code>click_id</code> behaviour. The rules are fixed and readable — SmartLink does not use AI optimisation and does not guarantee earnings. If no offer is eligible, it returns <code>404 {"error":"no eligible offer"}</code>.</p>
+
+  <h2>What every click records</h2>
+  <table>
+    <tr><th>Field</th><th>Meaning</th></tr>
+    <tr><td><code>click_id</code></td><td>Unique ID for the click (for example <code>clk_…</code>). This is what conversions link back to.</td></tr>
+    <tr><td><code>affiliate_code</code>, <code>offer_id</code></td><td>Whose link it is, and which offer it points to.</td></tr>
+    <tr><td><code>sub1</code> … <code>sub5</code></td><td>Your sub-parameters.</td></tr>
+    <tr><td><code>source</code></td><td>Traffic source label.</td></tr>
+    <tr><td><code>referrer</code></td><td>The page the visitor came from, when the browser sends it.</td></tr>
+    <tr><td><code>ip</code></td><td>Visitor IP, used for fraud signals and country detection.</td></tr>
+    <tr><td><code>user_agent</code></td><td>Visitor browser / device string.</td></tr>
+    <tr><td><code>country</code></td><td>Detected country, or the <code>country</code> query hint.</td></tr>
+    <tr><td><code>device</code></td><td>Device hint.</td></tr>
+  </table>
+
+  <h2>Looking a click up</h2>
+  <p><code>GET https://go.affilayer.com/api/clicks/{click_id}</code> returns the click and its conversion, if one exists. Unknown IDs return <code>404 {"error":"click not found"}</code>.</p>
+
+  <h2>Stats</h2>
+  <p><code>GET https://go.affilayer.com/api/stats</code> returns server-side aggregates over recorded events only — clicks, conversions and revenue as recorded, never estimates.</p>
+
+  <div class="note"><p><strong>Conversions are never trusted from the client side.</strong> A conversion only enters the system through a signed server-to-server call — see <a href="/api.html">API</a> — and is recorded as pending until a person reviews it.</p></div>
+</main>
+<footer>
+  <div class="footer-inner">
+    <span>AffiLayer Docs — operated by MarketSync Global LLC, New Mexico, USA.</span>
+    <span><a href="https://affilayer.com/">affilayer.com</a> · <a href="mailto:support@affilayer.com">support@affilayer.com</a></span>
+  </div>
+</footer>
+</body>
+</html>

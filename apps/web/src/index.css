@@ -3,6 +3,10 @@
 body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   overflow-x: clip;
+  /* Page background must be navy even before React mounts: the Suspense
+   * fallback (PageLoader) and the boot loader in index.html sit on the
+   * body, so a white body would flash white on every chunk load. */
+  background-color: #070D1A;
 }
 
 /* Brand palette — premium gold on darker navy.
@@ -161,7 +165,9 @@ body {
   .page-switch-bar,
   .loader-mark,
   .loader-bar-fill,
-  .skeleton {
+  .skeleton,
+  .art-float,
+  .art-path {
     animation: none;
   }
   .nav-link::after {
@@ -218,6 +224,20 @@ body {
 .hero-layer {
   transition: transform 0.3s ease-out;
   will-change: transform;
+}
+
+/* Page illustrations: the hub mark drifts gently; the dashed path flows.
+ * Disabled under prefers-reduced-motion (see below). */
+@keyframes art-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.art-float {
+  animation: art-float 6s ease-in-out infinite;
+}
+.art-path {
+  stroke-dasharray: 5 6;
+  animation: hero-dash-flow 1.6s linear infinite;
 }
 
 /* Dark form fields with a gold edge (public contact form). */

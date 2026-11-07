@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="AffiLayer API reference: every endpoint on go.affilayer.com — health, tracking clicks, SmartLink, signed conversion intake, stats and click lookup." />
+  <meta name="theme-color" content="#070D1A" />
+  <title>API — AffiLayer Docs</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a class="logo" href="/">Affi<span>Layer</span> Docs</a>
+    <nav class="docs-nav" aria-label="Docs">
+      <a href="/">Docs</a>
+      <a href="/getting-started.html">Getting started</a>
+      <a href="/tracking.html">Tracking</a>
+      <a href="/postbacks.html">Postbacks</a>
+      <a href="/payouts.html">Payouts</a>
+      <a href="/api.html" aria-current="page">API</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <p class="eyebrow">API</p>
+  <h1><span>API</span></h1>
+  <p class="lede">Everything on <code>https://go.affilayer.com</code>. The tracking API is read access plus signed conversion intake — offers, users and payouts live in the dashboard, not in this API.</p>
+
+  <h2>Endpoints</h2>
+  <table>
+    <tr><th>Method &amp; path</th><th>What it does</th></tr>
+    <tr><td><code>GET /health</code></td><td>Returns <code>{"ok":true}</code>. Use it to check the tracking service is up.</td></tr>
+    <tr><td><code>GET /c/{affiliate_code}/{offer_id}</code></td><td>Records a click and redirects (<code>302</code>) to the offer landing page with <code>?click_id=</code> appended. Unknown offer → <code>404</code>.</td></tr>
+    <tr><td><code>GET /s/{smartlink_code}</code></td><td>Deterministic SmartLink pick and redirect (<code>302</code>). No eligible offer → <code>404</code>.</td></tr>
+    <tr><td><code>POST /conversion</code></td><td>Signed conversion intake (see below). New conversion → <code>201</code>; duplicate → <code>200</code>.</td></tr>
+    <tr><td><code>GET /api/stats</code></td><td>Server-side aggregates over recorded events only.</td></tr>
+    <tr><td><code>GET /api/clicks/{click_id}</code></td><td>The click and its conversion, if one exists. Unknown ID → <code>404</code>.</td></tr>
+  </table>
+
+  <h2>POST /conversion</h2>
+  <p>Conversions arrive server-to-server only, signed with HMAC-SHA256. Send a JSON body with the header:</p>
+  <pre><code>x-affilayer-signature: &lt;HMAC-SHA256 hex of the raw body&gt;</code></pre>
+  <p>The HMAC key is your postback secret. An optional <code>sha256=</code> prefix on the header is accepted. A bad signature returns <code>400 {"error":"bad signature"}</code>. If the secret is not configured on the server, it returns <code>500</code>.</p>
+
+  <h3>Request body</h3>
+  <table>
+    <tr><th>Field</th><th>Required</th><th>Meaning</th></tr>
+    <tr><td><code>click_id</code></td><td>Yes</td><td>The click ID the conversion is attributed to.</td></tr>
+    <tr><td><code>offer_id</code></td><td>Yes</td><td>The offer the conversion belongs to.</td></tr>
+    <tr><td><code>payout</code></td><td>Yes</td><td>Number, 0 or more. The conversion payout amount.</td></tr>
+    <tr><td><code>currency</code></td><td>Yes</td><td>Payout currency, for example <code>USD</code>.</td></tr>
+    <tr><td><code>idempotency_key</code></td><td>Yes</td><td>Your unique key for this conversion. Sending it again returns the original instead of creating a duplicate.</td></tr>
+    <tr><td><code>status</code></td><td>No</td><td>Optional status hint.</td></tr>
+    <tr><td><code>sub1</code></td><td>No</td><td>Optional sub-parameter.</td></tr>
+  </table>
+  <p>Missing or invalid required fields return <code>400</code>. Invalid JSON returns <code>400</code>.</p>
+
+  <h3>Responses and dedup</h3>
+  <ul>
+    <li><code>201</code> — new conversion recorded. It starts as <code>pending</code>, and its commission is computed from the offer's payout model and entered in the ledger as pending.</li>
+    <li><code>200 {"ok":true,"duplicate":true,"conversion":{…}}</code> — the same <code>idempotency_key</code>, or the same <code>click_id</code> + <code>offer_id</code>, was already recorded. The original is returned; no duplicate is created.</li>
+    <li>Configured postbacks are dispatched after the conversion is recorded. A postback failure never fails the conversion itself.</li>
+  </ul>
+
+  <h3>Example</h3>
+  <pre><code>curl -X POST https://go.affilayer.com/conversion \
+  -H 'Content-Type: application/json' \
+  -H "x-affilayer-signature: $(echo -n '{"click_id":"clk_01J…","offer_id":"offer-a","payout":12.5,"currency":"USD","idempotency_key":"conv-0001"}' | openssl dgst -sha256 -hmac 'YOUR_POSTBACK_SECRET' | cut -d' ' -f2)" \
+  -d '{"click_id":"clk_01J…","offer_id":"offer-a","payout":12.5,"currency":"USD","idempotency_key":"conv-0001"}'</code></pre>
+
+  <div class="note"><p><strong>Keep your secret secret.</strong> The postback secret signs conversions and postbacks. Do not put it in client-side code, public repositories or shared documents.</p></div>
+</main>
+<footer>
+  <div class="footer-inner">
+    <span>AffiLayer Docs — operated by MarketSync Global LLC, New Mexico, USA.</span>
+    <span><a href="https://affilayer.com/">affilayer.com</a> · <a href="mailto:support@affilayer.com">support@affilayer.com</a></span>
+  </div>
+</footer>
+</body>
+</html>
