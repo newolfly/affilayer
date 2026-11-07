@@ -25,12 +25,17 @@ Nothing in this repo deploys itself. Every step below is manual and explicit.
   https://affilayer-tracking.sojibahmmed.workers.dev/health returns
   `{"ok":true}`; `POSTBACK_SECRET` set on the Worker (value only in
   `~/.affilayer-secrets`, chmod 600). `go.affilayer.com` DNS now points at the
-  Worker — verify `/health` on go.affilayer.com and run the full click →
-  signed conversion → replay-duplicate → /api/stats E2E check.
+  Worker — **but go.affilayer.com/health still returns Cloudflare 522 as of
+  7 Nov 16:00 +06** (checked twice, live browser). www.affilayer.com loads
+  fully, slow first render. If go is still 522 after ~15 min, check the Worker
+  route binding for go.affilayer.com in the dashboard (Workers & Pages →
+  affilayer-tracking → Settings → Triggers/Routes) — the DNS record alone
+  does not prove the route is active.
 - **Auth note:** the OAuth access token obtained 7 Nov ~07:53 (in
-  `~/workspace/.oauth/tokens.json`) expired ~08:53; refresh it with the stored
-  refresh_token (client_id `54d11594-84e4-41aa-b438-e81b8fa78ee7`, browser UA)
-  before any further API work. The token has NO DNS scope — DNS was done via
+  `~/workspace/.oauth/tokens.json`) expired ~08:53; **the stored refresh_token
+  was REJECTED 7 Nov 16:00 (`invalid_grant`)** — API access needs a fresh
+  authorization from Sojib (new PKCE URL from `pkce.py`, authorize on his
+  phone, paste the callback URL). The token has NO DNS scope — DNS was done via
   the dashboard, which needed a fresh emailed 7-digit code each sign-in.
 - **Supabase:** explicitly deferred — no project created, no migrations applied.
 - **GitHub:** push to `newolfly/affilayer` is BLOCKED (403 — the
