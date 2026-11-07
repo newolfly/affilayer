@@ -95,15 +95,25 @@ function HeroIllustration() {
 
 export const SUPPORT_EMAIL = 'support@affilayer.com'
 
+/** Rotating vertical word in the hero headline. Crossfades: the outgoing
+ *  word fades out while the incoming word fades in over the same 0.45s,
+ *  so a word is always painted — there is never a fully-empty instant. */
 function RotatingVertical() {
-  const [i, setI] = useState(0)
+  const [[i, prev], setPair] = useState<[number, number | null]>([0, null])
   useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % VERTICALS.length), 3500)
+    const t = setInterval(() => setPair(([cur]) => [(cur + 1) % VERTICALS.length, cur]), 3500)
     return () => clearInterval(t)
   }, [])
   return (
-    <span key={VERTICALS[i]} className="rotator-word grad-text">
-      {VERTICALS[i]}
+    <span className="rotator-stack">
+      {prev !== null && (
+        <span key={`out-${VERTICALS[prev]}`} className="rotator-word rotator-out grad-text" aria-hidden="true">
+          {VERTICALS[prev]}
+        </span>
+      )}
+      <span key={`in-${VERTICALS[i]}`} className="rotator-word rotator-in grad-text">
+        {VERTICALS[i]}
+      </span>
     </span>
   )
 }

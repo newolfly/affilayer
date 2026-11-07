@@ -2,6 +2,17 @@
 
 Nothing in this repo deploys itself. Every step below is manual and explicit.
 
+## LIVE STATUS — 7 Nov 2026 ~19:28 +06 (ROTATOR CROSSFADE + HEADER SPACING PATCH DEPLOYED LIVE, BROWSER CHECK STILL OWED)
+
+- **Deployed 19:27 +06: Pages `affilayer-web`, deployment `6c57d03b` (103 files, new build)** — fresh `vite build` (VITE_TRACKING_URL=https://go.affilayer.com) + full prerender, 47/47 routes, 0 zero-byte files in dist. New assets: JS `index-DpwtQAa4.js`, CSS `index-O94aIlsY.css`.
+- **Fix 1 — hero rotator fade gap:** `RotatingVertical` (`src/pages/public.tsx`) now crossfades — outgoing word fades out while the incoming word fades in over the same 0.45s (`rotator-in` / `rotator-out` keyframes in `src/index.css`), so a word is always painted; the old 3.5s infinite keyframes (word invisible 82–100% of each cycle) are gone. Reduced-motion: outgoing copy hidden, no animation.
+- **Fix 2 — desktop header spacing:** public header container `max-w-6xl` → `max-w-7xl` with `gap-4`; desktop nav now shows at `xl` (was `lg`) with hamburger below that; `whitespace-nowrap` on all nav links and Log in / Register / Dashboard buttons; `shrink-0` on logo, nav and right group — nav items can no longer wrap and the logo keeps a clear gap from the first link. No redesign.
+- **Live verification by curl 19:28 +06 (all 200):** `/` 35,022 B (serves `rotator-stack` markup + new asset hashes); `/geo/br` 32,284 B; `/sitemap.xml` 6,699 B (47 URLs); `go.affilayer.com/health` `{"ok":true}` (11 B).
+- **Browser (visual) check still owed:** watch the hero through a full rotation — a word must be visible at every instant; check the desktop header — no wrapped nav items, clear logo gap.
+- **Tests: 28/28 pass** (17 shared + 11 tracking). `tsc --noEmit` clean.
+- **Cloudflare token used for this deploy expires ~20:01 +06, NO refresh token** — any further deploy needs another phone authorization.
+- Worker, Supabase, DNS untouched.
+
 ## LIVE STATUS — 7 Nov 2026 ~19:40 +06 (DEFECT FIXES + A11Y DEPLOYED LIVE, BROWSER CHECK STILL OWED)
 
 - **Deployed 19:39 +06: Pages `affilayer-web`, deployment `eb53c4b0` (103 files, new build)** — fresh `vite build` + full `prerender.py` run (47/47 routes, Chromium worked this time). New assets: JS `index-C876gXqB.js`, CSS `index-9kmTr0TV.css`, geo chunk `geo-BJv3JPCi.js`.

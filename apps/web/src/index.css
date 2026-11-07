@@ -134,6 +134,9 @@ body {
   .rotator-word {
     animation: none;
   }
+  .rotator-out {
+    display: none;
+  }
   .lift,
   .pill-btn,
   .pill-btn-outline {
@@ -154,15 +157,33 @@ body {
   }
 }
 
-/* Rotating vertical word in the hero headline. */
-@keyframes rotator-word {
-  0%, 72% { opacity: 1; transform: translateY(0); }
-  82%, 92% { opacity: 0; transform: translateY(-0.6em); }
-  100% { opacity: 0; transform: translateY(0.6em); }
+/* Rotating vertical word in the hero headline. Crossfade: the outgoing
+ *  word fades out while the incoming word fades in over the same 0.45s,
+ *  so a word is always painted — never a fully-empty instant. */
+.rotator-stack {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+@keyframes rotator-in {
+  from { opacity: 0; transform: translateY(0.35em); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes rotator-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-0.35em); }
 }
 .rotator-word {
   display: inline-block;
-  animation: rotator-word 3.5s ease-in-out infinite;
+}
+.rotator-in {
+  animation: rotator-in 0.45s ease-out both;
+}
+.rotator-out {
+  position: absolute;
+  inset: 0;
+  animation: rotator-out 0.45s ease-in both;
+  pointer-events: none;
 }
 
 /* Page transition: light fade + rise on every route change (see PageTransition). */

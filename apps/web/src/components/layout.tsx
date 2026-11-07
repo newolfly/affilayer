@@ -51,7 +51,7 @@ export function PageTransition({ children }: { children: ReactNode }) {
 export function Logo() {
   const locale = useLocale()
   return (
-    <Link to={localizePath('/', locale)} className="flex items-center gap-2.5 font-bold text-lg text-white">
+    <Link to={localizePath('/', locale)} className="flex shrink-0 items-center gap-2.5 whitespace-nowrap font-bold text-lg text-white">
       <img src="/logo-mark.svg" alt="AffiLayer" className="h-8 w-8" width={32} height={32} />
       AffiLayer
     </Link>
@@ -120,32 +120,32 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-[#070D1A] text-slate-200">
       <header className={`sticky top-0 z-40 border-b border-slate-800 bg-[#070D1A]/90 backdrop-blur transition-shadow ${scrolled ? 'shadow-lg shadow-black/30' : ''}`}>
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Logo />
-          <nav className="hidden gap-6 lg:flex" aria-label="Main">
+          <nav className="hidden shrink-0 gap-6 xl:flex" aria-label="Main">
             {publicLinks.map((l) => (
               <NavLink
                 key={l.to}
                 to={l.to}
-                className={({ isActive }) => `text-sm transition-colors ${isActive ? 'font-semibold text-white' : 'text-slate-300 hover:text-white'}`}
+                className={({ isActive }) => `whitespace-nowrap text-sm transition-colors ${isActive ? 'font-semibold text-white' : 'text-slate-300 hover:text-white'}`}
               >
                 {l.label}
               </NavLink>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <LanguageSwitcher />
             {user ? (
-              <Link to="/app" className="pill-btn !px-4 !py-2 !text-sm">{t('nav.dashboard')}</Link>
+              <Link to="/app" className="pill-btn whitespace-nowrap !px-4 !py-2 !text-sm">{t('nav.dashboard')}</Link>
             ) : (
               <>
-                <Link to="/login" className="hidden rounded-full border border-slate-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-slate-400 sm:inline-block">{t('nav.login')}</Link>
-                <Link to="/register" className="pill-btn !px-4 !py-2 !text-sm">{t('nav.register')}</Link>
+                <Link to="/login" className="hidden whitespace-nowrap rounded-full border border-slate-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-slate-400 sm:inline-block">{t('nav.login')}</Link>
+                <Link to="/register" className="pill-btn whitespace-nowrap !px-4 !py-2 !text-sm">{t('nav.register')}</Link>
               </>
             )}
             <button
               type="button"
-              className="rounded-lg border border-slate-700 p-2 text-slate-200 hover:bg-slate-800 lg:hidden"
+              className="rounded-lg border border-slate-700 p-2 text-slate-200 hover:bg-slate-800 xl:hidden"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -155,7 +155,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
         {menuOpen && (
-          <nav className="border-t border-slate-800 px-4 py-3 lg:hidden" aria-label="Mobile">
+          <nav className="border-t border-slate-800 px-4 py-3 xl:hidden" aria-label="Mobile">
             <div className="grid gap-1">
               {publicLinks.map((l) => (
                 <NavLink
