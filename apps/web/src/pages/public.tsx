@@ -7,6 +7,7 @@ import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
 import { FAQ_GROUPS } from '../lib/faq-data'
 import { useLocale, useT, localizePath } from '../lib/i18n'
+import { isDemoMode } from '../lib/data'
 import { COUNTRIES } from '../lib/geo-data'
 
 const VERTICALS = ['Dating', 'Finance', 'Gaming', 'Sweepstakes', 'Nutra', 'iGaming']
@@ -98,7 +99,10 @@ export const SUPPORT_EMAIL = 'support@affilayer.com'
 
 /** Rotating vertical word in the hero headline. Crossfades: the outgoing
  *  word fades out while the incoming word fades in over the same 0.45s,
- *  so a word is always painted — there is never a fully-empty instant. */
+ *  so a word is always painted — there is never a fully-empty instant.
+ *  The {' '} between the two spans is deliberate: both words sit in the
+ *  H1 during the crossfade (and in the prerendered HTML), so without a
+ *  space crawlers read them as one joined word (e.g. "SweepstakesNutra"). */
 function RotatingVertical() {
   const [[i, prev], setPair] = useState<[number, number | null]>([0, null])
   useEffect(() => {
@@ -112,6 +116,7 @@ function RotatingVertical() {
           {VERTICALS[prev]}
         </span>
       )}
+      {' '}
       <span key={`in-${VERTICALS[i]}`} className="rotator-word rotator-in grad-text">
         {VERTICALS[i]}
       </span>
@@ -290,6 +295,9 @@ export function ContactForm() {
           <p className="mt-2 text-sm text-slate-300">
             {t('contact.sent.body', { email: form.email })}
           </p>
+          {isDemoMode && (
+            <p className="mt-2 text-sm text-amber-400">Demo mode — your message was saved in this browser only and was not sent. Email support@affilayer.com to reach us.</p>
+          )}
         </div>
       ) : (
         <form onSubmit={submit} className="mx-auto mt-8 max-w-lg space-y-3">
@@ -309,6 +317,9 @@ export function ContactForm() {
             <label htmlFor="contact-message" className="mb-1 block text-sm font-semibold text-white">{t('contact.ph.message')}</label>
             <textarea id="contact-message" className="dark-field" placeholder={t('contact.ph.message')} rows={5} required value={form.message} onChange={set('message')} />
           </div>
+          {isDemoMode && (
+            <p className="text-sm text-amber-400">Demo mode — this form saves your message in this browser only. Nothing is sent to us; email support@affilayer.com to reach a real person.</p>
+          )}
           <button className="pill-btn w-full">{t('contact.send')}</button>
         </form>
       )}
@@ -861,8 +872,8 @@ export function Advertise() {
       <p className="mt-4 max-w-3xl text-slate-300">
         AffiLayer puts your offer in front of affiliates who run traffic
         across many countries and verticals. You set the payout, the caps and
-        the traffic rules — and you approve the affiliates and the conversions
-        before anything becomes payable.
+        the traffic rules — and you approve the affiliates. Conversions are
+        reviewed by the network before anything becomes payable.
       </p>
       <PageArt
         variant="advertise"
@@ -889,6 +900,25 @@ export function Advertise() {
       <div className="mt-6 flex flex-wrap gap-3">
         <Link to="/register" className="pill-btn">Register as an advertiser</Link>
         <a href="mailto:support@affilayer.com" className="pill-btn-outline">Questions? support@affilayer.com</a>
+      </div>
+    </PublicLayout>
+  )
+}
+
+export function NotFound() {
+  return (
+    <PublicLayout>
+      <div className="mx-auto max-w-2xl py-16 text-center">
+        <p className="text-sm font-semibold uppercase tracking-widest text-amber-400">404</p>
+        <h1 className="mt-4 text-3xl font-bold text-white md:text-4xl">Page not found</h1>
+        <p className="mx-auto mt-4 max-w-xl text-slate-300">
+          This page does not exist on affilayer.com. The link may be mistyped,
+          or the page may have moved.
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Link to="/" className="pill-btn">Back to home</Link>
+          <Link to="/contact" className="pill-btn-outline">Contact support</Link>
+        </div>
       </div>
     </PublicLayout>
   )

@@ -218,11 +218,13 @@ export function computeCommission(payout: number, model: PayoutModel, rateBps?: 
  * Expand postback macros in a template URL / payload.
  * Macros: {click_id} {conversion_id} {payout} {currency} {status} {sub1}.
  * Unknown macros are left untouched; missing values expand to ''.
+ * Values are URL-encoded, so a sub-parameter can never inject extra
+ * query parameters into the postback URL.
  */
 export function expandPostbackMacros(template: string, vars: Record<string, string>): string {
   const known = new Set(['click_id', 'conversion_id', 'payout', 'currency', 'status', 'sub1']);
   return template.replace(/\{([a-z0-9_]+)\}/gi, (match, key: string) => {
-    if (key in vars) return vars[key];
+    if (key in vars) return encodeURIComponent(vars[key]);
     if (known.has(key.toLowerCase())) return '';
     return match; // unknown macro left untouched
   });

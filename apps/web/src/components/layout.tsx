@@ -128,17 +128,23 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+  // Header nav: only localise paths that actually have a localised
+  // route (LOCALIZED_BASE_PATHS). Localising anything else builds a
+  // link to a page that does not exist (/es/about, /es/faq, ...), which
+  // the SPA then bounces back to English — a soft 404.
+  const navPath = (base: string) =>
+    LOCALIZED_BASE_PATHS.includes(base) ? localizePath(base, locale) : base
   const publicLinks = [
-    { to: localizePath('/about', locale), label: t('nav.about') },
-    { to: localizePath('/advantages', locale), label: t('nav.advantages') },
+    { to: navPath('/about'), label: t('nav.about') },
+    { to: navPath('/advantages'), label: t('nav.advantages') },
     { to: localizePath('/advertisers', locale), label: t('nav.advertisers') },
     { to: localizePath('/affiliates', locale), label: t('nav.affiliates') },
     { to: localizePath('/how-it-works', locale), label: t('nav.how') },
     { to: localizePath('/geo', locale), label: t('nav.countries') },
-    { to: localizePath('/blog', locale), label: t('nav.blog') },
-    { to: localizePath('/faq', locale), label: t('nav.faq') },
+    { to: navPath('/blog'), label: t('nav.blog') },
+    { to: navPath('/faq'), label: t('nav.faq') },
     { to: '/partner', label: t('nav.partner') },
-    { to: localizePath('/contact', locale), label: t('nav.contact') },
+    { to: navPath('/contact'), label: t('nav.contact') },
   ]
   /** Trust signals. Every item is a true, verifiable statement about how
    *  the network operates — no testimonials, no client logos, no numbers

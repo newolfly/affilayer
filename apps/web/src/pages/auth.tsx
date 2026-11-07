@@ -148,6 +148,9 @@ export function Register() {
             ? 'Advertiser registration is shorter — we ask for your company and website so we can verify you.'
             : 'Affiliate registration — tell us who you are and how you run traffic.'}
         </p>
+        {isDemoMode && (
+          <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">Demo mode: Supabase is not configured, so registration is simulated and no account is created. Try the public demo instead: log in with <span className="font-semibold">demo-publisher</span> or <span className="font-semibold">demo-advertiser</span>, password <span className="font-semibold">1234</span>, on the <Link to="/login" className="text-amber-700">login page</Link>. Sample data only, nothing is real.</p>
+        )}
         {done ? (
           <div className="mt-4">
             <p className="text-sm text-slate-600">Account created. Complete onboarding to submit your application for approval.</p>
@@ -218,9 +221,6 @@ export function Register() {
               <div><label className={labelCls}>Messenger ID</label><input className={inputCls} placeholder="@username" value={messengerId} onChange={(e) => setMessengerId(e.target.value)} /></div>
             </div>
             <button className={btnCls}>Create account</button>
-            {isDemoMode && (
-              <p className="text-xs text-slate-500">Demo mode: Supabase is not configured, so registration is simulated — try the public demo instead: log in with <span className="font-semibold text-slate-700">demo-publisher</span> or <span className="font-semibold text-slate-700">demo-advertiser</span>, password <span className="font-semibold text-slate-700">1234</span>, on the <Link to="/login" className="text-amber-700">login page</Link>. Sample data only, nothing is real.</p>
-            )}
             <button type="button" onClick={() => { signInDemo('demo-aff-1'); navigate('/onboarding') }} className="w-full text-sm text-amber-700 underline">Demo: continue as Demo Affiliate</button>
           </form>
         )}

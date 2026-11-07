@@ -58,7 +58,7 @@ export function AdvertiserCreateOffer() {
   const [form, setForm] = useState({
     name: '', description: '', vertical: 'Finance', countries: 'US, GB', devices: 'desktop, mobile',
     trafficSources: 'SEO, Content', conversionType: 'Signup', payoutModel: 'CPA' as PayoutModel,
-    payout: '', currency: settings.defaultCurrency, capDaily: '', capTotal: '', landingUrl: '', creatives: '',
+    payout: '', rate: '', currency: settings.defaultCurrency, capDaily: '', capTotal: '', landingUrl: '', creatives: '',
     approvalRequired: true,
   })
   const set = (k: keyof typeof form) => (e: { target: { value: string; checked?: boolean } }) =>
@@ -67,6 +67,12 @@ export function AdvertiserCreateOffer() {
     e.preventDefault()
     const payout = Number(form.payout)
     if (!Number.isFinite(payout) || payout < 0) { setError('Payout must be a number of 0 or more.'); return }
+    let rateBps: number | undefined
+    if (form.payoutModel === 'CPS') {
+      const rate = Number(form.rate)
+      if (!Number.isFinite(rate) || rate < 0 || rate > 100) { setError('Commission rate must be between 0 and 100%.'); return }
+      rateBps = Math.round(rate * 100)
+    }
     let landing: URL
     try { landing = new URL(form.landingUrl) } catch { setError('Landing URL must be a valid URL.'); return }
     if (landing.protocol !== 'https:' && landing.protocol !== 'http:') { setError('Landing URL must start with http:// or https://.'); return }
@@ -75,7 +81,7 @@ export function AdvertiserCreateOffer() {
       id: newId('offer'), name: form.name.trim(), description: form.description.trim(),
       vertical: form.vertical.trim(), countries: split(form.countries), devices: split(form.devices),
       trafficSources: split(form.trafficSources), conversionType: form.conversionType.trim(),
-      payoutModel: form.payoutModel, payout, currency: form.currency.trim() || settings.defaultCurrency,
+      payoutModel: form.payoutModel, payout, rateBps, currency: form.currency.trim() || settings.defaultCurrency,
       capDaily: form.capDaily === '' ? null : Number(form.capDaily),
       capTotal: form.capTotal === '' ? null : Number(form.capTotal),
       landingUrl: form.landingUrl.trim(), creatives: split(form.creatives),
@@ -104,7 +110,8 @@ export function AdvertiserCreateOffer() {
               {(['CPA', 'CPL', 'CPS', 'CPC'] as PayoutModel[]).map((m) => <option key={m}>{m}</option>)}
             </select>
           </div>
-          <div><label className={labelCls}>Payout (amount{form.payoutModel === 'CPS' ? ' — for CPS this is the order value; commission rate is set separately' : ''})</label><input className={inputCls} type="number" min="0" step="0.01" required value={form.payout} onChange={set('payout')} /></div>
+          <div><label className={labelCls}>Payout (amount{form.payoutModel === 'CPS' ? ' — for CPS this is the order value; set the commission rate below' : ''})</label><input className={inputCls} type="number" min="0" step="0.01" required value={form.payout} onChange={set('payout')} /></div>
+          {form.payoutModel === 'CPS' && (<div><label className={labelCls}>Commission rate (%)</label><input className={inputCls} type="number" min="0" max="100" step="0.01" required value={form.rate} onChange={set('rate')} /></div>)}
           <div><label className={labelCls}>Currency</label><input className={inputCls} value={form.currency} onChange={set('currency')} /></div>
           <div><label className={labelCls}>Creatives (URLs, comma-separated)</label><input className={inputCls} value={form.creatives} onChange={set('creatives')} /></div>
           <div><label className={labelCls}>Daily cap</label><input className={inputCls} type="number" min="0" value={form.capDaily} onChange={set('capDaily')} /></div>

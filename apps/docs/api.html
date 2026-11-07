@@ -34,8 +34,8 @@
     <tr><td><code>GET /c/{affiliate_code}/{offer_id}</code></td><td>Records a click and redirects (<code>302</code>) to the offer landing page with <code>?click_id=</code> appended. Unknown offer → <code>404</code>.</td></tr>
     <tr><td><code>GET /s/{smartlink_code}</code></td><td>Deterministic SmartLink pick and redirect (<code>302</code>). No eligible offer → <code>404</code>.</td></tr>
     <tr><td><code>POST /conversion</code></td><td>Signed conversion intake (see below). New conversion → <code>201</code>; duplicate → <code>200</code>.</td></tr>
-    <tr><td><code>GET /api/stats</code></td><td>Server-side aggregates over recorded events only.</td></tr>
-    <tr><td><code>GET /api/clicks/{click_id}</code></td><td>The click and its conversion, if one exists. Unknown ID → <code>404</code>.</td></tr>
+    <tr><td><code>GET /api/stats</code></td><td>Operator only — send <code>Authorization: Bearer &lt;postback secret&gt;</code>. Server-side aggregates over recorded events only.</td></tr>
+    <tr><td><code>GET /api/clicks/{click_id}</code></td><td>Operator only — same Bearer token. The click and its conversion, if one exists. Unknown ID → <code>404</code>; no token → <code>401</code>.</td></tr>
   </table>
 
   <h2>POST /conversion</h2>
@@ -48,13 +48,13 @@
     <tr><th>Field</th><th>Required</th><th>Meaning</th></tr>
     <tr><td><code>click_id</code></td><td>Yes</td><td>The click ID the conversion is attributed to.</td></tr>
     <tr><td><code>offer_id</code></td><td>Yes</td><td>The offer the conversion belongs to.</td></tr>
-    <tr><td><code>payout</code></td><td>Yes</td><td>Number, 0 or more. The conversion payout amount.</td></tr>
-    <tr><td><code>currency</code></td><td>Yes</td><td>Payout currency, for example <code>USD</code>.</td></tr>
+    <tr><td><code>payout</code></td><td>Yes</td><td>Number, 0 to 10,000. The conversion payout amount.</td></tr>
+    <tr><td><code>currency</code></td><td>Yes</td><td>Payout currency — one the network settles in, for example <code>USD</code>.</td></tr>
     <tr><td><code>idempotency_key</code></td><td>Yes</td><td>Your unique key for this conversion. Sending it again returns the original instead of creating a duplicate.</td></tr>
     <tr><td><code>status</code></td><td>No</td><td>Optional status hint.</td></tr>
     <tr><td><code>sub1</code></td><td>No</td><td>Optional sub-parameter.</td></tr>
   </table>
-  <p>Missing or invalid required fields return <code>400</code>. Invalid JSON returns <code>400</code>.</p>
+  <p>Missing or invalid required fields return <code>400</code>. Invalid JSON returns <code>400</code>. A conversion is only accepted for a click that was actually recorded, on the offer that click belongs to — an unknown <code>click_id</code> or <code>offer_id</code> returns <code>422</code>. Currency must be one the network settles in; payout is capped at 10,000 per conversion.</p>
 
   <h3>Responses and dedup</h3>
   <ul>
@@ -66,8 +66,8 @@
   <h3>Example</h3>
   <pre><code>curl -X POST https://go.affilayer.com/conversion \
   -H 'Content-Type: application/json' \
-  -H "x-affilayer-signature: $(echo -n '{"click_id":"clk_01J…","offer_id":"offer-a","payout":12.5,"currency":"USD","idempotency_key":"conv-0001"}' | openssl dgst -sha256 -hmac 'YOUR_POSTBACK_SECRET' | cut -d' ' -f2)" \
-  -d '{"click_id":"clk_01J…","offer_id":"offer-a","payout":12.5,"currency":"USD","idempotency_key":"conv-0001"}'</code></pre>
+  -H "x-affilayer-signature: $(echo -n '{"click_id":"clk_01J…","offer_id":"demo-offer-1","payout":12.5,"currency":"USD","idempotency_key":"conv-0001"}' | openssl dgst -sha256 -hmac 'YOUR_POSTBACK_SECRET' | cut -d' ' -f2)" \
+  -d '{"click_id":"clk_01J…","offer_id":"demo-offer-1","payout":12.5,"currency":"USD","idempotency_key":"conv-0001"}'</code></pre>
 
   <div class="note"><p><strong>Keep your secret secret.</strong> The postback secret signs conversions and postbacks. Do not put it in client-side code, public repositories or shared documents.</p></div>
 </main>

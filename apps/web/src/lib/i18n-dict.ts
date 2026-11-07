@@ -143,7 +143,7 @@ const en = {
   'adv.funnel.3.d': 'Review applications before affiliates can run your offer.',
   'adv.funnel.3.cta': 'Review affiliates',
   'adv.funnel.4.t': 'Track conversions',
-  'adv.funnel.4.d': 'Approve, reject or reverse attributed conversions.',
+  'adv.funnel.4.d': 'Conversions are reviewed by the network before they become payable.',
   'adv.funnel.4.cta': 'See conversions',
   'adv.register': 'Register as an advertiser',
 
@@ -367,7 +367,7 @@ const es: Record<DictKey, string> = {
   'adv.funnel.3.d': 'Revisa las solicitudes antes de que los afiliados puedan promocionar tu oferta.',
   'adv.funnel.3.cta': 'Revisar afiliados',
   'adv.funnel.4.t': 'Seguir conversiones',
-  'adv.funnel.4.d': 'Aprueba, rechaza o revierte las conversiones atribuidas.',
+  'adv.funnel.4.d': 'Las conversiones son revisadas por la red antes de ser pagaderas.',
   'adv.funnel.4.cta': 'Ver conversiones',
   'adv.register': 'Registrarse como anunciante',
 
@@ -588,7 +588,7 @@ const pt: Record<DictKey, string> = {
   'adv.funnel.3.d': 'Analise as inscrições antes de os afiliados poderem promover sua oferta.',
   'adv.funnel.3.cta': 'Analisar afiliados',
   'adv.funnel.4.t': 'Acompanhar conversões',
-  'adv.funnel.4.d': 'Aprove, rejeite ou reverta as conversões atribuídas.',
+  'adv.funnel.4.d': 'As conversões são revisadas pela rede antes de se tornarem pagáveis.',
   'adv.funnel.4.cta': 'Ver conversões',
   'adv.register': 'Cadastrar-se como anunciante',
 

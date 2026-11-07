@@ -6,8 +6,8 @@
  *   GET  /c/:affiliateCode/:offerId   -> 302 to landing URL (records a click)
  *   GET  /s/:smartlinkCode           -> 302 to the deterministic SmartLink pick
  *   POST /conversion                  -> HMAC-signed, idempotent, deduped (201 / 200 duplicate)
- *   GET  /api/stats                   -> server-side aggregation over recorded events only
- *   GET  /api/clicks/:clickId         -> click + its conversion (if any)
+ *   GET  /api/stats                   -> operator-only aggregation (Bearer POSTBACK_SECRET)
+ *   GET  /api/clicks/:clickId         -> operator-only click + its conversion
  *
  * Store: in-memory, per Worker isolate — ephemeral, NOT shared across
  * isolates. This matches the Fastify service's dev default (in-memory
@@ -15,7 +15,9 @@
  * truth for production volume; use the Fastify service with Postgres
  * (services/tracking) for durable tracking.
  *
- * Env: POSTBACK_SECRET (wrangler secret) — HMAC key for POST /conversion.
+ * Env: POSTBACK_SECRET (wrangler secret) — HMAC key for POST /conversion,
+ * and the operator token (Authorization: Bearer <secret>) for /api/stats
+ * and /api/clicks, which expose revenue and raw click data.
  */
 import {
   computeCommission,
@@ -54,8 +56,45 @@ function clientIp(request: Request): string | undefined {
   return undefined;
 }
 
-function geoFrom(request: Request, params: URLSearchParams): string | undefined {
-  return params.get('geo') ?? request.headers.get('cf-ipcountry') ?? undefined;
+/** Currencies the network settles in (ISO-4217). Anything else is rejected. */
+const ALLOWED_CURRENCIES = new Set([
+  'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'NZD', 'SGD', 'HKD',
+  'INR', 'BRL', 'MXN', 'ZAR', 'PLN', 'SEK', 'NOK', 'DKK', 'CZK', 'HUF',
+  'ILS', 'KRW', 'TWD', 'THB', 'MYR', 'IDR', 'PHP', 'VND', 'TRY', 'AED', 'SAR',
+]);
+
+/** Per-conversion payout ceiling — blocks absurd values (e.g. 1e12). */
+const MAX_PAYOUT = 10000;
+
+/** Best-effort per-IP click rate limit (per isolate): 60 clicks / 60s.
+ *  Not a security boundary — it only slows automated click floods. */
+const clickRate = new Map<string, number[]>();
+function clickRateLimited(ip: string | undefined): boolean {
+  if (!ip) return false;
+  const now = Date.now();
+  const hits = (clickRate.get(ip) ?? []).filter((t) => t > now - 60_000);
+  if (hits.length >= 60) return true;
+  hits.push(now);
+  clickRate.set(ip, hits);
+  if (clickRate.size > 5000) {
+    for (const [k, v] of clickRate) {
+      if (v.length === 0 || v[v.length - 1] < now - 60_000) clickRate.delete(k);
+    }
+  }
+  return false;
+}
+
+/** Operator endpoints (/api/stats, /api/clicks) are not public: they
+ *  expose revenue and raw click data (IP, user agent). The POSTBACK_SECRET
+ *  doubles as the operator token — Bearer auth, never a query param. */
+function isOperator(request: Request, env: Env): boolean {
+  return !!env.POSTBACK_SECRET && request.headers.get('authorization') === `Bearer ${env.POSTBACK_SECRET}`;
+}
+
+function geoFrom(request: Request): string | undefined {
+  // Country comes from Cloudflare's header only. A ?geo= query param must
+  // never override it — the visitor could spoof their country.
+  return request.headers.get('cf-ipcountry') ?? undefined;
 }
 
 function recordClickFields(
@@ -79,7 +118,7 @@ function recordClickFields(
     referrer: request.headers.get('referer') ?? request.headers.get('referrer') ?? undefined,
     ip: clientIp(request),
     userAgent: request.headers.get('user-agent') ?? undefined,
-    country: geoFrom(request, url.searchParams),
+    country: geoFrom(request),
     device: url.searchParams.get('device') ?? undefined,
     createdAt: new Date().toISOString(),
     ...extra,
@@ -127,6 +166,12 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
       400,
     );
   }
+  if (!ALLOWED_CURRENCIES.has(currency)) {
+    return json({ error: 'unsupported currency' }, 400);
+  }
+  if (payout > MAX_PAYOUT) {
+    return json({ error: 'payout exceeds the per-conversion maximum' }, 400);
+  }
 
   // Dedup: same idempotency_key OR same click_id+offer_id returns the original.
   const existing =
@@ -136,8 +181,13 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
     return json({ ok: true, duplicate: true, conversion: existing }, 200);
   }
 
+  // A conversion must belong to a real click on a real offer — never
+  // record conversions for clicks that never happened.
   const click = await store.getClick(clickId);
+  if (!click) return json({ error: 'unknown click_id' }, 422);
+  if (click.offerId !== offerId) return json({ error: 'click_id does not belong to offer_id' }, 422);
   const offer = await store.getOffer(offerId);
+  if (!offer) return json({ error: 'unknown offer_id' }, 422);
   const conversion: Conversion = {
     id: crypto.randomUUID(),
     clickId,
@@ -259,6 +309,7 @@ export default {
     // GET /c/:affiliateCode/:offerId -> 302 to landing URL
     const clickMatch = path.match(/^\/c\/([^/]+)\/([^/]+)$/);
     if (request.method === 'GET' && clickMatch) {
+      if (clickRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
       const [, affiliateCode, offerId] = clickMatch;
       const offer = await store.getOffer(decodeURIComponent(offerId));
       if (!offer) return json({ error: 'offer not found' }, 404);
@@ -273,9 +324,17 @@ export default {
     // GET /s/:smartlinkCode -> deterministic pick, 302
     const smartMatch = path.match(/^\/s\/([^/]+)$/);
     if (request.method === 'GET' && smartMatch) {
+      if (clickRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
       const [, smartlinkCode] = smartMatch;
       const offers = await store.listOffers();
-      const picked = smartlinkPick(offers, {
+      // Enforce per-offer click caps at the edge: offers that hit their
+      // `cap` are not eligible for a SmartLink pick. (capDaily / capTotal
+      // are not enforced here — the store has no daily window.)
+      const clicks = await store.listClicks();
+      const clicksByOffer = new Map<string, number>();
+      for (const c of clicks) clicksByOffer.set(c.offerId, (clicksByOffer.get(c.offerId) ?? 0) + 1);
+      const uncapped = offers.filter((o) => o.cap === undefined || (clicksByOffer.get(o.id) ?? 0) < o.cap);
+      const picked = smartlinkPick(uncapped, {
         country: url.searchParams.get('country') ?? undefined,
         device: url.searchParams.get('device') ?? undefined,
         trafficSource: url.searchParams.get('source') ?? undefined,
@@ -297,14 +356,16 @@ export default {
       return handleConversion(request, env);
     }
 
-    // GET /api/stats
+    // GET /api/stats — operator only
     if (request.method === 'GET' && path === '/api/stats') {
+      if (!isOperator(request, env)) return json({ error: 'unauthorized' }, 401);
       return handleStats(url);
     }
 
-    // GET /api/clicks/:clickId
+    // GET /api/clicks/:clickId — operator only
     const lookupMatch = path.match(/^\/api\/clicks\/([^/]+)$/);
     if (request.method === 'GET' && lookupMatch) {
+      if (!isOperator(request, env)) return json({ error: 'unauthorized' }, 401);
       const click = await store.getClick(decodeURIComponent(lookupMatch[1]));
       if (!click) return json({ error: 'click not found' }, 404);
       const conversions = await store.listConversions();

@@ -173,6 +173,41 @@
 --   'bbbbbbbb-0000-4000-8000-000000000003', 'idem-demo-999');
 
 -- ---------------------------------------------------------------------------
+-- 17. C-1 NEGATIVE (audit 7 Nov 2026): AS AFFILIATE1, privilege escalation
+--     must FAIL — both the INSERT and the UPDATE path.
+--     Expected: the INSERT errors (policy WITH CHECK) and the UPDATE either
+--     errors or silently leaves the row unchanged; after either attempt the
+--     row must still read role='affiliate', status='pending'.
+--     (If either attempt succeeds in setting role='super_admin', the fix
+--     in 005_fix_rls_escalation.sql is NOT live — STOP, do not go live.)
+-- ---------------------------------------------------------------------------
+-- -- INSERT path (fresh profile row for a second user id is not possible for
+-- -- affiliate1 — id must equal auth.uid() — so the escalation attempt is
+-- -- an UPDATE of their own row, plus a direct INSERT of their own row
+-- -- with a privileged role, which must fail the policy):
+-- INSERT INTO public.profiles (id, email, role, status)
+--   VALUES ('bbbbbbbb-0000-4000-8000-000000000003',
+--           'affiliate1@demo.local', 'super_admin', 'approved');
+-- -- UPDATE path:
+-- UPDATE public.profiles SET role = 'super_admin', status = 'approved'
+--   WHERE id = 'bbbbbbbb-0000-4000-8000-000000000003';
+-- -- Verify (must still be affiliate / pending):
+-- SELECT role, status FROM public.profiles
+--   WHERE id = 'bbbbbbbb-0000-4000-8000-000000000003';
+
+-- ---------------------------------------------------------------------------
+-- 18. H-2 (audit 7 Nov 2026): AS AFFILIATE1, affiliate_balances shows
+--     ONLY their own row; affiliate2's balances must NOT appear.
+--     Expected: first query 1 row (affiliate1's totals); second query
+--     0 rows. (Before the 005 fix the view ran as owner and both rows
+--     were visible to any signed-in user.)
+-- ---------------------------------------------------------------------------
+-- SELECT * FROM public.affiliate_balances
+--   WHERE affiliate_id = 'bbbbbbbb-0000-4000-8000-000000000003';
+-- SELECT * FROM public.affiliate_balances
+--   WHERE affiliate_id = 'bbbbbbbb-0000-4000-8000-000000000004';
+
+-- ---------------------------------------------------------------------------
 -- HOW TO RUN THESE AS A REAL USER (psql, superuser connection):
 --   Supabase Auth sets request.jwt.claims from the JWT. In psql you can
 --   impersonate a user for one transaction like this (replace the UUID):

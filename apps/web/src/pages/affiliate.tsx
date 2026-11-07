@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
-import { getClicks, getConversions, getOffers, getStats } from '../lib/data'
+import { getClicks, getConversions, getOffers, getStats, isDemoMode } from '../lib/data'
 import type { ReportFilters } from '../lib/data'
 import { demoDailySeries } from '../lib/demo-data'
 import { logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
@@ -397,6 +397,9 @@ export function AffiliateTickets() {
         <form onSubmit={submit} className="space-y-3">
           <input className={`${inputCls} w-full`} placeholder="Subject" aria-label="Subject" required value={subject} onChange={(e) => setSubject(e.target.value)} />
           <textarea className={`${inputCls} w-full`} rows={4} placeholder="Describe the issue…" aria-label="Describe the issue" required value={message} onChange={(e) => setMessage(e.target.value)} />
+          {isDemoMode && (
+            <p className="text-xs text-amber-700">Demo mode — tickets are saved in this browser only and are not sent to support.</p>
+          )}
           <button className={btnCls}>Submit ticket</button>
         </form>
         {sent && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Ticket submitted.</p>}

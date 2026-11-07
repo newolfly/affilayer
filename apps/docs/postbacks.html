@@ -45,16 +45,16 @@
   <pre><code>https://tracker.example/postback?click_id={click_id}&amp;payout={payout}&amp;currency={currency}&amp;status={status}</code></pre>
 
   <h2>Verifying the signature</h2>
-  <p>Every postback carries a signature header:</p>
-  <pre><code>x-affilayer-signature: &lt;hex&gt;</code></pre>
-  <p>The value is the HMAC-SHA256 of the raw request body, keyed with your postback secret, hex-encoded. An optional <code>sha256=</code> prefix is accepted. To verify, recompute the HMAC over the raw body with your secret and compare the two hex strings in constant time. If the header is missing or does not match, reject the postback.</p>
+  <p>When your postback config has a secret set, every postback carries a signature header:</p>
+  <pre><code>x-affilayer-signature: sha256=&lt;hex&gt;</code></pre>
+  <p>The value is the HMAC-SHA256 of the full expanded postback URL, keyed with your postback secret, hex-encoded, with a <code>sha256=</code> prefix. To verify, recompute the HMAC over the exact URL you received with your secret and compare the two hex strings in constant time. If the header is missing or does not match, reject the postback. Postbacks without a configured secret are sent unsigned.</p>
   <p>Example verification (Node.js):</p>
   <pre><code>import { createHmac, timingSafeEqual } from 'node:crypto';
 
-function verifyPostback(secret, rawBody, header) {
+function verifyPostback(secret, fullUrl, header) {
   if (!header) return false;
   const given = header.startsWith('sha256=') ? header.slice(7) : header;
-  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  const expected = createHmac('sha256', secret).update(fullUrl).digest('hex');
   if (given.length !== expected.length) return false;
   return timingSafeEqual(Buffer.from(given), Buffer.from(expected));
 }</code></pre>

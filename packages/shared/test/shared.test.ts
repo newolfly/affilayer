@@ -47,6 +47,9 @@ describe('expandPostbackMacros', () => {
   it('missing values expand to empty string', () => {
     expect(expandPostbackMacros('a={sub1}&b={payout}', { payout: '5' })).toBe('a=&b=5');
   });
+  it('URL-encodes values so a sub cannot inject query params', () => {
+    expect(expandPostbackMacros('a={sub1}', { sub1: 'x&y=z' })).toBe('a=x%26y%3Dz');
+  });
 });
 
 describe('generateClickId', () => {

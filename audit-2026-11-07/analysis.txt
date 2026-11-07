@@ -1,0 +1,284 @@
+==========================================================================================
+page-about.html bytes: 20255
+html lang: en
+viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+title: About AffiLayer | Global CPA Affiliate Network | len: 46
+description: AffiLayer is a new global CPA affiliate network operated by MarketSync Global LLC, New Mexico, USA. Tracking you can audit, a ledger you can trust. | len: 147
+canonical: https://affilayer.com/about
+  og:title: About AffiLayer | Global CPA Affiliate Network
+  og:description: AffiLayer is a new global CPA affiliate network operated by MarketSync Global LLC, New Mexico, USA. Tracking y
+  og:image: https://affilayer.com/og-image.png
+  og:url: https://affilayer.com/about
+  og:type: website
+  og:locale: en_US
+  twitter:card: summary_large_image
+  twitter:title: About AffiLayer | Global CPA Affiliate Network
+  twitter:description: AffiLayer is a new global CPA affiliate network operated by MarketSync Global LLC, New Mexico, USA. Tracking y
+  twitter:image: https://affilayer.com/og-image.png
+  h1 count: 1 | h1s: ['About AffiLayer']
+  heading sequence: 1 | total headings: 1
+  skip link: PRESENT: Skip to main content
+  <main>: <main id="main-content" class="mx-auto max-w-6xl px-4 py-10">
+  images: 2 total, 0 missing alt, 0 empty alt
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+  forms: 0
+==========================================================================================
+page-advantages.html bytes: 26203
+html lang: en
+viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+title: Why AffiLayer | Advantages of a Transparent CPA Network | len: 55
+description: Auditable tracking, an append-only commission ledger, and approval flows on both sides. What AffiLayer does differently — and what it does not promise. | len: 151
+canonical: https://affilayer.com/advantages
+  og:title: Why AffiLayer | Advantages of a Transparent CPA Network
+  og:description: Auditable tracking, an append-only commission ledger, and approval flows on both sides. What AffiLayer does di
+  og:image: https://affilayer.com/og-image.png
+  og:url: https://affilayer.com/advantages
+  og:type: website
+  og:locale: en_US
+  twitter:card: summary_large_image
+  twitter:title: Why AffiLayer | Advantages of a Transparent CPA Network
+  twitter:description: Auditable tracking, an append-only commission ledger, and approval flows on both sides. What AffiLayer does di
+  twitter:image: https://affilayer.com/og-image.png
+  h1 count: 1 | h1s: ['What AffiLayer does differently']
+  heading sequence: 123333333322 | total headings: 12
+  skip link: PRESENT: Skip to main content
+  <main>: <main id="main-content" class="mx-auto max-w-6xl px-4 py-10">
+  images: 2 total, 0 missing alt, 0 empty alt
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+  forms: 0
+==========================================================================================
+page-blog-post.html bytes: 19228
+html lang: en
+viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+title: AffiLayer is live: what the network offers on day one | AffiLayer Blog | len: 70
+description: The network opens with direct CPA offers, SmartLink routing, full-funnel tracking and an auditable commission ledger — and nothing we have not actually built. | len: 158
+canonical: https://affilayer.com/blog/affilayer-is-live
+  og:title: AffiLayer is live: what the network offers on day one | AffiLayer Blog
+  og:description: The network opens with direct CPA offers, SmartLink routing, full-funnel tracking and an auditable commission 
+  og:image: https://affilayer.com/og-image.png
+  og:url: https://affilayer.com/blog/affilayer-is-live
+  og:type: article
+  og:locale: en_US
+  twitter:card: summary_large_image
+  twitter:title: AffiLayer is live: what the network offers on day one | AffiLayer Blog
+  twitter:description: The network opens with direct CPA offers, SmartLink routing, full-funnel tracking and an auditable commission 
+  twitter:image: https://affilayer.com/og-image.png
+  h1 count: 1 | h1s: ['AffiLayer is live: what the network offers on day one']
+  heading sequence: 1 | total headings: 1
+  skip link: PRESENT: Skip to main content
+  <main>: <main id="main-content" class="mx-auto max-w-6xl px-4 py-10">
+  images: 2 total, 0 missing alt, 0 empty alt
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+  forms: 0
+==========================================================================================
+page-contact.html bytes: 20509
+html lang: en
+viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+title: Contact AffiLayer | Support &amp; Enquiries | len: 43
+description: Questions about an offer, a payout, or running traffic? Email support@affilayer.com or send a message — our team replies to the email you give. | len: 143
+canonical: https://affilayer.com/contact
+  og:title: Contact AffiLayer | Support &amp; Enquiries
+  og:description: Questions about an offer, a payout, or running traffic? Email support@affilayer.com or send a message — our te
+  og:image: https://affilayer.com/og-image.png
+  og:url: https://affilayer.com/contact
+  og:type: website
+  og:locale: en_US
+  twitter:card: summary_large_image
+  twitter:title: Contact AffiLayer | Support &amp; Enquiries
+  twitter:description: Questions about an offer, a payout, or running traffic? Email support@affilayer.com or send a message — our te
+  twitter:image: https://affilayer.com/og-image.png
+  h1 count: 1 | h1s: ['Contact us']
+  heading sequence: 12 | total headings: 2
+  skip link: PRESENT: Skip to main content
+  <main>: <main id="main-content" class="mx-auto max-w-6xl px-4 py-10">
+  images: 2 total, 0 missing alt, 0 empty alt
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+  forms: 1
+    form 0: 4 fields
+      field: input
+      field: input
+      field: input
+      field: textarea
+      <label> count: 4
+==========================================================================================
+page-es.html bytes: 36859
+html lang: es
+viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+title: AffiLayer — Red global de afiliados CPA | len: 39
+description: AffiLayer es una nueva red CPA global. Ofertas directas y enrutamiento SmartLink, seguimiento completo y un libro contable de comisiones auditable. | len: 147
+canonical: https://affilayer.com/es/
+  og:title: AffiLayer — Red global de afiliados CPA
+  og:description: AffiLayer es una nueva red CPA global. Ofertas directas y enrutamiento SmartLink, seguimiento completo y un li
+  og:image: https://affilayer.com/og-image.png
+  og:url: https://affilayer.com/es/
+  og:type: website
+  og:locale: es_ES
+  twitter:card: summary_large_image
+  twitter:title: AffiLayer — Red global de afiliados CPA
+  twitter:description: AffiLayer es una nueva red CPA global. Ofertas directas y enrutamiento SmartLink, seguimiento completo y un li
+  twitter:image: https://affilayer.com/og-image.png
+  hreflang en: https://affilayer.com/
+  hreflang es: https://affilayer.com/es
+  hreflang pt: https://affilayer.com/pt
+  hreflang x-default: https://affilayer.com/
+  h1 count: 1 | h1s: ['Convierte tráfico de SweepstakesNutra en comisiones.']
+  heading sequence: 12223333333322 | total headings: 14
+  skip link: PRESENT: Saltar al contenido principal
+  <main>: <main id="main-content" class="mx-auto max-w-6xl px-4 py-10">
+  images: 2 total, 0 missing alt, 0 empty alt
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+  forms: 1
+    form 0: 4 fields
+      field: input
+      field: input
+      field: input
+      field: textarea
+      <label> count: 4
+==========================================================================================
+page-faq.html bytes: 31437
+html lang: en
+viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+title: FAQ | AffiLayer CPA Affiliate Network | len: 37
+description: Straight answers about joining AffiLayer, running traffic, SmartLink, and getting paid. Manual admin-approved payouts, Net30 by default. | len: 136
+canonical: https://affilayer.com/faq
+  og:title: FAQ | AffiLayer CPA Affiliate Network
+  og:description: Straight answers about joining AffiLayer, running traffic, SmartLink, and getting paid. Manual admin-approved 
+  og:image: https://affilayer.com/og-image.png
+  og:url: https://affilayer.com/faq
+  og:type: website
+  og:locale: en_US
+  twitter:card: summary_large_image
+  twitter:title: FAQ | AffiLayer CPA Affiliate Network
+  twitter:description: Straight answers about joining AffiLayer, running traffic, SmartLink, and getting paid. Manual admin-approved 
+  twitter:image: https://affilayer.com/og-image.png
+  h1 count: 1 | h1s: ['Frequently asked questions']
+  heading sequence: 12222 | total headings: 5
+  skip link: PRESENT: Skip to main content
+  <main>: <main id="main-content" class="mx-auto max-w-6xl px-4 py-10">
+  images: 2 total, 0 missing alt, 0 empty alt
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+  forms: 0
+==========================================================================================
+page-geo-br.html bytes: 35977
+html lang: en
+viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+title: CPA Affiliate Network in Brazil | AffiLayer | len: 43
+description: Run CPA offers in Brazil with AffiLayer: full-funnel tracking, an auditable commission ledger and manual Net30 payouts. | len: 119
+canonical: https://affilayer.com/geo/br
+  og:title: CPA Affiliate Network in Brazil | AffiLayer
+  og:description: Run CPA offers in Brazil with AffiLayer: full-funnel tracking, an auditable commission ledger and manual Net30
+  og:image: https://affilayer.com/og-image.png
+  og:url: https://affilayer.com/geo/br
+  og:type: website
+  og:locale: en_US
+  twitter:card: summary_large_image
+  twitter:title: CPA Affiliate Network in Brazil | AffiLayer
+  twitter:description: Run CPA offers in Brazil with AffiLayer: full-funnel tracking, an auditable commission ledger and manual Net30
+  twitter:image: https://affilayer.com/og-image.png
+  hreflang en: https://affilayer.com/geo/br
+  hreflang es: https://affilayer.com/es/geo/br
+  hreflang pt: https://affilayer.com/pt/geo/br
+  hreflang x-default: https://affilayer.com/geo/br
+  h1 count: 1 | h1s: ['CPA affiliate network in Brazil']
+  heading sequence: 12233333233332 | total headings: 14
+  skip link: PRESENT: Skip to main content
+  <main>: <main id="main-content" class="mx-auto max-w-6xl px-4 py-10">
+  images: 2 total, 0 missing alt, 0 empty alt
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+  forms: 0
+==========================================================================================
+page-home.html bytes: 36286
+html lang: en
+viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+title: AffiLayer — Global CPA Affiliate Network | len: 40
+description: AffiLayer is a new global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an auditable commission ledger. | len: 133
+canonical: https://affilayer.com/
+  og:title: AffiLayer — Global CPA Affiliate Network
+  og:description: AffiLayer is a new global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an audit
+  og:image: https://affilayer.com/og-image.png
+  og:url: https://affilayer.com/
+  og:type: website
+  og:locale: en_US
+  twitter:card: summary_large_image
+  twitter:title: AffiLayer — Global CPA Affiliate Network
+  twitter:description: AffiLayer is a new global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an audit
+  twitter:image: https://affilayer.com/og-image.png
+  hreflang en: https://affilayer.com/
+  hreflang es: https://affilayer.com/es
+  hreflang pt: https://affilayer.com/pt
+  hreflang x-default: https://affilayer.com/
+  h1 count: 1 | h1s: ['Turn SweepstakesNutra traffic into commission.']
+  heading sequence: 12223333333322 | total headings: 14
+  skip link: PRESENT: Skip to main content
+  <main>: <main id="main-content" class="mx-auto max-w-6xl px-4 py-10">
+  images: 2 total, 0 missing alt, 0 empty alt
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+  forms: 1
+    form 0: 4 fields
+      field: input
+      field: input
+      field: input
+      field: textarea
+      <label> count: 4
+==========================================================================================
+page-partner.html bytes: 21385
+html lang: en
+viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+title: Become a Partner | AffiLayer | len: 28
+description: Partner with AffiLayer: bring your audience or your offers to a CPA network you can audit. Partnerships are agreed one by one and reviewed by hand. | len: 147
+canonical: https://affilayer.com/partner
+  og:title: Become a Partner | AffiLayer
+  og:description: Partner with AffiLayer: bring your audience or your offers to a CPA network you can audit. Partnerships are ag
+  og:image: https://affilayer.com/og-image.png
+  og:url: https://affilayer.com/partner
+  og:type: website
+  og:locale: en_US
+  twitter:card: summary_large_image
+  twitter:title: Become a Partner | AffiLayer
+  twitter:description: Partner with AffiLayer: bring your audience or your offers to a CPA network you can audit. Partnerships are ag
+  twitter:image: https://affilayer.com/og-image.png
+  h1 count: 1 | h1s: ['Become an AffiLayer partner']
+  heading sequence: 12333 | total headings: 5
+  skip link: PRESENT: Skip to main content
+  <main>: <main id="main-content" class="mx-auto max-w-6xl px-4 py-10">
+  images: 2 total, 0 missing alt, 0 empty alt
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+  forms: 0
+==========================================================================================
+page-pt-affiliates.html bytes: 28576
+html lang: pt
+viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+title: Para afiliados | Ganhe com ofertas de CPA e SmartLink | len: 53
+description: Promova ofertas de CPA diretas ou envie tráfego por um único SmartLink. Cada clique registrado, cada conversão atribuída e pagamentos a partir de um livro-razão | len: 171
+canonical: https://affilayer.com/pt/affiliates
+  og:title: Para afiliados | Ganhe com ofertas de CPA e SmartLink
+  og:description: Promova ofertas de CPA diretas ou envie tráfego por um único SmartLink. Cada clique registrado, cada conversão
+  og:image: https://affilayer.com/og-image.png
+  og:url: https://affilayer.com/pt/affiliates
+  og:type: website
+  og:locale: pt_BR
+  twitter:card: summary_large_image
+  twitter:title: Para afiliados | Ganhe com ofertas de CPA e SmartLink
+  twitter:description: Promova ofertas de CPA diretas ou envie tráfego por um único SmartLink. Cada clique registrado, cada conversão
+  twitter:image: https://affilayer.com/og-image.png
+  hreflang en: https://affilayer.com/affiliates
+  hreflang es: https://affilayer.com/es/affiliates
+  hreflang pt: https://affilayer.com/pt/affiliates
+  hreflang x-default: https://affilayer.com/affiliates
+  h1 count: 1 | h1s: ['Para afiliados']
+  heading sequence: 122222233333 | total headings: 12
+  skip link: PRESENT: Pular para o conteúdo principal
+  <main>: <main id="main-content" class="mx-auto max-w-6xl px-4 py-10">
+  images: 2 total, 0 missing alt, 0 empty alt
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+    img: <img alt="AffiLayer" class="h-8 w-8" width="32" height="32" src="/logo-mark.svg">
+  forms: 0

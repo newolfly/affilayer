@@ -23,6 +23,7 @@ const Privacy = lazy(() => import('./pages/public').then((m) => ({ default: m.Pr
 const Partner = lazy(() => import('./pages/public').then((m) => ({ default: m.Partner })))
 const WhiteLabel = lazy(() => import('./pages/public').then((m) => ({ default: m.WhiteLabel })))
 const Advertise = lazy(() => import('./pages/public').then((m) => ({ default: m.Advertise })))
+const NotFound = lazy(() => import('./pages/public').then((m) => ({ default: m.NotFound })))
 const Blog = lazy(() => import('./pages/blog').then((m) => ({ default: m.Blog })))
 const BlogPost = lazy(() => import('./pages/blog').then((m) => ({ default: m.BlogPost })))
 const GeoIndex = lazy(() => import('./pages/geo').then((m) => ({ default: m.GeoIndex })))
@@ -215,7 +216,7 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="tickets" element={<AdminTickets />} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
       </LocaleProvider>

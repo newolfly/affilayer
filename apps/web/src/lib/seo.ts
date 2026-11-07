@@ -15,6 +15,8 @@ export type SeoMeta = {
   description: string
   ogType?: 'website' | 'article'
   jsonLd?: Record<string, unknown> | Record<string, unknown>[]
+  /** True for pages search engines must not index (app/auth routes, 404). */
+  noindex?: boolean
 }
 
 const ORGANIZATION = {
@@ -210,10 +212,25 @@ function metaFor(pathname: string): SeoMeta {
       }
     }
   }
+  // App and auth routes are not public pages: generic title, never indexed.
+  if (
+    path === '/app' ||
+    path.startsWith('/app/') ||
+    ['/login', '/register', '/onboarding', '/pending'].includes(path)
+  ) {
+    return {
+      title: 'AffiLayer — Global CPA Affiliate Network',
+      description:
+        'AffiLayer is a new global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an auditable commission ledger.',
+      noindex: true,
+    }
+  }
+  // Anything else unmatched is a real 404: its own title, never indexed.
   return {
-    title: 'AffiLayer — Global CPA Affiliate Network',
+    title: 'Page not found | AffiLayer',
     description:
-      'AffiLayer is a new global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an auditable commission ledger.',
+      'This page does not exist on affilayer.com. Go back to the AffiLayer home page or use the navigation to find what you were looking for.',
+    noindex: true,
   }
 }
 
@@ -420,6 +437,8 @@ export function RouteSeo() {
     document.title = meta.title
     document.documentElement.setAttribute('lang', locale)
     setMeta('description', meta.description)
+    if (meta.noindex) setMeta('robots', 'noindex')
+    else document.head.querySelector('meta[name="robots"]')?.remove()
     setMeta('og:title', meta.title, 'property')
     setMeta('og:description', meta.description, 'property')
     setMeta('og:url', url, 'property')

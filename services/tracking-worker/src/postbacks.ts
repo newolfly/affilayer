@@ -54,8 +54,10 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
 /**
  * Deliver configured postbacks for one conversion. Each config URL is
  * macro-expanded, fetched with GET, retried up to 3 times with
- * exponential backoff on network error or non-2xx. One postback_event
- * is recorded per config. Returns the recorded events.
+ * exponential backoff on network error or non-2xx. When the config has
+ * a secret, the request carries x-affilayer-signature: sha256=<HMAC of
+ * the expanded URL>. One postback_event is recorded per config.
+ * Returns the recorded events.
  */
 export async function deliverPostbacks(
   store: Store,
@@ -71,6 +73,12 @@ export async function deliverPostbacks(
 
   for (const config of configs) {
     const url = expandPostbackMacros(config.url, vars);
+    // Sign the expanded URL when the config has a secret, so the
+    // receiver can verify the postback really came from AffiLayer.
+    const headers: Record<string, string> = {};
+    if (config.secret) {
+      headers['x-affilayer-signature'] = `sha256=${await computeSignature(config.secret, url)}`;
+    }
     let attempts = 0;
     let delivered = false;
     let statusCode: number | undefined;
@@ -79,7 +87,7 @@ export async function deliverPostbacks(
     while (attempts < maxAttempts && !delivered) {
       attempts++;
       try {
-        const res = await fetchFn(url, { method: 'GET' });
+        const res = await fetchFn(url, { method: 'GET', headers, signal: AbortSignal.timeout(5000) });
         statusCode = res.status;
         if (res.ok) {
           delivered = true;

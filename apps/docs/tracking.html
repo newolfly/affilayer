@@ -63,10 +63,10 @@
   </table>
 
   <h2>Looking a click up</h2>
-  <p><code>GET https://go.affilayer.com/api/clicks/{click_id}</code> returns the click and its conversion, if one exists. Unknown IDs return <code>404 {"error":"click not found"}</code>.</p>
+  <p><code>GET https://go.affilayer.com/api/clicks/{click_id}</code> returns the click and its conversion, if one exists. Unknown IDs return <code>404 {"error":"click not found"}</code>. This is an operator endpoint: send <code>Authorization: Bearer &lt;postback secret&gt;</code> — without it, it returns <code>401</code>.</p>
 
   <h2>Stats</h2>
-  <p><code>GET https://go.affilayer.com/api/stats</code> returns server-side aggregates over recorded events only — clicks, conversions and revenue as recorded, never estimates.</p>
+  <p><code>GET https://go.affilayer.com/api/stats</code> returns server-side aggregates over recorded events only — clicks, conversions and revenue as recorded, never estimates. This is an operator endpoint: send <code>Authorization: Bearer &lt;postback secret&gt;</code> — without it, it returns <code>401</code>.</p>
 
   <div class="note"><p><strong>Conversions are never trusted from the client side.</strong> A conversion only enters the system through a signed server-to-server call — see <a href="/api.html">API</a> — and is recorded as pending until a person reviews it.</p></div>
 </main>
