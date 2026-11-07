@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { AppLayout } from './components/layout'
+import type { DashboardNavItem } from './components/layout'
 import { useAuth, roleHome } from './lib/auth'
 import { RouteSeo } from './lib/seo'
 import type { Role } from './lib/types'
@@ -73,44 +74,44 @@ function AppHome() {
   return <Navigate to={roleHome(user.role)} replace />
 }
 
-const affiliateNav = [
-  { to: '/app/affiliate', label: 'Dashboard' },
-  { to: '/app/affiliate/offers', label: 'Offers' },
-  { to: '/app/affiliate/my-campaigns', label: 'My campaigns' },
-  { to: '/app/affiliate/tracking-links', label: 'Tracking links' },
-  { to: '/app/affiliate/reports', label: 'Reports' },
-  { to: '/app/affiliate/postbacks', label: 'Postbacks' },
-  { to: '/app/affiliate/earnings', label: 'Earnings' },
-  { to: '/app/affiliate/payouts', label: 'Payouts' },
-  { to: '/app/affiliate/profile', label: 'Profile' },
-  { to: '/app/affiliate/tickets', label: 'Tickets' },
+const affiliateNav: DashboardNavItem[] = [
+  { to: '/app/affiliate', label: 'Dashboard', icon: 'grid' },
+  { to: '/app/affiliate/offers', label: 'Offers', icon: 'tag' },
+  { to: '/app/affiliate/my-campaigns', label: 'My campaigns', icon: 'megaphone' },
+  { to: '/app/affiliate/tracking-links', label: 'Tracking links', icon: 'link' },
+  { to: '/app/affiliate/reports', label: 'Reports', icon: 'chart' },
+  { to: '/app/affiliate/postbacks', label: 'Postbacks', icon: 'send' },
+  { to: '/app/affiliate/earnings', label: 'Earnings', icon: 'wallet' },
+  { to: '/app/affiliate/payouts', label: 'Payouts', icon: 'banknote' },
+  { to: '/app/affiliate/profile', label: 'Profile', icon: 'user' },
+  { to: '/app/affiliate/tickets', label: 'Tickets', icon: 'ticket' },
 ]
 
-const advertiserNav = [
-  { to: '/app/advertiser', label: 'Dashboard' },
-  { to: '/app/advertiser/campaigns', label: 'Campaigns' },
-  { to: '/app/advertiser/create-offer', label: 'Create offer' },
-  { to: '/app/advertiser/affiliates', label: 'Affiliates' },
-  { to: '/app/advertiser/conversions', label: 'Conversions' },
-  { to: '/app/advertiser/reports', label: 'Reports' },
-  { to: '/app/advertiser/billing', label: 'Billing' },
+const advertiserNav: DashboardNavItem[] = [
+  { to: '/app/advertiser', label: 'Dashboard', icon: 'grid' },
+  { to: '/app/advertiser/campaigns', label: 'Campaigns', icon: 'megaphone' },
+  { to: '/app/advertiser/create-offer', label: 'Create offer', icon: 'plus' },
+  { to: '/app/advertiser/affiliates', label: 'Affiliates', icon: 'users' },
+  { to: '/app/advertiser/conversions', label: 'Conversions', icon: 'check' },
+  { to: '/app/advertiser/reports', label: 'Reports', icon: 'chart' },
+  { to: '/app/advertiser/billing', label: 'Billing', icon: 'wallet' },
 ]
 
-const adminNav = [
-  { to: '/app/admin', label: 'Overview' },
-  { to: '/app/admin/users', label: 'Users' },
-  { to: '/app/admin/affiliates', label: 'Affiliates' },
-  { to: '/app/admin/advertisers', label: 'Advertisers' },
-  { to: '/app/admin/offers', label: 'Offers' },
-  { to: '/app/admin/campaigns', label: 'Campaigns' },
-  { to: '/app/admin/conversions', label: 'Conversions' },
-  { to: '/app/admin/fraud', label: 'Fraud' },
-  { to: '/app/admin/ledger', label: 'Ledger' },
-  { to: '/app/admin/payouts', label: 'Payouts' },
-  { to: '/app/admin/compliance', label: 'Compliance' },
-  { to: '/app/admin/audit-logs', label: 'Audit logs' },
-  { to: '/app/admin/settings', label: 'Settings' },
-  { to: '/app/admin/tickets', label: 'Tickets' },
+const adminNav: DashboardNavItem[] = [
+  { to: '/app/admin', label: 'Overview', icon: 'grid' },
+  { to: '/app/admin/users', label: 'Users', icon: 'users' },
+  { to: '/app/admin/affiliates', label: 'Affiliates', icon: 'user' },
+  { to: '/app/admin/advertisers', label: 'Advertisers', icon: 'building' },
+  { to: '/app/admin/offers', label: 'Offers', icon: 'tag' },
+  { to: '/app/admin/campaigns', label: 'Campaigns', icon: 'megaphone' },
+  { to: '/app/admin/conversions', label: 'Conversions', icon: 'check' },
+  { to: '/app/admin/fraud', label: 'Fraud', icon: 'shield' },
+  { to: '/app/admin/ledger', label: 'Ledger', icon: 'file' },
+  { to: '/app/admin/payouts', label: 'Payouts', icon: 'banknote' },
+  { to: '/app/admin/compliance', label: 'Compliance', icon: 'lock' },
+  { to: '/app/admin/audit-logs', label: 'Audit logs', icon: 'eye' },
+  { to: '/app/admin/settings', label: 'Settings', icon: 'settings' },
+  { to: '/app/admin/tickets', label: 'Tickets', icon: 'ticket' },
 ]
 
 export default function App() {

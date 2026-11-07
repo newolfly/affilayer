@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Card, Empty, Stat } from '../components/layout'
+import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
 import { getCampaigns, getClicks, getConversions, getOffers, getProfiles, getStats } from '../lib/data'
 import { demoDailySeries } from '../lib/demo-data'
@@ -20,11 +20,12 @@ export function AdvertiserDashboard() {
   useEffect(() => { getStats().then(setStats); getOffers().then(setOffers) }, [])
   return (
     <div className="space-y-4">
+      <FirstSteps role="advertiser" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Clicks" value={String(stats.clicks)} />
-        <Stat label="Conversions" value={String(stats.conversions)} />
-        <Stat label="Approved" value={String(stats.approved)} />
-        <Stat label="Commission payable" value={`$${stats.revenue.toFixed(2)}`} />
+        <Stat label="Clicks" value={String(stats.clicks)} icon="chart" />
+        <Stat label="Conversions" value={String(stats.conversions)} icon="check" />
+        <Stat label="Approved" value={String(stats.approved)} icon="shield" />
+        <Stat label="Commission payable" value={`$${stats.revenue.toFixed(2)}`} icon="banknote" />
       </div>
       <Card title="Clicks — last 7 days (demo sample)"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
       <Card title="Your offers">
@@ -158,9 +159,9 @@ export function AdvertiserReports() {
     <Card title="Reports">
       <ReportFiltersForm filters={filters} setFilters={setFilters} />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Clicks" value={String(clicks.length)} />
-        <Stat label="Conversions" value={String(convs.length)} />
-        <Stat label="Approved spend" value={`$${convs.filter((c) => c.status === 'approved').reduce((s, c) => s + c.payout, 0).toFixed(2)}`} />
+        <Stat label="Clicks" value={String(clicks.length)} icon="chart" />
+        <Stat label="Conversions" value={String(convs.length)} icon="check" />
+        <Stat label="Approved spend" value={`$${convs.filter((c) => c.status === 'approved').reduce((s, c) => s + c.payout, 0).toFixed(2)}`} icon="wallet" />
       </div>
       <div className="mt-4"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></div>
     </Card>
@@ -174,7 +175,7 @@ export function AdvertiserBilling() {
         <p className="text-sm text-slate-600">Billing is based on approved conversions in the commission ledger. No payment integration is part of this MVP — invoices and payouts are administered outside the app and reconciled against the ledger.</p>
       </Card>
       <Card title="Current balance (demo sample)">
-        <Stat label="Payable (approved, unpaid)" value="$102.00" sub="From demo ledger data — not real" />
+        <Stat label="Payable (approved, unpaid)" value="$102.00" sub="From demo ledger data — not real" icon="banknote" />
       </Card>
     </div>
   )

@@ -1,10 +1,95 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { PublicLayout, Reveal } from '../components/layout'
+import { Icon } from '../components/icons'
+import type { IconName } from '../components/icons'
 import { FAQ_GROUPS } from '../lib/faq-data'
 
 const VERTICALS = ['Dating', 'Finance', 'Gaming', 'Sweepstakes', 'Nutra', 'iGaming']
+
+/** Hero illustration: the layered AffiLayer "A" as a hub, with offer nodes
+ *  (CPA / CPL / CPS / SmartLink) connected by a flowing tracking path.
+ *  Original SVG drawn for this page — node labels are payout models only,
+ *  never amounts. Parallax layers drift with the pointer (fine pointers
+ *  only; disabled under prefers-reduced-motion and on touch). */
+function HeroIllustration() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const onMove = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const rect = ref.current?.getBoundingClientRect()
+    if (!rect) return
+    setOffset({
+      x: (e.clientX - rect.left) / rect.width - 0.5,
+      y: (e.clientY - rect.top) / rect.height - 0.5,
+    })
+  }
+  const layer = (depth: number): React.CSSProperties => ({
+    transform: `translate3d(${(offset.x * depth).toFixed(1)}px, ${(offset.y * depth).toFixed(1)}px, 0)`,
+  })
+  return (
+    <div
+      ref={ref}
+      onPointerMove={onMove}
+      onPointerLeave={() => setOffset({ x: 0, y: 0 })}
+      className="relative mx-auto mt-10 max-w-3xl"
+      role="img"
+      aria-label="Illustration: the AffiLayer network hub connecting CPA, CPL, CPS and SmartLink offers through one tracked path"
+    >
+      <svg viewBox="0 0 640 250" className="w-full" fill="none">
+        <defs>
+          <linearGradient id="hero-grad" x1="0" y1="0" x2="640" y2="0" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#f97316" />
+            <stop offset="1" stopColor="#eab308" />
+          </linearGradient>
+        </defs>
+        <g className="hero-layer" style={layer(5)} opacity="0.5">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <circle key={i} cx={40 + i * 70} cy={i % 2 === 0 ? 28 : 222} r="2" fill="#475569" />
+          ))}
+        </g>
+        <g className="hero-layer" style={layer(9)} stroke="#334155" strokeWidth="1.5">
+          <line x1="118" y1="72" x2="272" y2="112" />
+          <line x1="118" y1="182" x2="272" y2="140" />
+          <line x1="522" y1="72" x2="368" y2="112" />
+          <line x1="522" y1="182" x2="368" y2="140" />
+        </g>
+        <g className="hero-layer" style={layer(9)}>
+          <path className="hero-path" d="M118 127 H 522" stroke="url(#hero-grad)" strokeWidth="2" />
+        </g>
+        <g className="hero-layer" style={layer(15)} fontFamily="inherit" fontSize="13" fontWeight="700" fill="#e2e8f0" textAnchor="middle">
+          <g>
+            <rect x="48" y="48" width="140" height="48" rx="12" fill="#0f172a" stroke="#334155" />
+            <text x="118" y="77">CPA offer</text>
+          </g>
+          <g>
+            <rect x="48" y="158" width="140" height="48" rx="12" fill="#0f172a" stroke="#334155" />
+            <text x="118" y="187">CPL offer</text>
+          </g>
+          <g>
+            <rect x="452" y="48" width="140" height="48" rx="12" fill="#0f172a" stroke="#334155" />
+            <text x="522" y="77">CPS offer</text>
+          </g>
+          <g>
+            <rect x="452" y="158" width="140" height="48" rx="12" fill="#0f172a" stroke="#334155" />
+            <text x="522" y="187">SmartLink</text>
+          </g>
+        </g>
+        <g className="hero-layer" style={layer(22)}>
+          <circle cx="320" cy="126" r="52" fill="#0f172a" stroke="url(#hero-grad)" strokeWidth="2.5" />
+          <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="5" fill="none">
+            <path d="M320 96 302 152" stroke="#f97316" />
+            <path d="M320 96 338 152" stroke="#f59e0b" />
+            <path d="M309 133h22" stroke="#eab308" />
+          </g>
+          <text x="320" y="200" textAnchor="middle" fontFamily="inherit" fontSize="12" fontWeight="600" fill="#94a3b8">one tracked path</text>
+        </g>
+      </svg>
+    </div>
+  )
+}
 
 export const SUPPORT_EMAIL = 'support@affilayer.com'
 
@@ -44,6 +129,9 @@ function Hero() {
         <p className="mt-4 text-xs text-slate-500">
           Free to join. Applications are reviewed by our team, typically within 2 business days.
         </p>
+        <Reveal delay={120}>
+          <HeroIllustration />
+        </Reveal>
       </div>
     </section>
   )
@@ -62,7 +150,7 @@ function ProductCards() {
           definition up front, so you know exactly what you are promoting and what
           it pays. Apply where approval is required, then generate your tracking link.
         </p>
-        <Link to="/affiliates" className="pill-btn mt-5">Browse offers →</Link>
+        <Link to="/affiliates" className="pill-btn mt-5">Browse offers <Icon name="arrow-right" className="inline h-4 w-4" /></Link>
       </div>
       </Reveal>
       <Reveal delay={100}>
@@ -75,41 +163,48 @@ function ProductCards() {
           deterministic rules — no black box, no promised earnings. You see which
           offer each click landed on.
         </p>
-        <Link to="/how-it-works" className="pill-btn mt-5">How SmartLink works →</Link>
+        <Link to="/how-it-works" className="pill-btn mt-5">How SmartLink works <Icon name="arrow-right" className="inline h-4 w-4" /></Link>
       </div>
       </Reveal>
     </section>
   )
 }
 
-export const BENEFITS = [
+export const BENEFITS: { t: string; d: string; icon: IconName }[] = [
   {
     t: 'Direct offers',
     d: 'Offers come with the payout model, caps and traffic rules stated up front. No hidden terms discovered after the click.',
+    icon: 'tag',
   },
   {
     t: 'SmartLink routing',
     d: 'One link routes each visitor to an eligible offer for their country and device, using rules you can read — not a black box.',
+    icon: 'sparkle',
   },
   {
     t: 'Full-funnel tracking',
     d: 'Every click gets a unique click ID with country, device, referrer and your sub-parameters, and stays linked to its conversion.',
+    icon: 'link',
   },
   {
     t: 'Reviewed payouts',
     d: 'Conversions move through pending, approved, rejected or reversed with a record of each change. Payouts are manual and admin-approved — never automatic, never guessed.',
+    icon: 'shield',
   },
   {
     t: 'Wide GEO range',
     d: 'Offers across many countries, with per-offer GEO targeting so you only promote where the advertiser actually wants traffic.',
+    icon: 'globe',
   },
   {
     t: 'Dedicated support',
     d: 'A real person answers tickets and reviews applications. New affiliates get help choosing their first offers.',
+    icon: 'ticket',
   },
   {
     t: 'Transparent reporting',
     d: 'Clicks, conversions, EPC and CR broken down by date, offer, country, device and source — the same numbers both sides see.',
+    icon: 'chart',
   },
 ]
 
@@ -127,7 +222,10 @@ export function BenefitsSection() {
         {BENEFITS.map((b, i) => (
           <Reveal key={b.t} delay={(i % 3) * 80}>
           <div className="lift h-full rounded-xl bg-white p-5 text-slate-900">
-            <h3 className="font-semibold">{b.t}</h3>
+            <span className="inline-flex rounded-lg bg-orange-500/10 p-2 text-orange-600">
+              <Icon name={b.icon} className="h-5 w-5" />
+            </span>
+            <h3 className="mt-3 font-semibold">{b.t}</h3>
             <p className="mt-2 text-sm text-slate-600">{b.d}</p>
           </div>
           </Reveal>
@@ -306,6 +404,15 @@ export function AdvertisersPage() {
           <Reveal key={t}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div></Reveal>
         ))}
       </div>
+      <FunnelSteps
+        heading="Your path to your first customer"
+        steps={[
+          { n: '1', t: 'Create account', d: 'Register as an advertiser and complete onboarding.', to: '/register', cta: 'Register', icon: 'user' },
+          { n: '2', t: 'Create offer', d: 'Set the payout model, caps, GEOs and traffic rules.', to: '/app/advertiser/create-offer', cta: 'Create offer', icon: 'plus' },
+          { n: '3', t: 'Approve affiliates', d: 'Review applications before affiliates can run your offer.', to: '/app/advertiser/affiliates', cta: 'Review affiliates', icon: 'users' },
+          { n: '4', t: 'Track conversions', d: 'Approve, reject or reverse attributed conversions.', to: '/app/advertiser/conversions', cta: 'See conversions', icon: 'chart' },
+        ]}
+      />
       <Link to="/register" className="pill-btn mt-6">Register as an advertiser</Link>
     </PublicLayout>
   )
@@ -333,8 +440,48 @@ export function AffiliatesPage() {
           <Reveal key={t}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div></Reveal>
         ))}
       </div>
+      <FunnelSteps
+        heading="Your path to your first payout"
+        steps={[
+          { n: '1', t: 'Create account', d: 'Register as an affiliate and complete onboarding.', to: '/register', cta: 'Register', icon: 'user' },
+          { n: '2', t: 'Get approved', d: 'Our team reviews your application, typically within 2 business days.', to: '/onboarding', cta: 'Start onboarding', icon: 'shield' },
+          { n: '3', t: 'Pick an offer', d: 'Browse offers by vertical, country and payout model.', to: '/app/affiliate/offers', cta: 'Browse offers', icon: 'tag' },
+          { n: '4', t: 'Share your link', d: 'Generate a tracking link and send traffic to it.', to: '/app/affiliate/tracking-links', cta: 'Build a link', icon: 'link' },
+          { n: '5', t: 'Get paid', d: 'Approved conversions enter the ledger; request a payout when payable.', to: '/app/affiliate/earnings', cta: 'See earnings', icon: 'wallet' },
+        ]}
+      />
       <Link to="/register" className="pill-btn mt-6">Register as an affiliate</Link>
     </PublicLayout>
+  )
+}
+
+/** Numbered funnel path: each step links to the real next page in the app.
+ *  Used on the /affiliates and /advertisers pages. */
+function FunnelSteps({ heading, steps }: {
+  heading: string
+  steps: { n: string; t: string; d: string; to: string; cta: string; icon: IconName }[]
+}) {
+  return (
+    <section className="mt-14">
+      <h2 className="text-center text-3xl font-bold text-white">{heading}</h2>
+      <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {steps.map((s, i) => (
+          <Reveal key={s.t} delay={(i % 3) * 80}>
+          <div className="lift relative h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-yellow-400 text-sm font-bold text-white" aria-hidden>{s.n}</span>
+              <span className="text-orange-400"><Icon name={s.icon} className="h-5 w-5" /></span>
+            </div>
+            <h3 className="mt-3 text-lg font-bold text-white">{s.t}</h3>
+            <p className="mt-1 text-sm text-slate-300">{s.d}</p>
+            <Link to={s.to} className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-400 hover:text-orange-300">
+              {s.cta} <Icon name="arrow-right" className="h-4 w-4" />
+            </Link>
+          </div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
   )
 }
 

@@ -96,6 +96,16 @@ body {
   .lift:hover {
     transform: none;
   }
+  .page-in {
+    animation: none;
+  }
+  .hero-path {
+    animation: none;
+  }
+  .hero-layer {
+    transition: none;
+    transform: none !important;
+  }
 }
 
 /* Rotating vertical word in the hero headline. */
@@ -107,6 +117,28 @@ body {
 .rotator-word {
   display: inline-block;
   animation: rotator-word 3.5s ease-in-out infinite;
+}
+
+/* Page transition: light fade + rise on every route change (see PageTransition). */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-in {
+  animation: page-in 0.35s ease both;
+}
+
+/* Hero illustration: flowing tracking path + parallax layers. */
+@keyframes hero-dash-flow {
+  to { stroke-dashoffset: -24; }
+}
+.hero-path {
+  stroke-dasharray: 6 6;
+  animation: hero-dash-flow 1.2s linear infinite;
+}
+.hero-layer {
+  transition: transform 0.3s ease-out;
+  will-change: transform;
 }
 
 /* Dark form fields with an orange edge (public contact form). */

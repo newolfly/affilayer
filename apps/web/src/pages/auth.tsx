@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PublicLayout } from '../components/layout'
+import { Icon } from '../components/icons'
 import { useAuth } from '../lib/auth'
 import { isDemoMode } from '../lib/data'
 import { demoProfiles } from '../lib/demo-data'
@@ -139,10 +140,30 @@ export function Register() {
             <div><label className={labelCls}>Confirm password</label><input className={inputCls} type="password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} /></div>
             <div>
               <label className={labelCls}>I am registering as</label>
-              <select className={inputCls} value={role} onChange={(e) => setRole(e.target.value as Role)}>
-                <option value="affiliate">Affiliate</option>
-                <option value="advertiser">Advertiser</option>
-              </select>
+              <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Register as">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={role === 'affiliate'}
+                  onClick={() => setRole('affiliate')}
+                  className={`rounded-xl border-2 p-3 text-left transition-colors ${role === 'affiliate' ? 'border-orange-500 bg-orange-50' : 'border-slate-200 hover:border-slate-300'}`}
+                >
+                  <span className="text-orange-600"><Icon name="tag" className="h-5 w-5" /></span>
+                  <span className="mt-1 block text-sm font-bold">Affiliate</span>
+                  <span className="mt-0.5 block text-xs text-slate-500">Run offers, earn commission</span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={role === 'advertiser'}
+                  onClick={() => setRole('advertiser')}
+                  className={`rounded-xl border-2 p-3 text-left transition-colors ${role === 'advertiser' ? 'border-orange-500 bg-orange-50' : 'border-slate-200 hover:border-slate-300'}`}
+                >
+                  <span className="text-orange-600"><Icon name="megaphone" className="h-5 w-5" /></span>
+                  <span className="mt-1 block text-sm font-bold">Advertiser</span>
+                  <span className="mt-0.5 block text-xs text-slate-500">Publish offers, buy traffic</span>
+                </button>
+              </div>
             </div>
             <div>
               <label className={labelCls}>I am</label>

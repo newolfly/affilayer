@@ -22,10 +22,10 @@ export function AdminOverview() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Users" value={String(profiles.length)} />
-        <Stat label="Clicks" value={String(stats.clicks)} />
-        <Stat label="Conversions" value={String(stats.conversions)} />
-        <Stat label="Pending conversions" value={String(stats.pending)} />
+        <Stat label="Users" value={String(profiles.length)} icon="users" />
+        <Stat label="Clicks" value={String(stats.clicks)} icon="chart" />
+        <Stat label="Conversions" value={String(stats.conversions)} icon="check" />
+        <Stat label="Pending conversions" value={String(stats.pending)} icon="clock" />
       </div>
       <Card title="Clicks — last 7 days (demo sample)"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
     </div>
@@ -249,8 +249,8 @@ export function AdminPayouts() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Stat label="Approved, awaiting payment" value={`$${payable.toFixed(2)}`} />
-        <Stat label="Payout requests" value={String(payouts.length)} />
+        <Stat label="Approved, awaiting payment" icon="banknote" value={`$${payable.toFixed(2)}`} />
+        <Stat label="Payout requests" icon="ticket" value={String(payouts.length)} />
       </div>
       <Card title="Payouts">
         <p className="mb-3 text-sm text-slate-500">Payout execution is manual and admin-approved in this MVP. Approving a request does not move money — payment happens outside the app and is reconciled here.</p>

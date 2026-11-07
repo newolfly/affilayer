@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Card, Empty, Stat } from '../components/layout'
+import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
 import { getClicks, getConversions, getOffers, getStats } from '../lib/data'
@@ -35,11 +35,12 @@ export function AffiliateDashboard() {
   }, [user?.affiliateCode])
   return (
     <div className="space-y-4">
+      <FirstSteps role="affiliate" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Clicks" value={String(stats.clicks)} />
-        <Stat label="Conversions" value={String(stats.conversions)} />
-        <Stat label="Approved" value={String(stats.approved)} />
-        <Stat label="Revenue" value={`$${stats.revenue.toFixed(2)}`} sub={`EPC $${stats.epc.toFixed(2)} · CR ${(stats.cr * 100).toFixed(1)}%`} />
+        <Stat label="Clicks" value={String(stats.clicks)} icon="chart" />
+        <Stat label="Conversions" value={String(stats.conversions)} icon="check" />
+        <Stat label="Approved" value={String(stats.approved)} icon="shield" />
+        <Stat label="Revenue" value={`$${stats.revenue.toFixed(2)}`} sub={`EPC $${stats.epc.toFixed(2)} · CR ${(stats.cr * 100).toFixed(1)}%`} icon="wallet" />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Clicks — last 7 days (demo sample)"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
@@ -223,9 +224,9 @@ export function AffiliateReports() {
       <Card title="Reports">
         <ReportFiltersForm filters={filters} setFilters={setFilters} />
         <div className="grid gap-4 sm:grid-cols-3">
-          <Stat label="Clicks" value={String(clicks.length)} />
-          <Stat label="Conversions" value={String(convs.length)} />
-          <Stat label="Approved revenue" value={`$${convs.filter((c) => c.status === 'approved').reduce((s, c) => s + c.payout, 0).toFixed(2)}`} />
+          <Stat label="Clicks" value={String(clicks.length)} icon="chart" />
+          <Stat label="Conversions" value={String(convs.length)} icon="check" />
+          <Stat label="Approved revenue" value={`$${convs.filter((c) => c.status === 'approved').reduce((s, c) => s + c.payout, 0).toFixed(2)}`} icon="wallet" />
         </div>
       </Card>
       <Card title="By offer">
@@ -283,9 +284,9 @@ export function AffiliateEarnings() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Approved earnings" value={`$${approved.reduce((s, c) => s + c.payout, 0).toFixed(2)}`} />
-        <Stat label="Pending" value={`$${pending.reduce((s, c) => s + c.payout, 0).toFixed(2)}`} />
-        <Stat label="Rejected / reversed" value={String(convs.filter((c) => c.status === 'rejected' || c.status === 'reversed').length)} />
+        <Stat label="Approved earnings" icon="wallet" value={`$${approved.reduce((s, c) => s + c.payout, 0).toFixed(2)}`} />
+        <Stat label="Pending" value={`$${pending.reduce((s, c) => s + c.payout, 0).toFixed(2)}`} icon="clock" />
+        <Stat label="Rejected / reversed" value={String(convs.filter((c) => c.status === 'rejected' || c.status === 'reversed').length)} icon="alert" />
       </div>
       <Card title="Conversions">
         {convs.length === 0 ? <Empty text="No conversions yet." /> : (
@@ -331,8 +332,8 @@ export function AffiliatePayouts() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Stat label="Approved balance" value={`$${approvedBalance.toFixed(2)}`} />
-        <Stat label="Minimum payout" value={`$${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}`} />
+        <Stat label="Approved balance" icon="banknote" value={`$${approvedBalance.toFixed(2)}`} />
+        <Stat label="Minimum payout" icon="banknote" value={`$${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}`} />
       </div>
       <Card title="Request a payout">
         <form onSubmit={request} className="flex gap-2">

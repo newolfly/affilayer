@@ -30,20 +30,20 @@ CHROME = next(
     None,
 )
 
-# route -> text that must appear in the prerendered HTML (proves real content, not the shell)
+# route -> texts that must appear in the prerendered HTML (proves real content, not the shell)
 ROUTES = {
-    "/": "Why run traffic on",
-    "/about": "About AffiLayer",
-    "/advantages": "What AffiLayer does",
-    "/advertisers": "Publish offers",
-    "/affiliates": "Generate tracking links",
-    "/how-it-works": "Create an account",
-    "/faq": "What is AffiLayer?",
-    "/blog": "AffiLayer is live",
-    "/blog/affilayer-is-live": "AffiLayer is live: what the network offers on day one",
-    "/contact": "support@affilayer.com",
-    "/terms": "Terms of Service",
-    "/privacy": "Privacy Policy",
+    "/": ["Why run traffic on", "Every commission written to an auditable ledger", "one tracked path"],
+    "/about": ["About AffiLayer"],
+    "/advantages": ["What AffiLayer does"],
+    "/advertisers": ["Publish offers", "Your path to your first customer"],
+    "/affiliates": ["Generate tracking links", "Your path to your first payout"],
+    "/how-it-works": ["Create an account"],
+    "/faq": ["What is AffiLayer?"],
+    "/blog": ["AffiLayer is live"],
+    "/blog/affilayer-is-live": ["AffiLayer is live: what the network offers on day one"],
+    "/contact": ["support@affilayer.com"],
+    "/terms": ["Terms of Service"],
+    "/privacy": ["Privacy Policy"],
 }
 
 PORT = 4173
@@ -93,14 +93,15 @@ def main() -> int:
             print("vite preview did not become ready", file=sys.stderr)
             return 1
         failures = []
-        for route, marker in ROUTES.items():
+        for route, markers in ROUTES.items():
             url = f"http://127.0.0.1:{PORT}{route}"
             html = dump_dom(url)
-            if '<div id="root"></div>' in html and marker not in html:
-                failures.append(f"{route}: rendered shell only, marker missing: {marker!r}")
+            missing = [m for m in markers if m not in html]
+            if '<div id="root"></div>' in html and missing:
+                failures.append(f"{route}: rendered shell only, markers missing: {missing!r}")
                 continue
-            if marker not in html:
-                failures.append(f"{route}: marker missing: {marker!r}")
+            if missing:
+                failures.append(f"{route}: markers missing: {missing!r}")
                 continue
             if 'id="affilayer-jsonld"' not in html and route in ("/", "/faq", "/blog/affilayer-is-live"):
                 failures.append(f"{route}: JSON-LD script missing from prerendered HTML")
