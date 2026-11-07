@@ -2,35 +2,34 @@
 
 Nothing in this repo deploys itself. Every step below is manual and explicit.
 
-## LIVE STATUS — 7 Nov 2026 ~15:58 +06 (deployed, Supabase deferred)
+## LIVE STATUS — 7 Nov 2026 ~16:45 +06 (ALL DEPLOYED + VERIFIED LIVE, Supabase deferred)
 
 - **Domain:** `affilayer.com` — Cloudflare zone exists (Free plan, Zone ID
   `17c94ce53fca917182d3fd91512eb811`); nameservers at Namecheap point to
-  `olof.ns.cloudflare.com` + `teresa.ns.cloudflare.com`; zone status ACTIVE
-  (checked via API 7 Nov ~07:54).
-- **DNS fix DONE 7 Nov ~15:58 +06** (via Cloudflare dashboard, signed in as
-  sojbahmmed@gmail.com): apex A `192.64.119.13` and www CNAME
+  `olof.ns.cloudflare.com` + `teresa.ns.cloudflare.com`; zone status ACTIVE.
+- **DNS (done 7 Nov ~15:58 +06):** apex A `192.64.119.13` and www CNAME
   `parkingpage.namecheap.com` DELETED; added, all Proxied, TTL Auto:
   `affilayer.com` CNAME → `affilayer-web.pages.dev`, `www` CNAME →
   `affilayer-web.pages.dev`, `go` CNAME →
   `affilayer-tracking.sojibahmmed.workers.dev`. MX/SPF/mail/autoconfig/
   autodiscover/SRV records untouched (10 records total).
-- **Web app LIVE:** https://affilayer.com/ loads the AffiLayer homepage
-  (verified 7 Nov 15:58, title "AffiLayer — Global CPA Affiliate Network").
-  Pages project `affilayer-web` deployed 7 Nov ~07:55
-  (https://949914d2.affilayer-web.pages.dev); custom domains
-  `affilayer.com` + `www.affilayer.com` attached via API, were "initializing"
-  at attach time — re-check their status in the Pages dashboard.
-- **Tracking Worker LIVE:** `affilayer-tracking` deployed 7 Nov ~07:53;
-  https://affilayer-tracking.sojibahmmed.workers.dev/health returns
-  `{"ok":true}`; `POSTBACK_SECRET` set on the Worker (value only in
-  `~/.affilayer-secrets`, chmod 600). `go.affilayer.com` DNS now points at the
-  Worker — **but go.affilayer.com/health still returns Cloudflare 522 as of
-  7 Nov 16:00 +06** (checked twice, live browser). www.affilayer.com loads
-  fully, slow first render. If go is still 522 after ~15 min, check the Worker
-  route binding for go.affilayer.com in the dashboard (Workers & Pages →
-  affilayer-tracking → Settings → Triggers/Routes) — the DNS record alone
-  does not prove the route is active.
+- **Web app LIVE — deployed 7 Nov ~16:42 +06 (Pages `affilayer-web`,
+  deployment https://8a7dbfcc.affilayer-web.pages.dev):** verified live
+  16:44 — homepage loads with the layered-A logo in the header, "Browse by
+  country" section, all 47 routes prerendered; `/sitemap.xml` serves the real
+  XML (47 URLs, lastmod 2026-11-07). Commits live: logo/SEO/polish `a5d0cbb`,
+  design system + funnels `a66fd6d`, geo + multilingual `b0e8ee5`, growth plan
+  `4b048fc`.
+- **Tracking Worker LIVE — redeployed 7 Nov ~16:43 +06:** route fix
+  `go.affilayer.com/*` (commit `4e0fc42`) applied; verified live 16:44–16:45 —
+  `https://go.affilayer.com/health` returns `{"ok":true}` (HTTP 200), and a
+  live click `https://go.affilayer.com/c/AFF123/offer-a?sub1=test` returns
+  **302 with `?click_id=clk_…`** to the offer landing page. `POSTBACK_SECRET`
+  set on the Worker (value only in `~/.affilayer-secrets`, chmod 600).
+- **Auth:** fresh OAuth tokens obtained 7 Nov ~16:40 via Sojib's phone
+  authorization (in `~/workspace/.oauth/tokens.json`, chmod 600; access token
+  expires ~17:41, refresh token present). Same authorization covers Pages +
+  Worker deploys. Token has NO DNS scope — DNS stays a dashboard job.
 - **Polish + SEO + AI-search package DONE 7 Nov ~16:30 +06 (local, NOT deployed):**
   logo (layered-A mark, `apps/web/public/logo*.svg`, `favicon.*`, `og-image.png`),
   build-time prerendering of all 12 public routes (`npm run build:live` in
