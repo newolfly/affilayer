@@ -5,6 +5,7 @@ import { AppLayout } from './components/layout'
 import type { DashboardNavItem } from './components/layout'
 import { useAuth, roleHome } from './lib/auth'
 import { RouteSeo } from './lib/seo'
+import { LocaleProvider } from './lib/i18n'
 import type { Role } from './lib/types'
 
 // Route sections are code-split: each page module becomes its own chunk,
@@ -21,6 +22,8 @@ const Terms = lazy(() => import('./pages/public').then((m) => ({ default: m.Term
 const Privacy = lazy(() => import('./pages/public').then((m) => ({ default: m.Privacy })))
 const Blog = lazy(() => import('./pages/blog').then((m) => ({ default: m.Blog })))
 const BlogPost = lazy(() => import('./pages/blog').then((m) => ({ default: m.BlogPost })))
+const GeoIndex = lazy(() => import('./pages/geo').then((m) => ({ default: m.GeoIndex })))
+const GeoPage = lazy(() => import('./pages/geo').then((m) => ({ default: m.GeoPage })))
 const Login = lazy(() => import('./pages/auth').then((m) => ({ default: m.Login })))
 const Register = lazy(() => import('./pages/auth').then((m) => ({ default: m.Register })))
 const Onboarding = lazy(() => import('./pages/auth').then((m) => ({ default: m.Onboarding })))
@@ -117,6 +120,7 @@ const adminNav: DashboardNavItem[] = [
 export default function App() {
   return (
     <BrowserRouter>
+      <LocaleProvider>
       <RouteSeo />
       <Suspense fallback={<p className="p-8 text-slate-500">Loading…</p>}>
         <Routes>
@@ -133,6 +137,22 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/geo" element={<GeoIndex />} />
+          <Route path="/geo/:code" element={<GeoPage />} />
+          {/* Public, Spanish (same components, locale from the URL) */}
+          <Route path="/es" element={<Home />} />
+          <Route path="/es/affiliates" element={<AffiliatesPage />} />
+          <Route path="/es/advertisers" element={<AdvertisersPage />} />
+          <Route path="/es/how-it-works" element={<HowItWorks />} />
+          <Route path="/es/geo" element={<GeoIndex />} />
+          <Route path="/es/geo/:code" element={<GeoPage />} />
+          {/* Public, Portuguese */}
+          <Route path="/pt" element={<Home />} />
+          <Route path="/pt/affiliates" element={<AffiliatesPage />} />
+          <Route path="/pt/advertisers" element={<AdvertisersPage />} />
+          <Route path="/pt/how-it-works" element={<HowItWorks />} />
+          <Route path="/pt/geo" element={<GeoIndex />} />
+          <Route path="/pt/geo/:code" element={<GeoPage />} />
           {/* Auth */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -184,6 +204,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      </LocaleProvider>
     </BrowserRouter>
   )
 }

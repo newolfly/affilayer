@@ -12,4 +12,39 @@
   <url><loc>https://affilayer.com/contact</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://affilayer.com/terms</loc><lastmod>2026-11-07</lastmod><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://affilayer.com/privacy</loc><lastmod>2026-11-07</lastmod><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://affilayer.com/geo</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://affilayer.com/geo/us</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/geo/uk</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/geo/ca</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/geo/au</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/geo/de</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/geo/fr</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/geo/br</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/geo/in</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/es</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://affilayer.com/es/affiliates</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://affilayer.com/es/advertisers</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://affilayer.com/es/how-it-works</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://affilayer.com/es/geo</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/es/geo/us</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/es/geo/uk</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/es/geo/ca</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/es/geo/au</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/es/geo/de</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/es/geo/fr</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/es/geo/br</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/es/geo/in</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/pt</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://affilayer.com/pt/affiliates</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://affilayer.com/pt/advertisers</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://affilayer.com/pt/how-it-works</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://affilayer.com/pt/geo</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/pt/geo/us</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/pt/geo/uk</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/pt/geo/ca</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/pt/geo/au</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/pt/geo/de</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/pt/geo/fr</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/pt/geo/br</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/pt/geo/in</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
 </urlset>

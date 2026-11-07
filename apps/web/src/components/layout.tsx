@@ -5,6 +5,9 @@ import { useAuth } from '../lib/auth'
 import { isDemoMode } from '../lib/data'
 import { Icon } from './icons'
 import type { IconName } from './icons'
+import { useLocale, useT, localizePath, basePath, LOCALES, LOCALIZED_BASE_PATHS } from '../lib/i18n'
+import type { Locale } from '../lib/i18n'
+import { COUNTRIES } from '../lib/geo-data'
 
 /** Fades + rises its children into view the first time they scroll on screen.
  *  No-op for users with prefers-reduced-motion (see index.css). */
@@ -46,37 +49,46 @@ export function PageTransition({ children }: { children: ReactNode }) {
 }
 
 export function Logo() {
+  const locale = useLocale()
   return (
-    <Link to="/" className="flex items-center gap-2.5 font-bold text-lg text-white">
+    <Link to={localizePath('/', locale)} className="flex items-center gap-2.5 font-bold text-lg text-white">
       <img src="/logo-mark.svg" alt="AffiLayer" className="h-8 w-8" width={32} height={32} />
       AffiLayer
     </Link>
   )
 }
 
-const publicLinks = [
-  { to: '/about', label: 'About' },
-  { to: '/advantages', label: 'Advantages' },
-  { to: '/advertisers', label: 'Advertisers' },
-  { to: '/affiliates', label: 'Affiliates' },
-  { to: '/how-it-works', label: 'How it works' },
-  { to: '/blog', label: 'Blog' },
-  { to: '/faq', label: 'FAQ' },
-  { to: '/contact', label: 'Contact' },
-]
-
-/** Trust signals shown in the footer. Every item is a true, verifiable
- *  statement about how the network operates — no testimonials, no client
- *  logos, no numbers that are not real. */
-export const TRUST_ITEMS: { icon: IconName; text: string }[] = [
-  { icon: 'building', text: 'Operated by MarketSync Global LLC, New Mexico, USA' },
-  { icon: 'clock', text: 'Applications reviewed by our team, typically within 2 business days' },
-  { icon: 'banknote', text: 'Payouts manual and admin-approved, Net30 by default' },
-  { icon: 'file', text: 'Every commission written to an auditable ledger' },
-]
+/** EN / ES / PT switcher. Links to the same page in the other language when
+ *  that page exists in that language, otherwise to that language's home. */
+export function LanguageSwitcher() {
+  const t = useT()
+  const locale = useLocale()
+  const { pathname } = useLocation()
+  const base = basePath(pathname)
+  const target = (l: Locale) =>
+    LOCALIZED_BASE_PATHS.includes(base) ? localizePath(base, l) : l === 'en' ? base : `/${l}`
+  return (
+    <div className="flex items-center gap-0.5 rounded-full border border-slate-700 p-1" role="group" aria-label={t('nav.language')}>
+      {LOCALES.map((l) => (
+        <Link
+          key={l.code}
+          to={target(l.code)}
+          aria-current={l.code === locale ? 'true' : undefined}
+          className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+            l.code === locale ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          {l.short}
+        </Link>
+      ))}
+    </div>
+  )
+}
 
 export function PublicLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth()
+  const t = useT()
+  const locale = useLocale()
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
@@ -85,6 +97,26 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+  const publicLinks = [
+    { to: localizePath('/about', locale), label: t('nav.about') },
+    { to: localizePath('/advantages', locale), label: t('nav.advantages') },
+    { to: localizePath('/advertisers', locale), label: t('nav.advertisers') },
+    { to: localizePath('/affiliates', locale), label: t('nav.affiliates') },
+    { to: localizePath('/how-it-works', locale), label: t('nav.how') },
+    { to: localizePath('/geo', locale), label: t('nav.countries') },
+    { to: localizePath('/blog', locale), label: t('nav.blog') },
+    { to: localizePath('/faq', locale), label: t('nav.faq') },
+    { to: localizePath('/contact', locale), label: t('nav.contact') },
+  ]
+  /** Trust signals. Every item is a true, verifiable statement about how
+   *  the network operates — no testimonials, no client logos, no numbers
+   *  that are not real. */
+  const trustItems: { icon: IconName; text: string }[] = [
+    { icon: 'building', text: t('trust.operated') },
+    { icon: 'clock', text: t('trust.review') },
+    { icon: 'banknote', text: t('trust.payouts') },
+    { icon: 'file', text: t('trust.ledger') },
+  ]
   return (
     <div className="min-h-screen bg-[#0B1220] text-slate-200">
       <header className={`sticky top-0 z-40 border-b border-slate-800 bg-[#0B1220]/90 backdrop-blur transition-shadow ${scrolled ? 'shadow-lg shadow-black/30' : ''}`}>
@@ -102,12 +134,13 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             {user ? (
-              <Link to="/app" className="pill-btn !px-4 !py-2 !text-sm">Dashboard</Link>
+              <Link to="/app" className="pill-btn !px-4 !py-2 !text-sm">{t('nav.dashboard')}</Link>
             ) : (
               <>
-                <Link to="/login" className="hidden rounded-full border border-slate-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-slate-400 sm:inline-block">Log in</Link>
-                <Link to="/register" className="pill-btn !px-4 !py-2 !text-sm">Register</Link>
+                <Link to="/login" className="hidden rounded-full border border-slate-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-slate-400 sm:inline-block">{t('nav.login')}</Link>
+                <Link to="/register" className="pill-btn !px-4 !py-2 !text-sm">{t('nav.register')}</Link>
               </>
             )}
             <button
@@ -136,7 +169,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               ))}
               {!user && (
                 <Link to="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800/60">
-                  Log in
+                  {t('nav.login')}
                 </Link>
               )}
             </div>
@@ -149,61 +182,72 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       <footer className="border-t border-slate-800">
         <div className="mx-auto max-w-6xl px-4 pt-10">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {TRUST_ITEMS.map((t) => (
-              <div key={t.text} className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+            {trustItems.map((item) => (
+              <div key={item.text} className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
                 <span className="rounded-lg bg-orange-500/15 p-2 text-orange-400">
-                  <Icon name={t.icon} className="h-5 w-5" />
+                  <Icon name={item.icon} className="h-5 w-5" />
                 </span>
-                <p className="text-sm leading-snug text-slate-300">{t.text}</p>
+                <p className="text-sm leading-snug text-slate-300">{item.text}</p>
               </div>
             ))}
           </div>
           <p className="mt-4 text-center text-sm text-slate-400">
-            How we keep it honest:{' '}
-            <Link to="/how-it-works" className="font-semibold text-orange-400 hover:text-orange-300">see how tracking and payouts work</Link>
+            {t('footer.honest')}{' '}
+            <Link to={localizePath('/how-it-works', locale)} className="font-semibold text-orange-400 hover:text-orange-300">{t('footer.honest.how')}</Link>
             {' '}·{' '}
-            <Link to="/faq" className="font-semibold text-orange-400 hover:text-orange-300">read the FAQ</Link>
+            <Link to="/faq" className="font-semibold text-orange-400 hover:text-orange-300">{t('footer.honest.faq')}</Link>
             {' '}·{' '}
             <a href="mailto:support@affilayer.com" className="font-semibold text-orange-400 hover:text-orange-300">support@affilayer.com</a>
           </p>
         </div>
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm text-slate-400 md:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm text-slate-400 md:grid-cols-3 lg:grid-cols-5">
           <div>
             <Logo />
-            <p className="mt-3">A CPA affiliate network. Direct offers and SmartLink, with tracking and a ledger you can audit.</p>
-            <Link to="/register" className="pill-btn mt-4">Join AffiLayer</Link>
+            <p className="mt-3">{t('footer.tagline')}</p>
+            <Link to="/register" className="pill-btn mt-4">{t('footer.join')}</Link>
           </div>
           <div>
-            <p className="font-semibold text-white">Company</p>
+            <p className="font-semibold text-white">{t('footer.company')}</p>
             <ul className="mt-3 space-y-2">
-              <li><Link to="/about" className="hover:text-white">About</Link></li>
-              <li><Link to="/advantages" className="hover:text-white">Advantages</Link></li>
-              <li><Link to="/faq" className="hover:text-white">FAQ</Link></li>
-              <li><Link to="/blog" className="hover:text-white">Blog</Link></li>
+              <li><Link to="/about" className="hover:text-white">{t('nav.about')}</Link></li>
+              <li><Link to="/advantages" className="hover:text-white">{t('nav.advantages')}</Link></li>
+              <li><Link to="/faq" className="hover:text-white">{t('nav.faq')}</Link></li>
+              <li><Link to="/blog" className="hover:text-white">{t('nav.blog')}</Link></li>
             </ul>
           </div>
           <div>
-            <p className="font-semibold text-white">Product</p>
+            <p className="font-semibold text-white">{t('footer.product')}</p>
             <ul className="mt-3 space-y-2">
-              <li><Link to="/affiliates" className="hover:text-white">For affiliates</Link></li>
-              <li><Link to="/advertisers" className="hover:text-white">For advertisers</Link></li>
-              <li><Link to="/how-it-works" className="hover:text-white">How it works</Link></li>
-              <li><Link to="/login" className="hover:text-white">Log in</Link></li>
+              <li><Link to={localizePath('/affiliates', locale)} className="hover:text-white">{t('nav.affiliates')}</Link></li>
+              <li><Link to={localizePath('/advertisers', locale)} className="hover:text-white">{t('nav.advertisers')}</Link></li>
+              <li><Link to={localizePath('/how-it-works', locale)} className="hover:text-white">{t('nav.how')}</Link></li>
+              <li><Link to="/login" className="hover:text-white">{t('nav.login')}</Link></li>
             </ul>
           </div>
           <div>
-            <p className="font-semibold text-white">Info</p>
+            <p className="font-semibold text-white">{t('footer.countries')}</p>
+            <ul className="mt-3 space-y-2">
+              {COUNTRIES.slice(0, 4).map((c) => (
+                <li key={c.code}>
+                  <Link to={localizePath(`/geo/${c.code}`, locale)} className="hover:text-white">{c.name[locale]}</Link>
+                </li>
+              ))}
+              <li><Link to={localizePath('/geo', locale)} className="font-semibold text-orange-400 hover:text-orange-300">{t('footer.allCountries')}</Link></li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold text-white">{t('footer.info')}</p>
             <ul className="mt-3 space-y-2">
               <li><Link to="/terms" className="hover:text-white">Terms</Link></li>
               <li><Link to="/privacy" className="hover:text-white">Privacy</Link></li>
-              <li><Link to="/contact" className="hover:text-white">Contact</Link></li>
+              <li><Link to="/contact" className="hover:text-white">{t('nav.contact')}</Link></li>
             </ul>
-            <p className="mt-4 text-xs text-slate-500">Operated by MarketSync Global LLC, New Mexico, USA.</p>
+            <p className="mt-4 text-xs text-slate-500">{t('trust.operated')}.</p>
           </div>
         </div>
         <div className="border-t border-slate-800">
           <div className="mx-auto flex max-w-6xl flex-wrap gap-4 justify-between px-4 py-4 text-xs text-slate-500">
-            <span>© 2026 AffiLayer. All rights reserved.</span>
+            <span>{t('footer.rights')}</span>
             <span>support@affilayer.com</span>
           </div>
         </div>

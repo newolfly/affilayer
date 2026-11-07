@@ -54,9 +54,32 @@ earnings. It pays exactly like the offer the visitor was routed to.
 - The web app currently runs in demo mode (sample data shown where Supabase
   is not configured).
 
+## Languages and countries
+
+The public site is available in English, Spanish and Portuguese. English
+lives at the root URLs (affilayer.com, affilayer.com/affiliates, …); Spanish
+under /es/ and Portuguese under /pt/ (for example /es/geo/us and
+/pt/affiliates). The dashboards are in English for now.
+
+Country pages live under /geo/: United States (/geo/us), United Kingdom
+(/geo/uk), Canada (/geo/ca), Australia (/geo/au), Germany (/geo/de), France
+(/geo/fr), Brazil (/geo/br) and India (/geo/in). Each page describes the same
+global product — tracking, ledger, manual Net30 payouts — with no local
+offices, staff or country-specific offer counts claimed. AffiLayer is open
+worldwide; there is no restricted country list.
+
 ## Pages
 
 - Home — https://affilayer.com/
+- Countries — https://affilayer.com/geo
+- United States — https://affilayer.com/geo/us
+- United Kingdom — https://affilayer.com/geo/uk
+- Canada — https://affilayer.com/geo/ca
+- Australia — https://affilayer.com/geo/au
+- Germany — https://affilayer.com/geo/de
+- France — https://affilayer.com/geo/fr
+- Brazil — https://affilayer.com/geo/br
+- India — https://affilayer.com/geo/in
 - About — https://affilayer.com/about
 - Advantages — https://affilayer.com/advantages
 - For advertisers — https://affilayer.com/advertisers

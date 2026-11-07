@@ -5,6 +5,8 @@ import { PublicLayout, Reveal } from '../components/layout'
 import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
 import { FAQ_GROUPS } from '../lib/faq-data'
+import { useLocale, useT, localizePath } from '../lib/i18n'
+import { COUNTRIES } from '../lib/geo-data'
 
 const VERTICALS = ['Dating', 'Finance', 'Gaming', 'Sweepstakes', 'Nutra', 'iGaming']
 
@@ -107,27 +109,25 @@ function RotatingVertical() {
 }
 
 function Hero() {
+  const t = useT()
   return (
     <section className="relative overflow-hidden py-16 text-center md:py-20">
       <div className="hero-lines pointer-events-none absolute inset-0" aria-hidden />
       <div className="hero-glow" aria-hidden />
       <div className="relative">
-        <p className="text-sm font-semibold uppercase tracking-widest text-orange-400">A new CPA network — now open</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-orange-400">{t('home.eyebrow')}</p>
         <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-bold leading-tight text-white md:text-6xl">
-          Turn <RotatingVertical /> traffic into commission.
+          {t('home.titleBefore')} <RotatingVertical /> {t('home.titleAfter')}
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-slate-300">
-          AffiLayer connects advertisers who need customers with affiliates who can
-          reach them. Pick a direct offer, or send everything through one SmartLink —
-          every click tracked, every conversion attributed, every commission written
-          to a ledger you can audit.
+          {t('home.sub')}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link to="/register" className="pill-btn">Join as an affiliate</Link>
-          <Link to="/register" className="pill-btn-outline">Join as an advertiser</Link>
+          <Link to="/register" className="pill-btn">{t('home.ctaAffiliate')}</Link>
+          <Link to="/register" className="pill-btn-outline">{t('home.ctaAdvertiser')}</Link>
         </div>
         <p className="mt-4 text-xs text-slate-500">
-          Free to join. Applications are reviewed by our team, typically within 2 business days.
+          {t('home.note')}
         </p>
         <Reveal delay={120}>
           <HeroIllustration />
@@ -137,89 +137,87 @@ function Hero() {
   )
 }
 
+/** Country grid on the home page — the GEO-search entry point. */
+function BrowseByCountry() {
+  const t = useT()
+  const locale = useLocale()
+  return (
+    <section className="mt-14">
+      <h2 className="text-center text-3xl font-bold text-white">{t('browse.title')}</h2>
+      <p className="mx-auto mt-3 max-w-2xl text-center text-slate-300">{t('browse.sub')}</p>
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {COUNTRIES.map((c, i) => (
+          <Reveal key={c.code} delay={(i % 4) * 80}>
+            <Link
+              to={localizePath(`/geo/${c.code}`, locale)}
+              className="lift flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-4"
+            >
+              <span className="flex items-center gap-3 font-semibold text-white">
+                <span className="text-orange-400"><Icon name="globe" className="h-5 w-5" /></span>
+                {c.name[locale]}
+              </span>
+              <Icon name="arrow-right" className="h-4 w-4 text-orange-400" />
+            </Link>
+          </Reveal>
+        ))}
+      </div>
+      <p className="mt-6 text-center">
+        <Link to={localizePath('/geo', locale)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-400 hover:text-orange-300">
+          {t('browse.all')} <Icon name="arrow-right" className="h-4 w-4" />
+        </Link>
+      </p>
+    </section>
+  )
+}
+
 function ProductCards() {
+  const t = useT()
+  const locale = useLocale()
   return (
     <section className="mt-4 grid gap-4 md:grid-cols-2">
       <Reveal>
       <div className="lift h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-orange-400">CPA offers</p>
-        <h2 className="mt-2 text-2xl font-bold text-white">Direct offers, clear payouts</h2>
+        <p className="text-xs font-semibold uppercase tracking-widest text-orange-400">{t('home.cardOffers.kicker')}</p>
+        <h2 className="mt-2 text-2xl font-bold text-white">{t('home.cardOffers.title')}</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-          Browse offers by vertical, country, device and payout model — CPA, CPL,
-          CPS or CPC. Each offer states its caps, traffic rules and conversion
-          definition up front, so you know exactly what you are promoting and what
-          it pays. Apply where approval is required, then generate your tracking link.
+          {t('home.cardOffers.body')}
         </p>
-        <Link to="/affiliates" className="pill-btn mt-5">Browse offers <Icon name="arrow-right" className="inline h-4 w-4" /></Link>
+        <Link to={localizePath('/affiliates', locale)} className="pill-btn mt-5">{t('home.cardOffers.cta')} <Icon name="arrow-right" className="inline h-4 w-4" /></Link>
       </div>
       </Reveal>
       <Reveal delay={100}>
       <div className="lift h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-orange-400">SmartLink</p>
-        <h2 className="mt-2 text-2xl font-bold text-white">One link, every eligible offer</h2>
+        <p className="text-xs font-semibold uppercase tracking-widest text-orange-400">{t('home.cardSmart.kicker')}</p>
+        <h2 className="mt-2 text-2xl font-bold text-white">{t('home.cardSmart.title')}</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-          Send mixed or unsegmented traffic to a single link. SmartLink routes each
-          visitor to an eligible offer for their country and device, using clear,
-          deterministic rules — no black box, no promised earnings. You see which
-          offer each click landed on.
+          {t('home.cardSmart.body')}
         </p>
-        <Link to="/how-it-works" className="pill-btn mt-5">How SmartLink works <Icon name="arrow-right" className="inline h-4 w-4" /></Link>
+        <Link to={localizePath('/how-it-works', locale)} className="pill-btn mt-5">{t('home.cardSmart.cta')} <Icon name="arrow-right" className="inline h-4 w-4" /></Link>
       </div>
       </Reveal>
     </section>
   )
 }
 
-export const BENEFITS: { t: string; d: string; icon: IconName }[] = [
-  {
-    t: 'Direct offers',
-    d: 'Offers come with the payout model, caps and traffic rules stated up front. No hidden terms discovered after the click.',
-    icon: 'tag',
-  },
-  {
-    t: 'SmartLink routing',
-    d: 'One link routes each visitor to an eligible offer for their country and device, using rules you can read — not a black box.',
-    icon: 'sparkle',
-  },
-  {
-    t: 'Full-funnel tracking',
-    d: 'Every click gets a unique click ID with country, device, referrer and your sub-parameters, and stays linked to its conversion.',
-    icon: 'link',
-  },
-  {
-    t: 'Reviewed payouts',
-    d: 'Conversions move through pending, approved, rejected or reversed with a record of each change. Payouts are manual and admin-approved — never automatic, never guessed.',
-    icon: 'shield',
-  },
-  {
-    t: 'Wide GEO range',
-    d: 'Offers across many countries, with per-offer GEO targeting so you only promote where the advertiser actually wants traffic.',
-    icon: 'globe',
-  },
-  {
-    t: 'Dedicated support',
-    d: 'A real person answers tickets and reviews applications. New affiliates get help choosing their first offers.',
-    icon: 'ticket',
-  },
-  {
-    t: 'Transparent reporting',
-    d: 'Clicks, conversions, EPC and CR broken down by date, offer, country, device and source — the same numbers both sides see.',
-    icon: 'chart',
-  },
-]
+const BENEFIT_ICONS: IconName[] = ['tag', 'sparkle', 'link', 'shield', 'globe', 'ticket', 'chart']
 
 export function BenefitsSection() {
+  const t = useT()
+  const benefits = [1, 2, 3, 4, 5, 6, 7].map((n) => ({
+    t: t(`benefit.${n}.t` as `benefit.${1 | 2 | 3 | 4 | 5 | 6 | 7}.t`),
+    d: t(`benefit.${n}.d` as `benefit.${1 | 2 | 3 | 4 | 5 | 6 | 7}.d`),
+    icon: BENEFIT_ICONS[n - 1],
+  }))
   return (
     <section className="mt-14">
       <h2 className="text-center text-3xl font-bold text-white">
-        Why run traffic on <span className="grad-text">AffiLayer</span>
+        {t('home.why.titleA')} <span className="grad-text">AffiLayer</span>
       </h2>
       <p className="mx-auto mt-3 max-w-2xl text-center text-slate-300">
-        We are a new network, so we keep our promises small and our records open.
-        Here is what we actually do for affiliates and advertisers.
+        {t('home.why.sub')}
       </p>
       <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {BENEFITS.map((b, i) => (
+        {benefits.map((b, i) => (
           <Reveal key={b.t} delay={(i % 3) * 80}>
           <div className="lift h-full rounded-xl bg-white p-5 text-slate-900">
             <span className="inline-flex rounded-lg bg-orange-500/10 p-2 text-orange-600">
@@ -233,10 +231,10 @@ export function BenefitsSection() {
         <Reveal delay={160}>
         <div className="lift flex h-full flex-col justify-between rounded-xl border border-orange-500/40 bg-orange-500/10 p-5">
           <div>
-            <h3 className="font-semibold text-white">Ready to start?</h3>
-            <p className="mt-2 text-sm text-slate-300">Create an account, complete onboarding, and apply to your first offer.</p>
+            <h3 className="font-semibold text-white">{t('home.ready.title')}</h3>
+            <p className="mt-2 text-sm text-slate-300">{t('home.ready.body')}</p>
           </div>
-          <Link to="/register" className="pill-btn mt-4 self-start">Create an account</Link>
+          <Link to="/register" className="pill-btn mt-4 self-start">{t('home.ready.cta')}</Link>
         </div>
         </Reveal>
       </div>
@@ -245,6 +243,7 @@ export function BenefitsSection() {
 }
 
 export function ContactForm() {
+  const t = useT()
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
   const [sent, setSent] = useState(false)
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) =>
@@ -264,27 +263,25 @@ export function ContactForm() {
   return (
     <Reveal className="mt-14">
       <h2 className="text-center text-3xl font-bold text-white">
-        Talk to <span className="grad-text">us</span>
+        {t('contact.titleA')} <span className="grad-text">{t('contact.titleB')}</span>
       </h2>
       <p className="mx-auto mt-3 max-w-xl text-center text-slate-300">
-        Questions about an offer, a payout, or running traffic here? Send a message
-        and our team will reply to the email you give.
+        {t('contact.sub')}
       </p>
       {sent ? (
         <div className="mx-auto mt-8 max-w-lg rounded-xl border border-green-500/40 bg-green-500/10 p-6 text-center">
-          <p className="font-semibold text-white">Message received — thank you.</p>
+          <p className="font-semibold text-white">{t('contact.sent.title')}</p>
           <p className="mt-2 text-sm text-slate-300">
-            We will reply to {form.email}. (Demo note: while Supabase is not
-            configured, messages are stored in your browser only.)
+            {t('contact.sent.body', { email: form.email })}
           </p>
         </div>
       ) : (
         <form onSubmit={submit} className="mx-auto mt-8 max-w-lg space-y-3">
-          <input className="dark-field" placeholder="Name" required value={form.name} onChange={set('name')} />
-          <input className="dark-field" type="email" placeholder="Email" required value={form.email} onChange={set('email')} />
-          <input className="dark-field" placeholder="Subject" required value={form.subject} onChange={set('subject')} />
-          <textarea className="dark-field" placeholder="Message" rows={5} required value={form.message} onChange={set('message')} />
-          <button className="pill-btn w-full">Send message</button>
+          <input className="dark-field" placeholder={t('contact.ph.name')} required value={form.name} onChange={set('name')} />
+          <input className="dark-field" type="email" placeholder={t('contact.ph.email')} required value={form.email} onChange={set('email')} />
+          <input className="dark-field" placeholder={t('contact.ph.subject')} required value={form.subject} onChange={set('subject')} />
+          <textarea className="dark-field" placeholder={t('contact.ph.message')} rows={5} required value={form.message} onChange={set('message')} />
+          <button className="pill-btn w-full">{t('contact.send')}</button>
         </form>
       )}
     </Reveal>
@@ -297,6 +294,7 @@ export function Home() {
       <Hero />
       <ProductCards />
       <BenefitsSection />
+      <BrowseByCountry />
       <ContactForm />
     </PublicLayout>
   )
@@ -384,80 +382,67 @@ export function About() {
 }
 
 export function AdvertisersPage() {
+  const t = useT()
   return (
     <PublicLayout>
       <h1 className="text-3xl font-bold text-white md:text-4xl">
-        For <span className="grad-text">advertisers</span>
+        {t('adv.h1a')} <span className="grad-text">{t('adv.h1b')}</span>
       </h1>
       <p className="mt-4 max-w-3xl text-slate-300">
-        You need customers, not clicks you cannot explain. Publish an offer, set
-        the rules, approve who runs it, and pay only for conversions you have
-        reviewed.
+        {t('adv.intro')}
       </p>
       <div className="mt-6 space-y-4">
-        {[
-          ['Publish offers', 'Define the vertical, countries, devices, allowed traffic sources, conversion type and payout model (CPA, CPL, CPS or CPC), plus daily and total caps.'],
-          ['Approve affiliates', 'Review applications and traffic descriptions before an affiliate can generate tracking links for your offer.'],
-          ['See attributed conversions', 'Each conversion is linked to the click that produced it, with payout, currency and status.'],
-          ['Control spend', 'Caps limit volume per offer. The commission ledger records what is pending, approved and payable — and nothing becomes payable without review.'],
-        ].map(([t, d]) => (
-          <Reveal key={t}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div></Reveal>
+        {[1, 2, 3, 4].map((n) => (
+          <Reveal key={n}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t(`adv.card.${n}.t` as `adv.card.${1 | 2 | 3 | 4}.t`)}</h2><p className="mt-1 text-sm text-slate-600">{t(`adv.card.${n}.d` as `adv.card.${1 | 2 | 3 | 4}.d`)}</p></div></Reveal>
         ))}
       </div>
       <FunnelSteps
-        heading="Your path to your first customer"
+        heading={t('adv.funnel.heading')}
         steps={[
-          { n: '1', t: 'Create account', d: 'Register as an advertiser and complete onboarding.', to: '/register', cta: 'Register', icon: 'user' },
-          { n: '2', t: 'Create offer', d: 'Set the payout model, caps, GEOs and traffic rules.', to: '/app/advertiser/create-offer', cta: 'Create offer', icon: 'plus' },
-          { n: '3', t: 'Approve affiliates', d: 'Review applications before affiliates can run your offer.', to: '/app/advertiser/affiliates', cta: 'Review affiliates', icon: 'users' },
-          { n: '4', t: 'Track conversions', d: 'Approve, reject or reverse attributed conversions.', to: '/app/advertiser/conversions', cta: 'See conversions', icon: 'chart' },
+          { n: '1', t: t('adv.funnel.1.t'), d: t('adv.funnel.1.d'), to: '/register', cta: t('adv.funnel.1.cta'), icon: 'user' },
+          { n: '2', t: t('adv.funnel.2.t'), d: t('adv.funnel.2.d'), to: '/app/advertiser/create-offer', cta: t('adv.funnel.2.cta'), icon: 'plus' },
+          { n: '3', t: t('adv.funnel.3.t'), d: t('adv.funnel.3.d'), to: '/app/advertiser/affiliates', cta: t('adv.funnel.3.cta'), icon: 'users' },
+          { n: '4', t: t('adv.funnel.4.t'), d: t('adv.funnel.4.d'), to: '/app/advertiser/conversions', cta: t('adv.funnel.4.cta'), icon: 'chart' },
         ]}
       />
-      <Link to="/register" className="pill-btn mt-6">Register as an advertiser</Link>
+      <Link to="/register" className="pill-btn mt-6">{t('adv.register')}</Link>
     </PublicLayout>
   )
 }
 
 export function AffiliatesPage() {
+  const t = useT()
   return (
     <PublicLayout>
       <h1 className="text-3xl font-bold text-white md:text-4xl">
-        For <span className="grad-text">affiliates</span>
+        {t('aff.h1a')} <span className="grad-text">{t('aff.h1b')}</span>
       </h1>
       <p className="mt-4 max-w-3xl text-slate-300">
-        Two ways to earn on AffiLayer: run direct CPA offers you choose, or send
-        traffic through one SmartLink and let deterministic routing match each
-        visitor to an eligible offer.
+        {t('aff.intro')}
       </p>
       <div className="mt-6 space-y-4">
-        {[
-          ['Browse offers', 'Filter offers by vertical, country, device and payout model. Apply to offers that require approval.'],
-          ['Generate tracking links', 'Build links in the format /c/{affiliate_code}/{offer_id} with up to five sub-parameters for your own reporting.'],
-          ['Or use one SmartLink', 'A single link routes each visitor to an eligible offer for their country and device. You see which offer each click landed on.'],
-          ['Follow your numbers', 'Reports break clicks and conversions down by date, offer, country, device and source.'],
-          ['Get paid from the ledger', 'Earnings are calculated from approved conversions in the commission ledger. Request a payout when your balance is payable. Payouts are manual and admin-approved, Net30 by default.'],
-        ].map(([t, d]) => (
-          <Reveal key={t}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div></Reveal>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Reveal key={n}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t(`aff.card.${n}.t` as `aff.card.${1 | 2 | 3 | 4 | 5}.t`)}</h2><p className="mt-1 text-sm text-slate-600">{t(`aff.card.${n}.d` as `aff.card.${1 | 2 | 3 | 4 | 5}.d`)}</p></div></Reveal>
         ))}
       </div>
       <FunnelSteps
-        heading="Your path to your first payout"
+        heading={t('aff.funnel.heading')}
         steps={[
-          { n: '1', t: 'Create account', d: 'Register as an affiliate and complete onboarding.', to: '/register', cta: 'Register', icon: 'user' },
-          { n: '2', t: 'Get approved', d: 'Our team reviews your application, typically within 2 business days.', to: '/onboarding', cta: 'Start onboarding', icon: 'shield' },
-          { n: '3', t: 'Pick an offer', d: 'Browse offers by vertical, country and payout model.', to: '/app/affiliate/offers', cta: 'Browse offers', icon: 'tag' },
-          { n: '4', t: 'Share your link', d: 'Generate a tracking link and send traffic to it.', to: '/app/affiliate/tracking-links', cta: 'Build a link', icon: 'link' },
-          { n: '5', t: 'Get paid', d: 'Approved conversions enter the ledger; request a payout when payable.', to: '/app/affiliate/earnings', cta: 'See earnings', icon: 'wallet' },
+          { n: '1', t: t('aff.funnel.1.t'), d: t('aff.funnel.1.d'), to: '/register', cta: t('aff.funnel.1.cta'), icon: 'user' },
+          { n: '2', t: t('aff.funnel.2.t'), d: t('aff.funnel.2.d'), to: '/onboarding', cta: t('aff.funnel.2.cta'), icon: 'shield' },
+          { n: '3', t: t('aff.funnel.3.t'), d: t('aff.funnel.3.d'), to: '/app/affiliate/offers', cta: t('aff.funnel.3.cta'), icon: 'tag' },
+          { n: '4', t: t('aff.funnel.4.t'), d: t('aff.funnel.4.d'), to: '/app/affiliate/tracking-links', cta: t('aff.funnel.4.cta'), icon: 'link' },
+          { n: '5', t: t('aff.funnel.5.t'), d: t('aff.funnel.5.d'), to: '/app/affiliate/earnings', cta: t('aff.funnel.5.cta'), icon: 'wallet' },
         ]}
       />
-      <Link to="/register" className="pill-btn mt-6">Register as an affiliate</Link>
+      <Link to="/register" className="pill-btn mt-6">{t('aff.register')}</Link>
     </PublicLayout>
   )
 }
 
 /** Numbered funnel path: each step links to the real next page in the app.
- *  Used on the /affiliates and /advertisers pages. */
-function FunnelSteps({ heading, steps }: {
+ *  Used on the /affiliates, /advertisers and /geo/:country pages. */
+export function FunnelSteps({ heading, steps }: {
   heading: string
   steps: { n: string; t: string; d: string; to: string; cta: string; icon: IconName }[]
 }) {
@@ -486,25 +471,18 @@ function FunnelSteps({ heading, steps }: {
 }
 
 export function HowItWorks() {
-  const steps = [
-    ['1. Create an account', 'Register as an advertiser or an affiliate and complete onboarding: profile, traffic source, vertical, GEO, volume and payment profile.'],
-    ['2. Get approved', 'Our team reviews every application, typically within 2 business days. You can check your status on the approval page.'],
-    ['3. Offers and links', 'Advertisers publish offers. Affiliates apply where required, then generate a tracking link — or use a SmartLink for mixed traffic.'],
-    ['4. Clicks are tracked', 'A visitor clicking a tracking link is redirected to the offer landing page. The click is recorded with a unique click ID.'],
-    ['5. Conversions are attributed', 'When a conversion happens, it is linked to the original click ID and recorded as pending.'],
-    ['6. Review and payout', 'Conversions are approved, rejected or reversed by review. Approved commissions enter the ledger and become payable; payouts are manual and admin-approved, Net30 by default.'],
-  ]
+  const t = useT()
   return (
     <PublicLayout>
       <h1 className="text-3xl font-bold text-white md:text-4xl">
-        How it <span className="grad-text">works</span>
+        {t('how.h1a')} <span className="grad-text">{t('how.h1b')}</span>
       </h1>
       <div className="mt-6 space-y-4">
-        {steps.map(([t, d]) => (
-          <Reveal key={t}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t}</h2><p className="mt-1 text-sm text-slate-600">{d}</p></div></Reveal>
+        {[1, 2, 3, 4, 5, 6].map((n) => (
+          <Reveal key={n}><div className="lift rounded-xl bg-white p-5 text-slate-900"><h2 className="font-semibold">{t(`how.step.${n}.t` as `how.step.${1 | 2 | 3 | 4 | 5 | 6}.t`)}</h2><p className="mt-1 text-sm text-slate-600">{t(`how.step.${n}.d` as `how.step.${1 | 2 | 3 | 4 | 5 | 6}.d`)}</p></div></Reveal>
         ))}
       </div>
-      <Link to="/register" className="pill-btn mt-6">Create an account</Link>
+      <Link to="/register" className="pill-btn mt-6">{t('how.register')}</Link>
     </PublicLayout>
   )
 }

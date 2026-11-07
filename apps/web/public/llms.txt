@@ -11,11 +11,15 @@
 > Operated by MarketSync Global LLC, New Mexico, USA. Contact:
 > support@affilayer.com. The network is new and the offer catalogue is small
 > while advertisers are onboarded offer by offer. The web app currently runs
-> in demo mode while the Supabase backend is being connected.
+> in demo mode while the Supabase backend is being connected. The site is
+> available in English, Spanish and Portuguese; dashboards are in English
+> for now. Country pages cover the United States, United Kingdom, Canada,
+> Australia, Germany, France, Brazil and India.
 
 ## Pages
 
 - [Home](https://affilayer.com/): what AffiLayer is, direct offers, SmartLink, benefits
+- [Countries](https://affilayer.com/geo): country pages for the US, UK, Canada, Australia, Germany, France, Brazil and India
 - [About](https://affilayer.com/about): the network, its operator, and its three principles
 - [Advantages](https://affilayer.com/advantages): what AffiLayer does differently
 - [For advertisers](https://affilayer.com/advertisers): publish offers, approve affiliates, control spend
@@ -34,5 +38,7 @@
 - Payout schedule: manual and admin-approved, Net30 by default
 - Tracking link format: /c/{affiliate_code}/{offer_id}, up to five sub-parameters
 - Applications reviewed by the team, typically within 2 business days
+- Languages: English, Spanish, Portuguese (public pages); dashboards English-only
+- Country pages: /geo/us, /geo/uk, /geo/ca, /geo/au, /geo/de, /geo/fr, /geo/br, /geo/in
 - No bonus or referral program at launch
 - Chat traffic and incentivised traffic are not accepted

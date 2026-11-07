@@ -44,6 +44,41 @@ ROUTES = {
     "/contact": ["support@affilayer.com"],
     "/terms": ["Terms of Service"],
     "/privacy": ["Privacy Policy"],
+    "/geo": ["CPA affiliate network, country by country", "United States", "Which countries can join AffiLayer?"],
+    "/geo/us": ["CPA affiliate network in United States", "Can I join AffiLayer from United States?"],
+    "/geo/uk": ["CPA affiliate network in United Kingdom", "Can I join AffiLayer from United Kingdom?"],
+    "/geo/ca": ["CPA affiliate network in Canada", "Can I join AffiLayer from Canada?"],
+    "/geo/au": ["CPA affiliate network in Australia", "Can I join AffiLayer from Australia?"],
+    "/geo/de": ["CPA affiliate network in Germany", "Can I join AffiLayer from Germany?"],
+    "/geo/fr": ["CPA affiliate network in France", "Can I join AffiLayer from France?"],
+    "/geo/br": ["CPA affiliate network in Brazil", "Can I join AffiLayer from Brazil?"],
+    "/geo/in": ["CPA affiliate network in India", "Can I join AffiLayer from India?"],
+    "/es/": ["Una nueva red CPA", "Convierte tráfico de", "Explorar por país"],
+    "/es/affiliates": ["Para afiliados", "Tu camino hacia tu primer pago"],
+    "/es/advertisers": ["Para anunciantes", "Tu camino hacia tu primer cliente"],
+    "/es/how-it-works": ["Cómo funciona", "Crear una cuenta"],
+    "/es/geo": ["Red de afiliados CPA, país por país", "Estados Unidos", "¿Qué países pueden unirse a AffiLayer?"],
+    "/es/geo/us": ["Red de afiliados CPA en Estados Unidos", "¿Puedo unirme a AffiLayer desde Estados Unidos?"],
+    "/es/geo/uk": ["Red de afiliados CPA en Reino Unido", "¿Puedo unirme a AffiLayer desde Reino Unido?"],
+    "/es/geo/ca": ["Red de afiliados CPA en Canadá", "¿Puedo unirme a AffiLayer desde Canadá?"],
+    "/es/geo/au": ["Red de afiliados CPA en Australia", "¿Puedo unirme a AffiLayer desde Australia?"],
+    "/es/geo/de": ["Red de afiliados CPA en Alemania", "¿Puedo unirme a AffiLayer desde Alemania?"],
+    "/es/geo/fr": ["Red de afiliados CPA en Francia", "¿Puedo unirme a AffiLayer desde Francia?"],
+    "/es/geo/br": ["Red de afiliados CPA en Brasil", "¿Puedo unirme a AffiLayer desde Brasil?"],
+    "/es/geo/in": ["Red de afiliados CPA en India", "¿Puedo unirme a AffiLayer desde India?"],
+    "/pt/": ["Uma nova rede CPA", "Transforme tráfego de", "Explorar por país"],
+    "/pt/affiliates": ["Para afiliados", "Seu caminho até o primeiro pagamento"],
+    "/pt/advertisers": ["Para anunciantes", "Seu caminho até o primeiro cliente"],
+    "/pt/how-it-works": ["Como funciona", "Criar uma conta"],
+    "/pt/geo": ["Rede de afiliados CPA, país por país", "Estados Unidos", "Quais países podem entrar na AffiLayer?"],
+    "/pt/geo/us": ["Rede de afiliados CPA em Estados Unidos", "Posso entrar na AffiLayer a partir de Estados Unidos?"],
+    "/pt/geo/uk": ["Rede de afiliados CPA em Reino Unido", "Posso entrar na AffiLayer a partir de Reino Unido?"],
+    "/pt/geo/ca": ["Rede de afiliados CPA em Canadá", "Posso entrar na AffiLayer a partir de Canadá?"],
+    "/pt/geo/au": ["Rede de afiliados CPA em Austrália", "Posso entrar na AffiLayer a partir de Austrália?"],
+    "/pt/geo/de": ["Rede de afiliados CPA em Alemanha", "Posso entrar na AffiLayer a partir de Alemanha?"],
+    "/pt/geo/fr": ["Rede de afiliados CPA em França", "Posso entrar na AffiLayer a partir de França?"],
+    "/pt/geo/br": ["Rede de afiliados CPA em Brasil", "Posso entrar na AffiLayer a partir de Brasil?"],
+    "/pt/geo/in": ["Rede de afiliados CPA em Índia", "Posso entrar na AffiLayer a partir de Índia?"],
 }
 
 PORT = 4173
@@ -103,7 +138,7 @@ def main() -> int:
             if missing:
                 failures.append(f"{route}: markers missing: {missing!r}")
                 continue
-            if 'id="affilayer-jsonld"' not in html and route in ("/", "/faq", "/blog/affilayer-is-live"):
+            if 'id="affilayer-jsonld"' not in html:
                 failures.append(f"{route}: JSON-LD script missing from prerendered HTML")
                 continue
             target = DIST / route.strip("/") / "index.html" if route != "/" else DIST / "index.html"
