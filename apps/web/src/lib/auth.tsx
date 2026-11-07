@@ -3,6 +3,7 @@
 // are stored in localStorage under affilayer-demo-session.
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import { checkDemoCredentials, isDemoUsername } from '@affilayer/shared'
 import { supabase, isSupabaseConfigured } from './supabase'
 import { demoProfiles } from './demo-data'
 import { logAudit, updateDemo } from './demo-store'
@@ -24,6 +25,9 @@ interface AuthCtx {
   signIn: (email: string, password: string) => Promise<{ error?: string }>
   signUp: (email: string, password: string, role: Role, meta?: Record<string, string>) => Promise<{ error?: string }>
   signInDemo: (profileId: string) => void
+  /** Public demo login (demo-publisher / demo-advertiser + 1234). Demo-mode
+   *  only: never calls Supabase auth, never creates a real account. */
+  signInDemoCredentials: (username: string, password: string) => { error?: string; role?: Role }
   signOut: () => Promise<void>
   setOnboarding: (p: Partial<Profile>) => void
 }
@@ -38,6 +42,17 @@ function demoToUser(p: Profile): AuthUser {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
+
+  /** Shared by the role-picker and the public demo login: store the demo
+   *  profile as the session (localStorage only, never a backend call). */
+  const doSignInDemo = (profileId: string): boolean => {
+    const p = demoProfiles.find((d) => d.id === profileId)
+    if (!p) return false
+    const u = demoToUser(p)
+    localStorage.setItem(DEMO_KEY, JSON.stringify(u))
+    setUser(u)
+    return true
+  }
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
@@ -91,11 +106,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return {}
       },
       signInDemo: (profileId) => {
-        const p = demoProfiles.find((d) => d.id === profileId)
-        if (!p) return
-        const u = demoToUser(p)
-        localStorage.setItem(DEMO_KEY, JSON.stringify(u))
-        setUser(u)
+        doSignInDemo(profileId)
+      },
+      signInDemoCredentials: (username, password) => {
+        // Guardrail: the public demo login exists only while the app runs
+        // in demo mode. Once Supabase is configured it is refused outright
+        // — demo usernames must never reach Supabase auth or create a user.
+        if (isSupabaseConfigured) return { error: 'Demo login is only available in demo mode.' }
+        if (!isDemoUsername(username)) return { error: 'Unknown demo username.' }
+        const r = checkDemoCredentials(username, password)
+        if ('error' in r) return { error: r.error }
+        if (!doSignInDemo(r.profileId)) return { error: 'Demo profile not found.' }
+        return { role: r.role }
       },
       signOut: async () => {
         if (supabase) await supabase.auth.signOut()

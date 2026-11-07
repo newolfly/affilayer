@@ -90,12 +90,23 @@ export function PageArt({
             ))}
           </g>
           <g fontFamily="inherit" fontSize="11.5" fontWeight="700" fill="#e2e8f0" textAnchor="middle">
-            {nodes.slice(0, 4).map((n, i) => (
-              <g key={n}>
-                <rect x={NODE_BOXES[i].x} y={NODE_BOXES[i].y} width="180" height="44" rx="12" fill="#0F1B2E" stroke="#1E2A3F" />
-                <text x={NODE_BOXES[i].x + 90} y={NODE_BOXES[i].y + 27} textLength="168" lengthAdjust="spacingAndGlyphs">{n}</text>
-              </g>
-            ))}
+            {nodes.slice(0, 4).map((n, i) => {
+              // Only stretch labels that are genuinely too wide for the box.
+              // A short label like "Ledger" with textLength="168" gets its
+              // glyphs flattened across the whole box; short labels render
+              // at natural width, centred, instead.
+              const wide = n.length * 7.2 > 160
+              return (
+                <g key={n}>
+                  <rect x={NODE_BOXES[i].x} y={NODE_BOXES[i].y} width="180" height="44" rx="12" fill="#0F1B2E" stroke="#1E2A3F" />
+                  <text
+                    x={NODE_BOXES[i].x + 90}
+                    y={NODE_BOXES[i].y + 27}
+                    {...(wide ? { textLength: 168, lengthAdjust: 'spacingAndGlyphs' as const } : {})}
+                  >{n}</text>
+                </g>
+              )
+            })}
           </g>
           <g className="art-float">
             <circle cx="320" cy="112" r="46" fill="#0F1B2E" stroke={`url(#${gid})`} strokeWidth="2.5" />

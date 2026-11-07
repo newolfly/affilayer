@@ -138,6 +138,10 @@ function Hero() {
           <Link to="/register" className="pill-btn">{t('home.ctaAffiliate')}</Link>
           <Link to="/register" className="pill-btn-outline">{t('home.ctaAdvertiser')}</Link>
         </div>
+        <p className="mt-4 text-sm">
+          <Link to="/login" className="font-semibold text-amber-400 hover:text-amber-300">{t('home.demoTry')} →</Link>
+          {' '}<span className="text-[#8A97A8]">{t('home.demoNote')}</span>
+        </p>
         <p className="mt-4 text-xs text-[#8A97A8]">
           {t('home.note')}
         </p>

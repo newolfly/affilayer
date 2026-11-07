@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { DEMO_CREDENTIALS, DEMO_PASSWORD, isDemoUsername } from '@affilayer/shared'
 import { PublicLayout } from '../components/layout'
 import { Icon } from '../components/icons'
-import { useAuth } from '../lib/auth'
+import { roleHome, useAuth } from '../lib/auth'
 import { isDemoMode } from '../lib/data'
 import { demoProfiles } from '../lib/demo-data'
 import type { Role } from '../lib/types'
@@ -13,16 +14,25 @@ const labelCls = 'mb-1 block text-sm font-medium text-slate-700'
 const btnCls = 'w-full rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2 text-sm font-semibold text-[#0B1220]'
 
 export function Login() {
-  const { signIn, signInDemo } = useAuth()
+  const { signIn, signInDemo, signInDemoCredentials } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [product, setProduct] = useState<'cpa' | 'smartlink'>('cpa')
   const [error, setError] = useState('')
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    const r = await signIn(email, password)
+    // Public demo login: demo-publisher / demo-advertiser + 1234 signs into
+    // the localStorage demo store only — never Supabase auth (the guardrail
+    // lives in signInDemoCredentials). Anything else is a normal sign-in.
+    if (isDemoUsername(identifier)) {
+      const r = signInDemoCredentials(identifier, password)
+      if (r.error) setError(r.error)
+      else navigate(roleHome(r.role ?? 'affiliate'))
+      return
+    }
+    const r = await signIn(identifier, password)
     if (r.error) setError(r.error)
     else navigate('/app')
   }
@@ -51,14 +61,29 @@ export function Login() {
         </p>
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         <form onSubmit={submit} className="mt-4 space-y-3">
-          <div><label className={labelCls}>Email</label><input className={inputCls} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-          <div><label className={labelCls}>Password</label><input className={inputCls} type="password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+          <div><label className={labelCls} htmlFor="login-identifier">Email or demo username</label><input id="login-identifier" className={inputCls} type="text" autoComplete="username" placeholder="you@example.com or demo-publisher" required value={identifier} onChange={(e) => setIdentifier(e.target.value)} /></div>
+          <div><label className={labelCls} htmlFor="login-password">Password</label><input id="login-password" className={inputCls} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
           <button className={btnCls}>Log in</button>
         </form>
         <p className="mt-3 text-sm text-slate-500">No account yet? <Link to="/register" className="text-amber-700 font-semibold">Register</Link></p>
         {isDemoMode && (
           <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4">
-            <p className="text-sm font-semibold text-amber-800">Demo mode — pick a role to sign in (no password, fake data)</p>
+            <p className="text-sm font-semibold text-amber-800">Demo mode — sample data, nothing is real</p>
+            <p className="mt-1 text-xs text-amber-700">
+              Open to everyone — no approval, no email. Log in with a public demo account:
+            </p>
+            <ul className="mt-2 space-y-1 text-sm text-slate-700">
+              {DEMO_CREDENTIALS.map((c) => (
+                <li key={c.username}>
+                  <code className="rounded bg-white px-1.5 py-0.5 font-mono text-[13px] font-semibold text-slate-900">{c.username}</code>
+                  {' / '}
+                  <code className="rounded bg-white px-1.5 py-0.5 font-mono text-[13px] font-semibold text-slate-900">{DEMO_PASSWORD}</code>
+                  {' — '}
+                  {c.role === 'affiliate' ? 'Affiliate dashboard' : 'Advertiser dashboard'}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs text-slate-500">Or pick a role below for one-click demo sign-in (no password).</p>
             <div className="mt-3 space-y-2">
               {demoProfiles.map((p) => (
                 <button
@@ -194,7 +219,7 @@ export function Register() {
             </div>
             <button className={btnCls}>Create account</button>
             {isDemoMode && (
-              <p className="text-xs text-slate-500">Demo mode: Supabase is not configured, so registration is simulated — use the demo role-picker on the <Link to="/login" className="text-amber-700">login page</Link> instead, or continue to onboarding after picking a demo role.</p>
+              <p className="text-xs text-slate-500">Demo mode: Supabase is not configured, so registration is simulated — try the public demo instead: log in with <span className="font-semibold text-slate-700">demo-publisher</span> or <span className="font-semibold text-slate-700">demo-advertiser</span>, password <span className="font-semibold text-slate-700">1234</span>, on the <Link to="/login" className="text-amber-700">login page</Link>. Sample data only, nothing is real.</p>
             )}
             <button type="button" onClick={() => { signInDemo('demo-aff-1'); navigate('/onboarding') }} className="w-full text-sm text-amber-700 underline">Demo: continue as Demo Affiliate</button>
           </form>

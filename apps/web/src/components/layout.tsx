@@ -361,6 +361,9 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
                 {initial}
               </span>
               <span className="text-slate-300">{user?.email}</span>
+              {isDemoMode && (
+                <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-[#0B1220]" title="Demo mode — sample data, nothing is real">Demo</span>
+              )}
               <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold capitalize text-amber-300">{user?.role.replace('_', ' ')}</span>
             </span>
             <button
