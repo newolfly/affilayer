@@ -199,6 +199,37 @@ export async function decideConversion(id: string, to: 'approved' | 'rejected', 
   return error ? { error: error.message } : {}
 }
 
+/** Admin: approve / reject / suspend / reinstate an affiliate account.
+ *  In Supabase mode this updates `profiles.status` directly. That is safe
+ *  because the table's UPDATE policy (`profiles_update_own_or_admin`)
+ *  admits admins, and the `profiles_enforce_role_status` trigger lets
+ *  admins set status while forcing any non-admin's row back to
+ *  affiliate / pending / not_started — so a non-admin calling this can
+ *  never escalate or change anyone's status. The decision is also
+ *  recorded in `audit_logs` via the `log_audit` RPC (admin JWT); a
+ *  logging failure never blocks the decision itself. Demo mode keeps the
+ *  old local behaviour — the callers branch. */
+export async function decideProfile(
+  id: string,
+  to: 'approved' | 'rejected' | 'suspended',
+  actorId: string,
+  detail: string,
+): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { error } = await supabase.from('profiles').update({ status: to }).eq('id', id)
+  if (error) return { error: error.message }
+  // Best-effort audit trail; the decision already landed.
+  const action = to === 'suspended' ? 'account.suspend' : to === 'approved' ? 'kyc.approved' : 'kyc.rejected'
+  await supabase.rpc('log_audit', {
+    p_actor_id: actorId,
+    p_action: action,
+    p_entity_type: 'profile',
+    p_entity_id: id,
+    p_details: { detail },
+  })
+  return {}
+}
+
 export async function decidePayout(
   id: string,
   to: 'approved' | 'rejected' | 'paid',

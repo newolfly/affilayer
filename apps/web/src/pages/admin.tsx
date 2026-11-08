@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Card, Empty, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { decideConversion, decidePayout, getClicks, getConversions, getNpPayouts, getPayouts, getStats, isDemoMode, releasePayoutReservation } from '../lib/data'
+import { decideConversion, decidePayout, decideProfile, getClicks, getConversions, getNpPayouts, getPayouts, getProfiles, getStats, isDemoMode, releasePayoutReservation } from '../lib/data'
 import { executePayout, getCustodyBalance, refreshPayoutStatus, verifyPayout } from '../lib/payments'
 import { demoDailySeries } from '../lib/demo-data'
 import { logAudit, newId, resetDemo, updateDemo, useDemoState } from '../lib/demo-store'
@@ -379,33 +379,59 @@ export function AdminPayouts() {
 
 export function AdminCompliance() {
   const { user } = useAuth()
-  const { profiles } = useDemoState()
+  const { profiles: demoProfiles } = useDemoState()
+  const [liveProfiles, setLiveProfiles] = useState<Profile[] | null>(null)
+  const [error, setError] = useState('')
   const actor = user?.email ?? 'admin'
   const [reasons, setReasons] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState('')
+  // Supabase mode reads live rows; demo mode reads the demo store.
+  useEffect(() => { if (!isDemoMode) getProfiles().then(setLiveProfiles) }, [])
+  const profiles = isDemoMode ? demoProfiles : (liveProfiles ?? [])
 
-  const decide = (p: Profile, to: 'approved' | 'rejected') => {
+  const decide = async (p: Profile, to: 'approved' | 'rejected') => {
     const reason = (reasons[p.id] ?? '').trim()
     if (to === 'rejected' && !reason) { setNotice(`A reason is required to reject ${p.email}.`); return }
-    updateDemo((s) => {
-      const t = s.profiles.find((x) => x.id === p.id)
-      if (t) { t.status = to; t.reviewNote = reason || undefined }
-    })
-    logAudit(actor, `kyc.${to}`, 'profile', p.id, `${p.email} (${p.role}) ${to}${reason ? ` — ${reason}` : ''}.`)
+    if (isDemoMode) {
+      updateDemo((s) => {
+        const t = s.profiles.find((x) => x.id === p.id)
+        if (t) { t.status = to; t.reviewNote = reason || undefined }
+      })
+      logAudit(actor, `kyc.${to}`, 'profile', p.id, `${p.email} (${p.role}) ${to}${reason ? ` — ${reason}` : ''}.`)
+      setNotice(`${p.email} ${to}.`)
+      setReasons((r) => { const n = { ...r }; delete n[p.id]; return n })
+      return
+    }
+    if (!user) return
+    const r = await decideProfile(p.id, to, user.id, `${p.email} (${p.role}) ${to}${reason ? ` — ${reason}` : ''}.`)
+    if (r.error) { setError(r.error); return }
+    setError('')
     setNotice(`${p.email} ${to}.`)
     setReasons((r) => { const n = { ...r }; delete n[p.id]; return n })
+    getProfiles().then(setLiveProfiles)
   }
 
-  const suspend = (p: Profile, to: 'suspended' | 'approved') => {
+  const suspend = async (p: Profile, to: 'suspended' | 'approved') => {
     const reason = (reasons[p.id] ?? '').trim()
     if (to === 'suspended' && !reason) { setNotice(`A reason is required to suspend ${p.email}.`); return }
-    updateDemo((s) => {
-      const t = s.profiles.find((x) => x.id === p.id)
-      if (t) { t.status = to; t.reviewNote = reason || undefined }
-    })
-    logAudit(actor, to === 'suspended' ? 'account.suspend' : 'account.unsuspend', 'profile', p.id, `${p.email} → ${to}${reason ? ` — ${reason}` : ''}.`)
+    if (isDemoMode) {
+      updateDemo((s) => {
+        const t = s.profiles.find((x) => x.id === p.id)
+        if (t) { t.status = to; t.reviewNote = reason || undefined }
+      })
+      logAudit(actor, to === 'suspended' ? 'account.suspend' : 'account.unsuspend', 'profile', p.id, `${p.email} → ${to}${reason ? ` — ${reason}` : ''}.`)
+      setNotice(`${p.email} ${to === 'suspended' ? 'suspended' : 'reinstated'}.`)
+      setReasons((r) => { const n = { ...r }; delete n[p.id]; return n })
+      return
+    }
+    if (!user) return
+    const detail = `${p.email} → ${to}${reason ? ` — ${reason}` : ''}.`
+    const r = await decideProfile(p.id, to === 'suspended' ? 'suspended' : 'approved', user.id, detail)
+    if (r.error) { setError(r.error); return }
+    setError('')
     setNotice(`${p.email} ${to === 'suspended' ? 'suspended' : 'reinstated'}.`)
     setReasons((r) => { const n = { ...r }; delete n[p.id]; return n })
+    getProfiles().then(setLiveProfiles)
   }
 
   const pending = profiles.filter((p) => p.status === 'pending')
@@ -416,6 +442,7 @@ export function AdminCompliance() {
   return (
     <div className="space-y-4">
       {notice && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
+      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <Card title="KYC review queue">
         <p className="mb-3 text-sm text-slate-500">Accounts pending review cannot run offers until approved. Rejection and suspension always need a written reason, and every decision is recorded in the audit log.</p>
         {pending.length === 0 ? <Empty text="No accounts waiting for review." /> : pending.map((p) => (
