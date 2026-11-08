@@ -24,6 +24,13 @@ interface AuthCtx {
   isDemo: boolean
   signIn: (email: string, password: string) => Promise<{ error?: string }>
   signUp: (email: string, password: string, role: Role, meta?: Record<string, string>) => Promise<{ error?: string }>
+  /** Sends a password-reset email. The link lands on /reset-password,
+   *  where the recovery session lets the user set a new password.
+   *  Supabase must allow https://affilayer.com/reset-password as a
+   *  redirect URL or the link will not land on the app. */
+  requestPasswordReset: (email: string) => Promise<{ error?: string }>
+  /** Sets a new password for the current (recovery) session. */
+  updatePassword: (password: string) => Promise<{ error?: string }>
   signInDemo: (profileId: string) => void
   /** Public demo login (demo-publisher / demo-advertiser + 1234). Demo-mode
    *  only: never calls Supabase auth, never creates a real account. */
@@ -102,6 +109,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp: async (email, password, role, meta) => {
         if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured — use the demo role-picker below.' }
         const { error } = await supabase.auth.signUp({ email, password, options: { data: { role, ...(meta ?? {}) } } })
+        if (error) return { error: error.message }
+        return {}
+      },
+      requestPasswordReset: async (email) => {
+        if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured — password reset is not available in demo mode.' }
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        })
+        if (error) return { error: error.message }
+        return {}
+      },
+      updatePassword: async (password) => {
+        if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured — password reset is not available in demo mode.' }
+        const { error } = await supabase.auth.updateUser({ password })
         if (error) return { error: error.message }
         return {}
       },

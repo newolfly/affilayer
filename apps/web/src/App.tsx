@@ -32,6 +32,8 @@ const Login = lazy(() => import('./pages/auth').then((m) => ({ default: m.Login 
 const Register = lazy(() => import('./pages/auth').then((m) => ({ default: m.Register })))
 const Onboarding = lazy(() => import('./pages/auth').then((m) => ({ default: m.Onboarding })))
 const Pending = lazy(() => import('./pages/auth').then((m) => ({ default: m.Pending })))
+const ForgotPassword = lazy(() => import('./pages/auth').then((m) => ({ default: m.ForgotPassword })))
+const ResetPassword = lazy(() => import('./pages/auth').then((m) => ({ default: m.ResetPassword })))
 const AffiliateDashboard = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliateDashboard })))
 const AffiliateOffers = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliateOffers })))
 const AffiliateOfferDetail = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliateOfferDetail })))
@@ -171,6 +173,8 @@ export default function App() {
           {/* Auth */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/pending" element={<Pending />} />
           {/* App entry */}

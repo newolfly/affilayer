@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { DEMO_CREDENTIALS, DEMO_PASSWORD, isDemoUsername } from '@affilayer/shared'
@@ -6,6 +6,7 @@ import { PublicLayout } from '../components/layout'
 import { Icon } from '../components/icons'
 import { roleHome, useAuth } from '../lib/auth'
 import { isDemoMode } from '../lib/data'
+import { supabase } from '../lib/supabase'
 import { demoProfiles } from '../lib/demo-data'
 import type { Role } from '../lib/types'
 
@@ -65,6 +66,9 @@ export function Login() {
           <div><label className={labelCls} htmlFor="login-password">Password</label><input id="login-password" className={inputCls} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
           <button className={btnCls}>Log in</button>
         </form>
+        {!isDemoMode && (
+          <p className="mt-3 text-sm text-slate-500"><Link to="/forgot-password" className="text-amber-700 font-semibold">Forgot password?</Link></p>
+        )}
         <p className="mt-3 text-sm text-slate-500">No account yet? <Link to="/register" className="text-amber-700 font-semibold">Register</Link></p>
         {isDemoMode && (
           <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4">
@@ -327,6 +331,138 @@ export function Pending() {
         )}
         {user?.status === 'rejected' && (
           <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">Your application was not approved. Contact support if you think this is a mistake.</p>
+        )}
+      </div>
+    </PublicLayout>
+  )
+}
+
+export function ForgotPassword() {
+  const { requestPasswordReset } = useAuth()
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+  const [sent, setSent] = useState(false)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    const r = await requestPasswordReset(email)
+    if (r.error) setError(r.error)
+    else setSent(true)
+  }
+
+  return (
+    <PublicLayout>
+      <div className="mx-auto max-w-md rounded-xl bg-white p-6 text-slate-900">
+        <h1 className="text-xl font-bold">Forgot password</h1>
+        {isDemoMode ? (
+          <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Password reset is not available in demo mode. Use the public demo login on the <Link to="/login" className="font-semibold underline">login page</Link>.
+          </p>
+        ) : sent ? (
+          <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">
+            If an account exists for that email, a reset link has been sent. Check your inbox (and spam folder) — the link expires after a short time.
+          </p>
+        ) : (
+          <>
+            <p className="mt-1 text-sm text-slate-500">Enter the email you registered with and we will send you a link to set a new password.</p>
+            {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+            <form onSubmit={submit} className="mt-4 space-y-3">
+              <div><label className={labelCls} htmlFor="forgot-email">Email</label><input id="forgot-email" className={inputCls} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+              <button className={btnCls}>Send reset link</button>
+            </form>
+          </>
+        )}
+        <p className="mt-3 text-sm text-slate-500">Remembered it? <Link to="/login" className="text-amber-700 font-semibold">Back to log in</Link></p>
+      </div>
+    </PublicLayout>
+  )
+}
+
+export function ResetPassword() {
+  const { updatePassword, signOut } = useAuth()
+  const navigate = useNavigate()
+  const [checking, setChecking] = useState(true)
+  const [hasSession, setHasSession] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
+
+  // The reset email links here with #access_token=…&type=recovery. The
+  // Supabase client parses that hash on load and establishes a recovery
+  // session (PASSWORD_RECOVERY). No session means the link is invalid or
+  // expired — never show the password form in that case.
+  useEffect(() => {
+    let alive = true
+    if (!supabase) {
+      setChecking(false)
+      return
+    }
+    supabase.auth.getSession().then(({ data }) => {
+      if (!alive) return
+      setHasSession(!!data.session)
+      setChecking(false)
+    })
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!alive) return
+      if (event === 'PASSWORD_RECOVERY' || session) {
+        setHasSession(true)
+        setChecking(false)
+      }
+    })
+    return () => {
+      alive = false
+      sub.subscription.unsubscribe()
+    }
+  }, [])
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+    const r = await updatePassword(password)
+    if (r.error) setError(r.error)
+    else setDone(true)
+  }
+
+  const backToLogin = async () => {
+    await signOut()
+    navigate('/login')
+  }
+
+  return (
+    <PublicLayout>
+      <div className="mx-auto max-w-md rounded-xl bg-white p-6 text-slate-900">
+        <h1 className="text-xl font-bold">Set a new password</h1>
+        {isDemoMode ? (
+          <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Password reset is not available in demo mode. Use the public demo login on the <Link to="/login" className="font-semibold underline">login page</Link>.
+          </p>
+        ) : checking ? (
+          <p className="mt-3 text-sm text-slate-500">Checking your reset link…</p>
+        ) : done ? (
+          <>
+            <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Your password has been updated.</p>
+            <button onClick={backToLogin} className={`${btnCls} mt-4`}>Log in with your new password</button>
+          </>
+        ) : !hasSession ? (
+          <>
+            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">This reset link is invalid or has expired.</p>
+            <p className="mt-3 text-sm text-slate-500">Request a new one from the <Link to="/forgot-password" className="text-amber-700 font-semibold">forgot password</Link> page.</p>
+          </>
+        ) : (
+          <form onSubmit={submit} className="mt-4 space-y-3">
+            {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+            <div><label className={labelCls} htmlFor="reset-password">New password</label><input id="reset-password" className={inputCls} type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+            <div><label className={labelCls} htmlFor="reset-confirm">Confirm new password</label><input id="reset-confirm" className={inputCls} type="password" autoComplete="new-password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} /></div>
+            <button className={btnCls}>Set new password</button>
+          </form>
         )}
       </div>
     </PublicLayout>

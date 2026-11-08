@@ -216,7 +216,7 @@ function metaFor(pathname: string): SeoMeta {
   if (
     path === '/app' ||
     path.startsWith('/app/') ||
-    ['/login', '/register', '/onboarding', '/pending'].includes(path)
+    ['/login', '/register', '/onboarding', '/pending', '/forgot-password', '/reset-password'].includes(path)
   ) {
     return {
       title: 'AffiLayer — Global CPA Affiliate Network',
