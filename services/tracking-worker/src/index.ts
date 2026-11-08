@@ -9,15 +9,22 @@
  *   GET  /api/stats                   -> operator-only aggregation (Bearer POSTBACK_SECRET)
  *   GET  /api/clicks/:clickId         -> operator-only click + its conversion
  *
- * Store: in-memory, per Worker isolate — ephemeral, NOT shared across
- * isolates. This matches the Fastify service's dev default (in-memory
- * when DATABASE_URL is unset). Do not treat Worker stats as financial
- * truth for production volume; use the Fastify service with Postgres
- * (services/tracking) for durable tracking.
+ * Store: hybrid (see supabase-store.ts). Demo offers (demo-offer-1/2/3)
+ * and their clicks/conversions live in per-isolate memory, as before.
+ * Real offers (UUIDs) resolve from Supabase and their clicks,
+ * conversions and ledger rows go to Postgres via SECURITY DEFINER RPCs
+ * (migration 007) — durable across isolates. The dashboard reads the
+ * same Postgres rows via RLS, so Worker stats and dashboard stats are
+ * the same data. Click recording is best-effort: if the durable write
+ * fails, the visitor still gets their 302 (a lost click record beats
+ * a lost visitor); conversions are strict and report failures.
  *
  * Env: POSTBACK_SECRET (wrangler secret) — HMAC key for POST /conversion,
  * and the operator token (Authorization: Bearer <secret>) for /api/stats
  * and /api/clicks, which expose revenue and raw click data.
+ * SUPABASE_URL + SUPABASE_ANON_KEY (wrangler [vars], both public values)
+ * enable the durable store; without them the Worker runs fully in-memory
+ * (demo mode).
  */
 import {
   computeCommission,
@@ -27,14 +34,29 @@ import {
   type Conversion,
 } from '@affilayer/shared';
 import { InMemoryStore } from './store.js';
+import { SupabaseStore } from './supabase-store.js';
+import type { Store } from './store.js';
 import { deliverPostbacks, verifySignature } from './postbacks.js';
 
 export interface Env {
   POSTBACK_SECRET?: string;
+  SUPABASE_URL?: string;
+  SUPABASE_ANON_KEY?: string;
 }
 
-// One store per isolate (see header note — ephemeral by design).
-const store = new InMemoryStore();
+// One store per isolate. Memoized: env does not change across requests
+// in a deployment. Supabase-backed when the vars are set, in-memory
+// (demo mode) otherwise.
+let cachedStore: Store | null = null;
+function getStore(env: Env): Store {
+  if (cachedStore) return cachedStore;
+  if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+    cachedStore = new SupabaseStore({ url: env.SUPABASE_URL, anonKey: env.SUPABASE_ANON_KEY });
+  } else {
+    cachedStore = new InMemoryStore();
+  }
+  return cachedStore;
+}
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -136,6 +158,7 @@ interface ConversionBody {
 }
 
 async function handleConversion(request: Request, env: Env): Promise<Response> {
+  const store = getStore(env);
   const postbackSecret = env.POSTBACK_SECRET ?? '';
   if (!postbackSecret) {
     return json({ error: 'POSTBACK_SECRET not configured' }, 500);
@@ -240,7 +263,8 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
   );
 }
 
-async function handleStats(url: URL): Promise<Response> {
+async function handleStats(url: URL, env: Env): Promise<Response> {
+  const store = getStore(env);
   const q = url.searchParams;
   const from = q.get('from') ? new Date(q.get('from') as string).getTime() : Number.NEGATIVE_INFINITY;
   const to = q.get('to') ? new Date(q.get('to') as string).getTime() : Number.POSITIVE_INFINITY;
@@ -311,10 +335,16 @@ export default {
     if (request.method === 'GET' && clickMatch) {
       if (clickRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
       const [, affiliateCode, offerId] = clickMatch;
+      const store = getStore(env);
       const offer = await store.getOffer(decodeURIComponent(offerId));
       if (!offer) return json({ error: 'offer not found' }, 404);
       const click = recordClickFields(request, url, decodeURIComponent(affiliateCode), decodeURIComponent(offerId));
-      await store.recordClick(click);
+      // Best-effort: a failed durable write must never break the redirect.
+      try {
+        await store.recordClick(click);
+      } catch (err) {
+        console.error('recordClick failed (redirecting anyway):', err);
+      }
       return new Response(null, {
         status: 302,
         headers: { Location: appendQuery(offer.landingUrl, 'click_id', click.clickId) },
@@ -326,6 +356,7 @@ export default {
     if (request.method === 'GET' && smartMatch) {
       if (clickRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
       const [, smartlinkCode] = smartMatch;
+      const store = getStore(env);
       const offers = await store.listOffers();
       // Enforce per-offer click caps at the edge: offers that hit their
       // `cap` are not eligible for a SmartLink pick. (capDaily / capTotal
@@ -344,7 +375,12 @@ export default {
         smartlink: true,
         smartlinkCode: decodeURIComponent(smartlinkCode),
       });
-      await store.recordClick(click);
+      // Best-effort: a failed durable write must never break the redirect.
+      try {
+        await store.recordClick(click);
+      } catch (err) {
+        console.error('recordClick failed (redirecting anyway):', err);
+      }
       return new Response(null, {
         status: 302,
         headers: { Location: appendQuery(picked.landingUrl, 'click_id', click.clickId) },
@@ -359,13 +395,14 @@ export default {
     // GET /api/stats — operator only
     if (request.method === 'GET' && path === '/api/stats') {
       if (!isOperator(request, env)) return json({ error: 'unauthorized' }, 401);
-      return handleStats(url);
+      return handleStats(url, env);
     }
 
     // GET /api/clicks/:clickId — operator only
     const lookupMatch = path.match(/^\/api\/clicks\/([^/]+)$/);
     if (request.method === 'GET' && lookupMatch) {
       if (!isOperator(request, env)) return json({ error: 'unauthorized' }, 401);
+      const store = getStore(env);
       const click = await store.getClick(decodeURIComponent(lookupMatch[1]));
       if (!click) return json({ error: 'click not found' }, 404);
       const conversions = await store.listConversions();

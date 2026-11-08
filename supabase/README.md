@@ -13,6 +13,7 @@ live project is created or touched by anything in this folder.
 | `migrations/004_seed.sql` | **Demo data only** — fake orgs, users, offers, clicks, conversions |
 | `migrations/005_fix_rls_escalation.sql` | **Audit fix (7 Nov 2026) — apply before any real signup.** Closes C-1 (profiles role/status escalation trigger + `handle_new_user` + tightened INSERT policy) and H-2 (`affiliate_balances` as `security_invoker`) |
 | `migrations/006_fix_sql_editor_bootstrap.sql` | **Fix for a 005 bug (8 Nov 2026) — apply before promoting the first super_admin.** 005's trigger bypass checked only `auth.role()`, which is NULL in the dashboard SQL editor, so the editor's UPDATEs were silently rewritten to the safe defaults. 006 also treats `current_user = 'postgres'` as privileged. |
+| `migrations/007_tracking_rpc.sql` | **H-4 durable Worker store (8 Nov 2026) — apply before any real traffic.** SECURITY DEFINER RPCs the tracking Worker calls with the anon key: `tracking_resolve_affiliate`, `tracking_get_offer`, `tracking_record_click`, `tracking_record_conversion`, `tracking_record_ledger_entry` (one entry per conversion, unique index on `commission_ledger.conversion_id`), plus read RPCs `tracking_get_click`, `tracking_list_clicks`, `tracking_list_conversions`, `tracking_list_offers`, `tracking_find_conversion` for the operator endpoints and the dedup pre-check. Also adds `offers.rate_bps` (CPS commission rate). Server-side validation (offer active, click exists + matches, 31-currency allowlist, payout/amount cap 10,000) and durable dedup (ON CONFLICT DO NOTHING). Demo offers stay in the Worker's memory by design. |
 | `tests/rls-checks.sql` | SELECT checks to run by hand after applying the migrations |
 
 ## Apply
@@ -26,19 +27,21 @@ supabase db push
 ```
 
 `supabase db push` applies `migrations/` in filename order
-(001 → 002 → 003 → 004 → 005 → 006). The seed file (004) is included so a fresh
+(001 → 002 → 003 → 004 → 005 → 006 → 007). The seed file (004) is included so a fresh
 project gets demo data; delete or skip it for a production project.
 **005 must run before any real user signs up** — it is the audit fix that
 stops privilege escalation; a project that takes signups on 001-004 alone
 is vulnerable (audit C-1). **006 must run before promoting the first
 super_admin** — without it, the SQL editor cannot change role/status.
+**007 must run before any real traffic** — without it, the tracking
+Worker has nowhere durable to write clicks/conversions.
 
 ### Option B — Dashboard SQL editor
 
 In the Supabase dashboard, open the SQL editor and run the files **in
 order**: `001_schema.sql`, then `002_rls.sql`, then `003_functions.sql`,
 then `005_fix_rls_escalation.sql`, then `006_fix_sql_editor_bootstrap.sql`,
-then (dev only) `004_seed.sql`.
+then `007_tracking_rpc.sql`, then (dev only) `004_seed.sql`.
 Do not run them out of order — 002
 references tables from 001, 003 references tables from 001, and 004
 references everything before it. **Run 005 before the seed and before

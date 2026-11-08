@@ -20,3 +20,11 @@ zone_id = "17c94ce53fca917182d3fd91512eb811"
 # HMAC key for POST /conversion. Never put a real value here.
 # [vars]
 # POSTBACK_SECRET = ""
+
+# Durable store (migration 007): the Worker calls Supabase RPCs with the
+# publishable anon key. Both values are public — the web bundle already
+# ships them — so they are vars, never secrets. Without them the Worker
+# runs fully in-memory (demo mode).
+[vars]
+SUPABASE_URL = "https://cpaxrqwqyjutrscqvqjp.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_KVkx2s_BCgyvIng7RarhSw_5Sxdc_6w"
