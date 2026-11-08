@@ -86,7 +86,7 @@ let cachedStore: Store | null = null;
 function getStore(env: Env): Store {
   if (cachedStore) return cachedStore;
   if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
-    cachedStore = new SupabaseStore({ url: env.SUPABASE_URL, anonKey: env.SUPABASE_ANON_KEY });
+    cachedStore = new SupabaseStore({ url: env.SUPABASE_URL, anonKey: env.SUPABASE_ANON_KEY, workerProofSecret: env.NP_WORKER_PROOF });
   } else {
     cachedStore = new InMemoryStore();
   }

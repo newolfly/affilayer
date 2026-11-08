@@ -28,10 +28,19 @@ import {
   type PostbackEvent,
   type Store,
 } from './store.js';
+import { workerProof } from './nowpayments.js';
 
 export interface SupabaseStoreOptions {
   url: string;
   anonKey: string;
+  /**
+   * NP_WORKER_PROOF (wrangler secret, shared with the DB
+   * worker_secrets.np_ipn_proof). The 012 list RPCs require it: with a
+   * valid proof the Worker reads all rows as before; without it the
+   * lists raise insufficient_privilege. Missing secret = loud failure
+   * (no silent partial stats) so a misconfigured deploy is visible.
+   */
+  workerProofSecret?: string;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -124,6 +133,21 @@ export class SupabaseStore implements Store {
 
   constructor(private opts: SupabaseStoreOptions) {}
 
+  /**
+   * Worker proof for the 012 list RPCs: hex(HMAC-SHA256(function name,
+   * NP_WORKER_PROOF)). The subject is the function name so a proof
+   * minted for one list cannot be replayed against the other (or
+   * against 010's deposit/batch subjects). Throws when the secret is
+   * not configured — the lists must fail loudly, never silently return
+   * partial (demo-only) stats.
+   */
+  private async listProof(fnName: 'tracking_list_clicks' | 'tracking_list_conversions'): Promise<string> {
+    if (!this.opts.workerProofSecret) {
+      throw new Error(`supabase list ${fnName}: NP_WORKER_PROOF is not configured`);
+    }
+    return workerProof(fnName, this.opts.workerProofSecret);
+  }
+
   private async rpc<T>(fn: string, params: Record<string, unknown>): Promise<T> {
     const res = await fetch(`${this.opts.url}/rest/v1/rpc/${fn}`, {
       method: 'POST',
@@ -197,6 +221,7 @@ export class SupabaseStore implements Store {
       p_offer_id: null,
       p_affiliate_code: null,
       p_limit: 1000,
+      p_proof: await this.listProof('tracking_list_clicks'),
     });
     return [...demo, ...rows.map(mapClick)];
   }
@@ -274,6 +299,7 @@ export class SupabaseStore implements Store {
       p_offer_id: null,
       p_affiliate_code: null,
       p_limit: 1000,
+      p_proof: await this.listProof('tracking_list_conversions'),
     });
     return [...demo, ...rows.map(mapConversion)];
   }
@@ -311,6 +337,7 @@ export class SupabaseStore implements Store {
       p_offer_id: null,
       p_affiliate_code: null,
       p_limit: 1000,
+      p_proof: await this.listProof('tracking_list_conversions'),
     });
     const real: CommissionLedgerEntry[] = [];
     for (const row of rows) {

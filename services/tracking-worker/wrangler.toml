@@ -29,8 +29,13 @@ zone_id = "17c94ce53fca917182d3fd91512eb811"
 #     Worker auto-verifies payouts. Without it, payouts wait for a manual
 #     verification (dashboard, or the admin UI code entry).
 #   NP_WORKER_PROOF — random secret shared with the DB
-#     (worker_secrets.np_ipn_proof, seeded by migration 010; read it once
-#     via SQL and set it here). Authenticates the no-JWT IPN paths.
+#     (worker_secrets.np_ipn_proof, seeded by migration 010 — or by 012,
+#     which creates the table first; read it once via SQL and set it
+#     here). Authenticates the no-JWT IPN paths AND the 012 list RPCs
+#     (tracking_list_clicks / tracking_list_conversions): without this
+#     secret the Worker's SmartLink caps and /api/stats fail loudly
+#     (the lists raise insufficient_privilege), so the Worker MUST be
+#     deployed with NP_WORKER_PROOF set after 012 is applied live.
 #   NOWPAYMENTS_ENV — 'production' | 'sandbox'. UNSET = payments module
 #     disabled (all payment endpoints 503). Sandbox base is
 #     https://api-sandbox.nowpayments.io/v1 (separate sandbox account/key).

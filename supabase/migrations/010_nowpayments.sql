@@ -40,8 +40,10 @@
 -- browser role can read them; only SECURITY DEFINER functions can.
 -- Seeded with a random UUID; the operator reads it once (SQL editor) and
 -- sets it as the NP_WORKER_PROOF wrangler secret on affilayer-tracking.
+-- IF NOT EXISTS: 012 creates this table first (the list-RPC fix needs
+-- the same proof), so a later 010 apply must not clash.
 -- ---------------------------------------------------------------------------
-CREATE TABLE public.worker_secrets (
+CREATE TABLE IF NOT EXISTS public.worker_secrets (
   key         text PRIMARY KEY,
   value       text NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now()
@@ -167,7 +169,10 @@ BEGIN
   IF v_secret IS NULL THEN
     RETURN false;
   END IF;
-  v_expected := encode(hmac(p_subject, v_secret, 'sha256'), 'hex');
+  -- Schema-qualified: pgcrypto lives in the `extensions` schema, which
+  -- is NOT on this function's pinned search_path (public, pg_temp) —
+  -- a bare hmac() call raises 42883 at runtime.
+  v_expected := encode(extensions.hmac(p_subject, v_secret, 'sha256'), 'hex');
   RETURN v_expected = lower(COALESCE(p_proof, ''));
 END;
 $$;
@@ -366,7 +371,9 @@ AS $$
 DECLARE
   v_row public.advertiser_deposits%ROWTYPE;
 BEGIN
-  IF auth.uid() IS NOT NULL AND NOT public.is_admin() THEN
+  -- 011 fixed the admin-gate hole (no-JWT callers passed the old gate);
+  -- this RPC requires a real admin JWT. Do not revert to the old form.
+  IF auth.uid() IS NULL OR NOT public.is_admin() THEN
     RAISE EXCEPTION 'np_admin_credit_deposit: only admins may credit deposits'
       USING ERRCODE = 'insufficient_privilege';
   END IF;
@@ -436,7 +443,8 @@ DECLARE
   v_affiliate_id uuid;
   v_id uuid;
 BEGIN
-  IF auth.uid() IS NOT NULL AND NOT public.is_admin() THEN
+  -- 011 fixed the admin-gate hole (no-JWT callers passed the old gate).
+  IF auth.uid() IS NULL OR NOT public.is_admin() THEN
     RAISE EXCEPTION 'np_record_payout: only admins may record payouts'
       USING ERRCODE = 'insufficient_privilege';
   END IF;
@@ -495,7 +503,8 @@ AS $$
 DECLARE
   v_row public.np_payouts%ROWTYPE;
 BEGIN
-  IF auth.uid() IS NOT NULL AND NOT public.is_admin() THEN
+  -- 011 fixed the admin-gate hole (no-JWT callers passed the old gate).
+  IF auth.uid() IS NULL OR NOT public.is_admin() THEN
     RAISE EXCEPTION 'np_verify_payout: only admins may verify payouts'
       USING ERRCODE = 'insufficient_privilege';
   END IF;
@@ -545,6 +554,14 @@ AS $$
 DECLARE
   v_row public.np_payouts%ROWTYPE;
   v_mapped text;
+  -- Inline settlement (FINISHED path) mirrors 008's
+  -- complete_payout_request step for step.
+  v_req_status text;
+  v_req_affiliate_id uuid;
+  v_req_amount numeric(12, 2);
+  v_req_currency char(3);
+  v_payable numeric(12, 2);
+  v_transaction_id uuid;
 BEGIN
   SELECT * INTO v_row FROM public.np_payouts WHERE batch_id = p_batch_id FOR UPDATE;
   IF NOT FOUND THEN
@@ -582,13 +599,64 @@ BEGIN
   UPDATE public.np_payouts SET status = v_mapped WHERE batch_id = p_batch_id;
 
   IF v_mapped = 'finished' THEN
-    -- Settle: complete_payout_request inserts the payout_transactions row
-    -- (provider NOWPayments, ref = batch id), flips ledger payable ->
-    -- paid and the request -> paid. Called with no JWT, the 008 admin
-    -- gate passes for backend callers; the proof check above is the
-    -- authorization for this path.
-    PERFORM public.complete_payout_request(
-      v_row.payout_request_id, NULL, 'NOWPayments', p_batch_id
+    -- Settle inline: the settlement steps mirror 008's
+    -- complete_payout_request exactly (payable-sum check, insert the
+    -- payout_transactions row, flip ledger payable -> paid, request ->
+    -- paid, audit). It is inlined rather than called because 011 fixed
+    -- the 008 admin gate to reject no-JWT callers — and this
+    -- proof-gated path has no JWT. The proof check above IS the
+    -- authorization for this path. reviewed_by is left as the admin who
+    -- approved (complete_payout_request would overwrite it with NULL).
+    SELECT status, affiliate_id, amount, currency
+      INTO v_req_status, v_req_affiliate_id, v_req_amount, v_req_currency
+      FROM public.payout_requests
+      WHERE id = v_row.payout_request_id
+      FOR UPDATE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'payout request not found: %', v_row.payout_request_id
+        USING ERRCODE = 'no_data_found';
+    END IF;
+    IF v_req_status <> 'approved' THEN
+      RAISE EXCEPTION 'payout request % cannot be completed from status % (only approved can be completed)', v_row.payout_request_id, v_req_status
+        USING ERRCODE = 'check_violation';
+    END IF;
+    SELECT COALESCE(SUM(amount), 0)
+      INTO v_payable
+      FROM public.commission_ledger
+      WHERE affiliate_id = v_req_affiliate_id
+        AND currency = v_req_currency
+        AND status = 'payable';
+    IF v_payable <> v_req_amount THEN
+      RAISE EXCEPTION 'payout request % ($% %) no longer matches the reserved payable balance ($% %) — reject and re-approve it', v_row.payout_request_id, v_req_amount, v_req_currency, v_payable, v_req_currency
+        USING ERRCODE = 'check_violation';
+    END IF;
+    INSERT INTO public.payout_transactions
+      (payout_request_id, affiliate_id, amount, currency, status, provider, transaction_ref, paid_at)
+      VALUES (v_row.payout_request_id, v_req_affiliate_id, v_req_amount, v_req_currency, 'completed', 'NOWPayments', p_batch_id, now())
+      RETURNING id INTO v_transaction_id;
+    UPDATE public.commission_ledger
+      SET status = 'paid'
+      WHERE affiliate_id = v_req_affiliate_id
+        AND currency = v_req_currency
+        AND status = 'payable';
+    UPDATE public.payout_requests
+      SET status = 'paid', reviewed_at = now()
+      WHERE id = v_row.payout_request_id;
+    PERFORM public.log_audit(
+      NULL,
+      'payout.completed',
+      'payout',
+      v_row.payout_request_id,
+      jsonb_build_object(
+        'affiliate_id', v_req_affiliate_id,
+        'amount', v_req_amount,
+        'currency', v_req_currency,
+        'transaction_id', v_transaction_id,
+        'provider', 'NOWPayments',
+        'transaction_ref', p_batch_id,
+        'from_status', 'approved',
+        'to_status', 'paid'
+      )
     );
     PERFORM public.log_audit(
       NULL,
@@ -628,7 +696,8 @@ AS $$
 DECLARE
   v_status text;
 BEGIN
-  IF auth.uid() IS NOT NULL AND NOT public.is_admin() THEN
+  -- 011 fixed the admin-gate hole (no-JWT callers passed the old gate).
+  IF auth.uid() IS NULL OR NOT public.is_admin() THEN
     RAISE EXCEPTION 'np_release_payout_reservation: only admins may release payouts'
       USING ERRCODE = 'insufficient_privilege';
   END IF;
