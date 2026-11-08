@@ -4,12 +4,13 @@ import { Link, useParams } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
-import { getClicks, getConversions, getMyAffiliateProfile, getOffers, getPayouts, getStats, isDemoMode, requestPayout } from '../lib/data'
+import { getClicks, getConversions, getMyAffiliateProfile, getNpPayouts, getOffers, getPayouts, getStats, isDemoMode, requestPayout, savePayoutWallet } from '../lib/data'
+import { looksLikeTrc20, validatePayoutAddress } from '../lib/payments'
 import type { ReportFilters } from '../lib/data'
 import { demoDailySeries } from '../lib/demo-data'
 import { DEFAULT_SETTINGS, logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
 import { trackingLink } from '../lib/tracking'
-import type { Click, Conversion, Offer, PayoutRequest } from '../lib/types'
+import type { Click, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
 const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2 text-sm font-semibold text-[#0B1220]'
@@ -303,19 +304,24 @@ export function AffiliateEarnings() {
 export function AffiliatePayouts() {
   const { user } = useAuth()
   const demo = useDemoState()
-  const [live, setLive] = useState<{ payouts: PayoutRequest[]; conversions: Conversion[]; method: string } | null>(null)
+  const [live, setLive] = useState<{ payouts: PayoutRequest[]; conversions: Conversion[]; method: string; wallet?: PayoutWallet; npPayouts: NpPayout[] } | null>(null)
   const [amount, setAmount] = useState('')
   const [requested, setRequested] = useState(false)
   const [error, setError] = useState('')
+  const [walletAddress, setWalletAddress] = useState('')
+  const [walletSaved, setWalletSaved] = useState(false)
+  const [walletError, setWalletError] = useState('')
+  const [walletBusy, setWalletBusy] = useState(false)
   const code = user?.affiliateCode ?? 'AFF-DEMO-001'
   // Supabase mode reads live rows; demo mode reads the demo store. There
   // is no network-settings table yet, so Supabase mode uses the defaults.
   const settings = isDemoMode ? demo.settings : DEFAULT_SETTINGS
   useEffect(() => {
     if (isDemoMode) return
-    Promise.all([getPayouts(), getConversions(), getMyAffiliateProfile()]).then(([payouts, conversions, ap]) =>
-      setLive({ payouts, conversions, method: ap.paymentMethod ?? 'Bank transfer' }),
-    )
+    Promise.all([getPayouts(), getConversions(), getMyAffiliateProfile(), getNpPayouts()]).then(([payouts, conversions, ap, npPayouts]) => {
+      setLive({ payouts, conversions, method: ap.paymentMethod ?? 'Bank transfer', wallet: ap.payoutWallet, npPayouts })
+      if (ap.payoutWallet?.address) setWalletAddress(ap.payoutWallet.address)
+    })
   }, [])
   const payouts = isDemoMode ? demo.payouts : (live?.payouts ?? [])
   const conversions = isDemoMode ? demo.conversions : (live?.conversions ?? [])
@@ -354,12 +360,38 @@ export function AffiliatePayouts() {
     setError('')
     setRequested(true)
   }
+  const saveWallet = async (e: FormEvent) => {
+    e.preventDefault()
+    const address = walletAddress.trim()
+    if (!looksLikeTrc20(address)) { setWalletError('Enter a valid USDT TRC20 address (starts with T, 34 characters).'); return }
+    setWalletBusy(true)
+    setWalletError('')
+    const v = await validatePayoutAddress(address, 'usdttrc20')
+    if (v.error || v.valid === false) { setWalletBusy(false); setWalletError(v.error ?? 'NOWPayments rejected this address.'); return }
+    const r = await savePayoutWallet({ currency: 'usdttrc20', address })
+    setWalletBusy(false)
+    if (r.error) { setWalletError(r.error); return }
+    setLive((prev) => (prev ? { ...prev, wallet: { currency: 'usdttrc20', address } } : prev))
+    setWalletSaved(true)
+  }
+  const npByRequest = new Map((live?.npPayouts ?? []).map((n) => [n.payoutRequestId, n]))
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <Stat label="Approved balance" icon="banknote" value={`$${approvedBalance.toFixed(2)}`} />
         <Stat label="Minimum payout" icon="banknote" value={`$${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}`} />
       </div>
+      {!isDemoMode && (
+        <Card title="Payout wallet (crypto)">
+          <form onSubmit={saveWallet} className="flex gap-2">
+            <input className={inputCls} type="text" placeholder="USDT TRC20 address (starts with T)" aria-label="USDT TRC20 address" value={walletAddress} onChange={(e) => setWalletAddress(e.target.value)} />
+            <button className={btnCls} disabled={walletBusy}>{walletBusy ? 'Checking…' : 'Save wallet'}</button>
+          </form>
+          {walletError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{walletError}</p>}
+          {walletSaved && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Wallet saved and verified with NOWPayments.</p>}
+          <p className="mt-3 text-xs text-slate-400">Payouts are sent in USDT on TRON (TRC20) to this address. The address is checked with NOWPayments before it is saved — a wrong address means the payout cannot be sent. {live?.wallet?.address ? `Saved: ${live.wallet.address}` : 'No wallet saved yet — add one before requesting a payout.'}</p>
+        </Card>
+      )}
       <Card title="Request a payout">
         <form onSubmit={request} className="flex gap-2">
           <input className={inputCls} type="number" min="0" step="0.01" placeholder={`Amount (${settings.defaultCurrency})`} aria-label={`Amount (${settings.defaultCurrency})`} value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -372,8 +404,10 @@ export function AffiliatePayouts() {
       <Card title="Payout history">
         {mine.length === 0 ? <Empty text="No payouts yet." /> : (
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
-            <tbody>{mine.map((p) => <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.createdAt.slice(0, 10)}</td><td>${p.amount.toFixed(2)} {p.currency}</td><td>{p.method ?? '—'}</td><td>{p.status}</td></tr>)}</tbody>
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Amount</th><th>Method</th><th>Status</th><th>NOWPayments</th></tr></thead>
+            <tbody>{mine.map((p) => { const np = npByRequest.get(p.id); return (
+              <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.createdAt.slice(0, 10)}</td><td>${p.amount.toFixed(2)} {p.currency}</td><td>{p.method ?? '—'}</td><td>{p.status}</td><td>{np ? `${np.currency} · ${np.status}` : '—'}</td></tr>
+            ) })}</tbody>
           </table>
         )}
       </Card>

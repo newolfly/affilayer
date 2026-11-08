@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Card, Empty, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { decideConversion, decidePayout, getClicks, getConversions, getPayouts, getStats, isDemoMode } from '../lib/data'
+import { decideConversion, decidePayout, getClicks, getConversions, getNpPayouts, getPayouts, getStats, isDemoMode, releasePayoutReservation } from '../lib/data'
+import { executePayout, getCustodyBalance, refreshPayoutStatus, verifyPayout } from '../lib/payments'
 import { demoDailySeries } from '../lib/demo-data'
 import { logAudit, newId, resetDemo, updateDemo, useDemoState } from '../lib/demo-store'
 import type { NetworkSettings } from '../lib/demo-store'
 import { detectFraudSignals, ledgerTransition } from '@affilayer/shared'
 import { useAuth } from '../lib/auth'
-import type { Campaign, Conversion, Offer, PayoutRequest, Profile } from '../lib/types'
+import type { Campaign, Conversion, NpPayout, Offer, PayoutRequest, Profile } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
 const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-3 py-1.5 text-sm font-semibold text-[#0B1220] disabled:opacity-50'
@@ -255,12 +256,59 @@ export function AdminPayouts() {
   const { user } = useAuth()
   const { payouts: demoPayouts } = useDemoState()
   const [livePayouts, setLivePayouts] = useState<PayoutRequest[] | null>(null)
+  const [npPayouts, setNpPayouts] = useState<NpPayout[]>([])
+  const [custody, setCustody] = useState<Record<string, { amount: number }> | null>(null)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [payBusy, setPayBusy] = useState('')
+  const [verifyCodes, setVerifyCodes] = useState<Record<string, string>>({})
   const actor = user?.email ?? 'admin'
   // Supabase mode reads live rows; demo mode reads the demo store.
-  useEffect(() => { if (!isDemoMode) getPayouts().then(setLivePayouts) }, [])
+  useEffect(() => {
+    if (isDemoMode) return
+    getPayouts().then(setLivePayouts)
+    getNpPayouts().then(setNpPayouts)
+    getCustodyBalance().then((r) => {
+      if (r.balances && typeof r.balances === 'object') setCustody(r.balances as Record<string, { amount: number }>)
+    })
+  }, [])
   const payouts = isDemoMode ? demoPayouts : (livePayouts ?? [])
   const payable = payouts.filter((p) => p.status === 'approved').reduce((s, p) => s + p.amount, 0)
+  const npByRequest = new Map(npPayouts.map((n) => [n.payoutRequestId, n]))
+  const refreshNp = () => { getNpPayouts().then(setNpPayouts); getPayouts().then(setLivePayouts) }
+  const payViaNowPayments = async (p: PayoutRequest) => {
+    if (!user) return
+    setPayBusy(p.id)
+    setError('')
+    setNotice('')
+    const r = await executePayout(p.id)
+    setPayBusy('')
+    if (r.error) { setError(r.error); return }
+    setNotice(`NOWPayments payout ${String(r.batch_id ?? '')} created (${String(r.status ?? '')}).${r.auto_verified ? ' Verified automatically.' : ' Awaiting 2FA verification.'}`)
+    refreshNp()
+  }
+  const verifyBatch = async (batchId: string) => {
+    const code = (verifyCodes[batchId] ?? '').trim()
+    if (!/^\d{6}$/.test(code)) { setError('Enter the 6-digit 2FA code.'); return }
+    setError('')
+    const r = await verifyPayout(batchId, code)
+    if (r.error) { setError(r.error); return }
+    setNotice(`Payout ${batchId} verified.`)
+    refreshNp()
+  }
+  const refreshBatch = async (batchId: string) => {
+    const r = await refreshPayoutStatus(batchId)
+    if (r.error) { setError(r.error); return }
+    setNotice(`Payout ${batchId} is ${String(r.status ?? '')}.`)
+    refreshNp()
+  }
+  const release = async (p: PayoutRequest) => {
+    if (!user) return
+    const r = await releasePayoutReservation(p.id, user.id)
+    if (r.error) { setError(r.error); return }
+    setNotice(`Reservation for $${p.amount.toFixed(2)} released — the request is pending again.`)
+    refreshNp()
+  }
   const setStatus = async (p: PayoutRequest, status: PayoutRequest['status']) => {
     if (isDemoMode) {
       updateDemo((s) => { const t = s.payouts.find((x) => x.id === p.id); if (t) t.status = status })
@@ -278,31 +326,50 @@ export function AdminPayouts() {
   }
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Stat label="Approved, awaiting payment" icon="banknote" value={`$${payable.toFixed(2)}`} />
         <Stat label="Payout requests" icon="ticket" value={String(payouts.length)} />
+        <Stat label="NOWPayments custody (USDT)" icon="wallet" value={custody ? `${(custody.usdttrc20?.amount ?? 0).toFixed(2)} USDT` : '—'} sub="Balance available for affiliate payouts" />
       </div>
       <Card title="Payouts">
-        <p className="mb-3 text-sm text-slate-500">Payout execution is manual and admin-approved in this MVP. Approving a request does not move money — payment happens outside the app and is reconciled here.</p>
+        <p className="mb-3 text-sm text-slate-500">Approving a request reserves the ledger balance but does not move money. Pay via NOWPayments sends USDT (TRC20) to the affiliate's saved wallet — the ledger settles to paid only when NOWPayments reports the payout finished. "Mark paid" is for payouts made outside NOWPayments.</p>
         {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {notice && <p className="mb-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
         {payouts.length === 0 ? <Empty text="No payout requests yet." /> : (
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Affiliate</th><th>Amount</th><th>Method</th><th>Status</th><th /></tr></thead>
-            <tbody>{payouts.map((p) => (
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Affiliate</th><th>Amount</th><th>Method</th><th>Status</th><th>NOWPayments</th><th /></tr></thead>
+            <tbody>{payouts.map((p) => {
+              const np = npByRequest.get(p.id)
+              return (
               <tr key={p.id} className="border-t border-slate-100">
                 <td className="py-2">{p.createdAt.slice(0, 10)}</td><td>{p.affiliateCode}</td>
                 <td>${p.amount.toFixed(2)} {p.currency}</td><td>{p.method ?? '—'}</td><td>{p.status}</td>
+                <td>{np ? (<>
+                  <span className="font-mono text-xs">{np.batchId}</span> · {np.status}
+                  <span className="mt-1 flex gap-2">
+                    <button className={ghostCls} onClick={() => refreshBatch(np.batchId)}>Refresh</button>
+                    {np.status === 'awaiting_2fa' && (<>
+                      <input className={`${inputCls} w-24`} type="text" inputMode="numeric" maxLength={6} placeholder="2FA code" aria-label="2FA code" value={verifyCodes[np.batchId] ?? ''} onChange={(e) => setVerifyCodes((v) => ({ ...v, [np.batchId]: e.target.value }))} />
+                      <button className={btnCls} onClick={() => verifyBatch(np.batchId)}>Verify</button>
+                    </>)}
+                  </span>
+                </>) : '—'}</td>
                 <td className="text-right">
                   <span className="flex justify-end gap-2">
                     {p.status === 'requested' && (<>
                       <button className={btnCls} onClick={() => setStatus(p, 'approved')}>Approve</button>
                       <button className={dangerCls} onClick={() => setStatus(p, 'rejected')}>Reject</button>
                     </>)}
-                    {p.status === 'approved' && <button className={btnCls} onClick={() => setStatus(p, 'paid')}>Mark paid</button>}
+                    {p.status === 'approved' && !isDemoMode && (<>
+                      <button className={btnCls} disabled={payBusy === p.id} onClick={() => payViaNowPayments(p)}>{payBusy === p.id ? 'Paying…' : 'Pay via NOWPayments'}</button>
+                      <button className={btnCls} onClick={() => setStatus(p, 'paid')}>Mark paid</button>
+                      {np && (np.status === 'rejected' || np.status === 'failed') && <button className={ghostCls} onClick={() => release(p)}>Release</button>}
+                    </>)}
+                    {p.status === 'approved' && isDemoMode && <button className={btnCls} onClick={() => setStatus(p, 'paid')}>Mark paid</button>}
                   </span>
                 </td>
               </tr>
-            ))}</tbody>
+            )})}</tbody>
           </table>
         )}
       </Card>

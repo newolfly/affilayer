@@ -8,7 +8,7 @@
 // convert them to the shared camelCase domain types.
 import { supabase, isSupabaseConfigured } from './supabase'
 import { getDemoState } from './demo-store'
-import type { Campaign, Click, Conversion, Offer, PayoutRequest, Profile, Stats, SupportTicket } from './types'
+import type { AdvertiserBalance, AdvertiserDeposit, Campaign, Click, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, Profile, Stats, SupportTicket } from './types'
 
 export { isSupabaseConfigured }
 export const isDemoMode = !isSupabaseConfigured
@@ -217,9 +217,26 @@ export async function decidePayout(
   return error ? { error: error.message } : {}
 }
 
-/** Affiliate payout request. RLS allows an affiliate to INSERT their own
- *  row (affiliate_id = auth.uid()); the amount/status review is the
- *  admin's job via decidePayout. */
+/** Admin: release an approved payout's reservation (ledger payable ->
+ *  approved, request back to pending) — e.g. after a failed crypto
+ *  payout, so it can be retried or rejected. */
+export async function releasePayoutReservation(id: string, actorId: string): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { error } = await supabase.rpc('np_release_payout_reservation', {
+    p_request_id: id, p_actor: actorId,
+  })
+  return error ? { error: error.message } : {}
+}
+
+/** Admin: credit a partially-paid deposit by a USD amount read off the
+ *  NOWPayments dashboard (no invented rate). */
+export async function creditDepositManually(id: string, amountUsd: number, actorId: string): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { error } = await supabase.rpc('np_admin_credit_deposit', {
+    p_deposit_id: id, p_amount_usd: amountUsd, p_actor: actorId,
+  })
+  return error ? { error: error.message } : {}
+}
 export async function requestPayout(amount: number, currency: string, method: string): Promise<{ error?: string }> {
   if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
   const { data: { user } } = await supabase.auth.getUser()
@@ -231,12 +248,86 @@ export async function requestPayout(amount: number, currency: string, method: st
 }
 
 /** The affiliate's saved payment method (affiliate_profiles), if any. */
-export async function getMyAffiliateProfile(): Promise<{ paymentMethod?: string }> {
+export async function getMyAffiliateProfile(): Promise<{ paymentMethod?: string; payoutWallet?: PayoutWallet }> {
   if (!isSupabaseConfigured || !supabase) return {}
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return {}
-  const { data } = await supabase.from('affiliate_profiles').select('payment_method').eq('profile_id', user.id).maybeSingle()
-  return { paymentMethod: (data as Row | null)?.payment_method as string | undefined }
+  const { data } = await supabase.from('affiliate_profiles').select('payment_method, payout_currency, payout_address').eq('profile_id', user.id).maybeSingle()
+  const row = data as Row | null
+  return {
+    paymentMethod: row?.payment_method as string | undefined,
+    payoutWallet: row ? {
+      currency: String(row.payout_currency ?? 'usdttrc20'),
+      address: row.payout_address as string | undefined,
+    } : undefined,
+  }
+}
+
+/** Save the affiliate's payout wallet (USDT TRC20 address). The caller
+ *  validates the address with NOWPayments first (lib/payments); this only
+ *  writes the row the affiliate owns (RLS: update own). */
+export async function savePayoutWallet(wallet: PayoutWallet): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You are not signed in.' }
+  const { error } = await supabase.from('affiliate_profiles').update({
+    payout_currency: wallet.currency,
+    payout_address: wallet.address ?? null,
+  }).eq('profile_id', user.id)
+  return error ? { error: error.message } : {}
+}
+
+export function mapDeposit(r: Row): AdvertiserDeposit {
+  return {
+    id: String(r.id), advertiserId: String(r.advertiser_id ?? ''), amountUsd: num(r, 'amount_usd') ?? 0,
+    currency: String(r.currency ?? 'USD'), npPaymentId: str(r, 'np_payment_id'), npInvoiceId: str(r, 'np_invoice_id'),
+    npPayAddress: str(r, 'np_pay_address'), npPayAmount: num(r, 'np_pay_amount'), npPayCurrency: str(r, 'np_pay_currency'),
+    orderId: String(r.order_id ?? ''), status: (r.status as AdvertiserDeposit['status']) ?? 'waiting',
+    actuallyPaid: num(r, 'actually_paid'), outcomeAmount: num(r, 'outcome_amount'), outcomeCurrency: str(r, 'outcome_currency'),
+    adminNote: str(r, 'admin_note'), confirmedAt: str(r, 'confirmed_at'), createdAt: String(r.created_at ?? ''),
+  }
+}
+
+export function mapNpPayout(r: Row): NpPayout {
+  return {
+    id: String(r.id), batchId: String(r.batch_id ?? ''), withdrawalId: str(r, 'withdrawal_id'),
+    payoutRequestId: String(r.payout_request_id ?? ''), affiliateId: String(r.affiliate_id ?? ''),
+    address: String(r.address ?? ''), currency: String(r.currency ?? 'usdttrc20'),
+    amount: num(r, 'amount') ?? 0, fee: num(r, 'fee'),
+    status: (r.status as NpPayout['status']) ?? 'created', createdAt: String(r.created_at ?? ''),
+  }
+}
+
+/** The signed-in advertiser's deposits (RLS: own rows). */
+export async function getMyDeposits(): Promise<AdvertiserDeposit[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data, error } = await supabase.from('advertiser_deposits').select('*').eq('advertiser_id', user.id).order('created_at', { ascending: false })
+  if (error || !data) return []
+  return (data as Row[]).map(mapDeposit)
+}
+
+/** The signed-in advertiser's balances (RLS: own rows). */
+export async function getMyAdvertiserBalances(): Promise<AdvertiserBalance[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data, error } = await supabase.from('advertiser_balances').select('*').eq('advertiser_id', user.id)
+  if (error || !data) return []
+  return (data as Row[]).map((r) => ({
+    advertiserId: String(r.advertiser_id ?? ''), currency: String(r.currency ?? 'USD'),
+    balance: num(r, 'balance') ?? 0, updatedAt: str(r, 'updated_at'),
+  }))
+}
+
+/** NOWPayments payout batches (admin sees all via RLS; affiliates see
+ *  their own). Used by the admin payouts screen. */
+export async function getNpPayouts(): Promise<NpPayout[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data, error } = await supabase.from('np_payouts').select('*').order('created_at', { ascending: false })
+  if (error || !data) return []
+  return (data as Row[]).map(mapNpPayout)
 }
 
 export async function getTickets(): Promise<SupportTicket[]> {

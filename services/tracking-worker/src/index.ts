@@ -8,16 +8,21 @@
  *   POST /conversion                  -> HMAC-signed, idempotent, deduped (201 / 200 duplicate)
  *   GET  /api/stats                   -> operator-only aggregation (Bearer POSTBACK_SECRET)
  *   GET  /api/clicks/:clickId         -> operator-only click + its conversion
+ *   POST /api/payments/deposits       -> advertiser deposit (NOWPayments invoice, JWT)
+ *   POST /api/ipn/nowpayments         -> NOWPayments IPN (public; verified by API re-fetch)
+ *   POST /api/payouts/execute         -> admin: create NOWPayments payout for an approved request
+ *   POST /api/payouts/:batchId/verify -> admin: verify a payout with a 2FA code
+ *   GET  /api/payouts/:batchId/status -> admin: re-fetch payout status, sync + settle
+ *   GET  /api/payments/balance        -> admin: NOWPayments custody balances
+ *   POST /api/payments/validate-address -> signed-in user: validate a payout wallet address
  *
- * Store: hybrid (see supabase-store.ts). Demo offers (demo-offer-1/2/3)
- * and their clicks/conversions live in per-isolate memory, as before.
- * Real offers (UUIDs) resolve from Supabase and their clicks,
- * conversions and ledger rows go to Postgres via SECURITY DEFINER RPCs
- * (migration 007) — durable across isolates. The dashboard reads the
- * same Postgres rows via RLS, so Worker stats and dashboard stats are
- * the same data. Click recording is best-effort: if the durable write
- * fails, the visitor still gets their 302 (a lost click record beats
- * a lost visitor); conversions are strict and report failures.
+ * Money (migration 010, NOWPayments all-rounder): deposits are priced in
+ * USD and credited only when NOWPayments reports the payment `finished`
+ * (re-fetched via API — the IPN body is never trusted, because the
+ * account IPN secret is shared with InboxNumber). Payouts run only for
+ * admin-approved payout requests (H-5 gate) and settle the ledger only
+ * when the batch reports FINISHED. See
+ * ~/workspace/work/affilayer-nowpayments-brief.md.
  *
  * Env: POSTBACK_SECRET (wrangler secret) — HMAC key for POST /conversion,
  * and the operator token (Authorization: Bearer <secret>) for /api/stats
@@ -25,6 +30,12 @@
  * SUPABASE_URL + SUPABASE_ANON_KEY (wrangler [vars], both public values)
  * enable the durable store; without them the Worker runs fully in-memory
  * (demo mode).
+ * NOWPayments (wrangler secrets; unset NOWPAYMENTS_ENV disables payments):
+ *   NOWPAYMENTS_API_KEY, NOWPAYMENTS_EMAIL, NOWPAYMENTS_PASSWORD
+ *   (dashboard login, mints the 5-minute payout JWT),
+ *   NOWPAYMENTS_TOTP_SECRET (optional app-based 2FA seed for auto-verify),
+ *   NP_WORKER_PROOF (shared with the DB worker_secrets.np_ipn_proof),
+ *   NOWPAYMENTS_ENV ('production' | 'sandbox').
  */
 import {
   computeCommission,
@@ -37,11 +48,35 @@ import { InMemoryStore } from './store.js';
 import { SupabaseStore } from './supabase-store.js';
 import type { Store } from './store.js';
 import { deliverPostbacks, verifySignature } from './postbacks.js';
+import {
+  DEFAULT_PAYOUT_CURRENCY,
+  MAX_DEPOSIT_USD,
+  MIN_DEPOSIT_USD,
+  NP_IPN_CALLBACK_URL,
+  NP_TERMINAL_PAYMENT_STATUSES,
+  NowPaymentsClient,
+  NpError,
+  parseIpn,
+} from './nowpayments.js';
+import {
+  isAdminUser,
+  supabaseRpc,
+  supabaseSelect,
+  verifyUserJwt,
+  type SupabaseClient,
+  type SupabaseUser,
+} from './supabase-auth.js';
 
 export interface Env {
   POSTBACK_SECRET?: string;
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
+  NOWPAYMENTS_API_KEY?: string;
+  NOWPAYMENTS_EMAIL?: string;
+  NOWPAYMENTS_PASSWORD?: string;
+  NOWPAYMENTS_TOTP_SECRET?: string;
+  NOWPAYMENTS_ENV?: string;
+  NP_WORKER_PROOF?: string;
 }
 
 // One store per isolate. Memoized: env does not change across requests
@@ -321,6 +356,457 @@ async function handleStats(url: URL, env: Env): Promise<Response> {
   });
 }
 
+// ---------------------------------------------------------------------------
+// NOWPayments all-rounder (migration 010)
+// ---------------------------------------------------------------------------
+
+function npClient(env: Env): NowPaymentsClient | null {
+  if (!env.NOWPAYMENTS_ENV || !env.NOWPAYMENTS_API_KEY) return null;
+  return new NowPaymentsClient({
+    env: env.NOWPAYMENTS_ENV,
+    apiKey: env.NOWPAYMENTS_API_KEY,
+    email: env.NOWPAYMENTS_EMAIL,
+    password: env.NOWPAYMENTS_PASSWORD,
+    totpSecret: env.NOWPAYMENTS_TOTP_SECRET,
+    workerProof: env.NP_WORKER_PROOF,
+  });
+}
+
+function supabaseClient(env: Env): SupabaseClient | null {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return null;
+  return { url: env.SUPABASE_URL, anonKey: env.SUPABASE_ANON_KEY };
+}
+
+function bearerJwt(request: Request): string | null {
+  const h = request.headers.get('authorization') ?? '';
+  return h.startsWith('Bearer ') ? h.slice(7) : null;
+}
+
+/** Verify the caller's Supabase JWT. 401 when missing/invalid. */
+async function requireUser(
+  request: Request,
+  env: Env,
+): Promise<{ user: SupabaseUser; jwt: string } | Response> {
+  const jwt = bearerJwt(request);
+  const sb = supabaseClient(env);
+  if (!jwt || !sb) return json({ error: 'unauthorized' }, 401);
+  const user = await verifyUserJwt(sb, jwt);
+  if (!user) return json({ error: 'unauthorized' }, 401);
+  return { user, jwt };
+}
+
+/** Verify the caller is an admin (JWT + is_admin RPC). 403 otherwise. */
+async function requireAdmin(
+  request: Request,
+  env: Env,
+): Promise<{ user: SupabaseUser; jwt: string } | Response> {
+  const auth = await requireUser(request, env);
+  if (auth instanceof Response) return auth;
+  const sb = supabaseClient(env);
+  if (!sb || !(await isAdminUser(sb, auth.jwt))) {
+    return json({ error: 'admin only' }, 403);
+  }
+  return auth;
+}
+
+/** Light per-IP rate limit for the money-creating endpoints (per isolate). */
+const moneyRate = new Map<string, number[]>();
+function moneyRateLimited(ip: string | undefined, limit = 30): boolean {
+  if (!ip) return false;
+  const now = Date.now();
+  const hits = (moneyRate.get(ip) ?? []).filter((t) => t > now - 60_000);
+  if (hits.length >= limit) return true;
+  hits.push(now);
+  moneyRate.set(ip, hits);
+  return false;
+}
+
+const NP_DEPOSIT_SUCCESS_URL = 'https://affilayer.com/app/advertiser/billing?deposit=success';
+const NP_DEPOSIT_CANCEL_URL = 'https://affilayer.com/app/advertiser/billing?deposit=cancelled';
+
+/** POST /api/payments/deposits — advertiser creates a USD deposit invoice. */
+async function handleCreateDeposit(request: Request, env: Env): Promise<Response> {
+  const np = npClient(env);
+  if (!np) return json({ error: 'payments not configured' }, 503);
+  if (moneyRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
+  const auth = await requireUser(request, env);
+  if (auth instanceof Response) return auth;
+  const sb = supabaseClient(env);
+  if (!sb) return json({ error: 'supabase not configured' }, 500);
+
+  let body: { amount_usd?: unknown } = {};
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+  const amount = typeof body.amount_usd === 'number' ? body.amount_usd : Number.NaN;
+  if (!Number.isFinite(amount) || amount < MIN_DEPOSIT_USD || amount > MAX_DEPOSIT_USD) {
+    return json(
+      { error: `amount_usd must be between ${MIN_DEPOSIT_USD} and ${MAX_DEPOSIT_USD}` },
+      400,
+    );
+  }
+
+  const orderId = `dep_${crypto.randomUUID()}`;
+  let invoice;
+  try {
+    invoice = await np.createInvoice({
+      amountUsd: amount,
+      orderId,
+      successUrl: NP_DEPOSIT_SUCCESS_URL,
+      cancelUrl: NP_DEPOSIT_CANCEL_URL,
+    });
+  } catch (err) {
+    return json({ error: err instanceof Error ? err.message : 'NOWPayments error' }, 502);
+  }
+  if (!invoice.invoice_url) return json({ error: 'NOWPayments returned no invoice_url' }, 502);
+
+  try {
+    const depositId = await supabaseRpc<string>(sb, 'np_create_deposit', {
+      p_advertiser_id: auth.user.id,
+      p_amount_usd: amount,
+      p_np_payment_id: null,
+      p_np_invoice_id: invoice.id ?? null,
+      p_pay_address: null,
+      p_pay_amount: null,
+      p_pay_currency: null,
+      p_order_id: orderId,
+    }, auth.jwt);
+    return json(
+      { ok: true, deposit_id: depositId, order_id: orderId, invoice_url: invoice.invoice_url },
+      201,
+    );
+  } catch (err) {
+    // The invoice exists at NOWPayments but has no deposit row — the IPN
+    // will arrive with an unknown order_id and be logged for manual
+    // reconciliation. Never fail the advertiser's checkout for this.
+    console.error('np_create_deposit failed after invoice creation:', err, { orderId });
+    return json(
+      { ok: true, order_id: orderId, invoice_url: invoice.invoice_url, deposit_recorded: false },
+      201,
+    );
+  }
+}
+
+/** POST /api/ipn/nowpayments — NOWPayments IPN (public).
+ *  The body is UNTRUSTED: it only wakes us up. Every status is re-fetched
+ *  from the NOWPayments API with the API key before any DB write. */
+async function handleIpn(request: Request, env: Env): Promise<Response> {
+  const np = npClient(env);
+  if (!np) return json({ error: 'payments not configured' }, 503);
+  const sb = supabaseClient(env);
+  if (!sb) return json({ error: 'supabase not configured' }, 500);
+
+  let body: unknown = null;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+  const parsed = parseIpn(body);
+
+  try {
+    if (parsed.kind === 'payment' && parsed.paymentId) {
+      const payment = await np.getPayment(parsed.paymentId);
+      const status = payment.payment_status;
+      if (!NP_TERMINAL_PAYMENT_STATUSES.has(status)) {
+        return json({ ok: true, ignored: `payment status ${status} is not terminal` });
+      }
+      const orderId = payment.order_id ?? parsed.orderId;
+      if (!orderId) {
+        console.error('NOWPayments IPN: payment has no order_id', { payment: payment.payment_id });
+        return json({ ok: true, ignored: 'payment has no order_id' });
+      }
+      const result = await supabaseRpc<string>(sb, 'np_confirm_deposit', {
+        p_order_id: orderId,
+        p_proof: await np.proof(orderId),
+        p_status: status,
+        p_actually_paid: payment.actually_paid ?? null,
+        p_outcome_amount: payment.outcome_amount ?? null,
+        p_outcome_currency: payment.outcome_currency ?? null,
+        p_np_payment_id: String(payment.payment_id),
+      });
+      return json({ ok: true, deposit: result, status });
+    }
+
+    if (parsed.kind === 'payout' && parsed.batchId) {
+      const batch = await np.getPayout(parsed.batchId);
+      const status = String(batch.status ?? '');
+      if (!status) return json({ ok: true, ignored: 'payout has no status' });
+      const result = await supabaseRpc<string>(sb, 'np_sync_payout_status', {
+        p_batch_id: String(batch.id ?? parsed.batchId),
+        p_proof: await np.proof(String(batch.id ?? parsed.batchId)),
+        p_status: status,
+      });
+      return json({ ok: true, payout: result, status });
+    }
+
+    console.error('NOWPayments IPN: unrecognized body', JSON.stringify(body).slice(0, 500));
+    return json({ ok: true, ignored: 'unrecognized IPN body' });
+  } catch (err) {
+    console.error('NOWPayments IPN handling failed:', err);
+    return json({ error: err instanceof Error ? err.message : 'IPN handling failed' }, 502);
+  }
+}
+
+interface PayoutRequestRow {
+  id: string;
+  affiliate_id: string;
+  amount: number;
+  currency: string;
+  status: string;
+}
+
+interface AffiliateWalletRow {
+  profile_id: string;
+  payout_address: string | null;
+  payout_currency: string | null;
+}
+
+/** POST /api/payouts/execute — admin: pay an approved payout request via
+ *  NOWPayments. Preflights balance/address/fee, creates the batch, records
+ *  it, and auto-verifies with TOTP when configured. */
+async function handleExecutePayout(request: Request, env: Env): Promise<Response> {
+  const np = npClient(env);
+  if (!np) return json({ error: 'payments not configured' }, 503);
+  if (moneyRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
+  const auth = await requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
+  const sb = supabaseClient(env);
+  if (!sb) return json({ error: 'supabase not configured' }, 500);
+
+  let body: { payout_request_id?: unknown } = {};
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+  const requestId = typeof body.payout_request_id === 'string' ? body.payout_request_id : '';
+  if (!requestId) return json({ error: 'payout_request_id is required' }, 400);
+
+  try {
+    const rows = await supabaseSelect<PayoutRequestRow>(
+      sb,
+      'payout_requests',
+      `select=id,affiliate_id,amount,currency,status&id=eq.${encodeURIComponent(requestId)}`,
+      auth.jwt,
+    );
+    const payout = rows[0];
+    if (!payout) return json({ error: 'payout request not found' }, 404);
+    if (payout.status !== 'approved') {
+      return json({ error: `payout request is ${payout.status}, only approved can be paid` }, 409);
+    }
+
+    const wallets = await supabaseSelect<AffiliateWalletRow>(
+      sb,
+      'affiliate_profiles',
+      `select=profile_id,payout_address,payout_currency&profile_id=eq.${encodeURIComponent(payout.affiliate_id)}`,
+      auth.jwt,
+    );
+    const wallet = wallets[0];
+    const address = wallet?.payout_address ?? null;
+    const currency = wallet?.payout_currency || DEFAULT_PAYOUT_CURRENCY;
+    if (!address) {
+      return json({ error: 'affiliate has no payout wallet address on file' }, 422);
+    }
+
+    // Preflight: address valid, custody funded, fee known.
+    await np.validateAddress(address, currency);
+    const balances = await np.getBalance();
+    const available = balances[currency]?.amount ?? 0;
+    if (available < payout.amount) {
+      return json(
+        { error: `NOWPayments custody holds ${available} ${currency}, need ${payout.amount}` },
+        422,
+      );
+    }
+    let fee: number | null = null;
+    try {
+      const feeRes = (await np.estimatePayoutFee(currency, payout.amount)) as {
+        fee?: number;
+        network_fee?: number;
+      };
+      fee = feeRes.fee ?? feeRes.network_fee ?? null;
+    } catch {
+      fee = null; // Fee estimate is best-effort; creation still reports the fee.
+    }
+
+    const batch = await np.createPayout({ address, currency, amount: payout.amount });
+    const batchId = String(batch.id);
+    const withdrawalId =
+      batch.withdrawals && batch.withdrawals[0]?.id ? String(batch.withdrawals[0].id) : null;
+    if (!batchId) return json({ error: 'NOWPayments returned no payout batch id' }, 502);
+
+    await supabaseRpc(sb, 'np_record_payout', {
+      p_request_id: payout.id,
+      p_batch_id: batchId,
+      p_withdrawal_id: withdrawalId,
+      p_address: address,
+      p_currency: currency,
+      p_amount: payout.amount,
+      p_fee: fee,
+      p_actor: auth.user.id,
+    }, auth.jwt);
+
+    // Verify: TOTP auto-verify when configured, else leave awaiting_2fa.
+    if (np.hasTotp) {
+      try {
+        await np.verifyPayout(batchId, await np.totpNow());
+        await supabaseRpc(sb, 'np_verify_payout', {
+          p_batch_id: batchId,
+          p_actor: auth.user.id,
+        }, auth.jwt);
+        return json({
+          ok: true, batch_id: batchId, status: 'verified',
+          amount: payout.amount, currency, fee, auto_verified: true,
+        });
+      } catch (err) {
+        console.error('NOWPayments payout auto-verify failed:', err, { batchId });
+        await supabaseRpc(sb, 'np_sync_payout_status', {
+          p_batch_id: batchId,
+          p_proof: await np.proof(batchId),
+          p_status: 'WAITING',
+        });
+        return json({
+          ok: true, batch_id: batchId, status: 'awaiting_2fa',
+          amount: payout.amount, currency, fee, auto_verified: false,
+          verify_error: err instanceof Error ? err.message : 'verify failed',
+        });
+      }
+    }
+
+    await supabaseRpc(sb, 'np_sync_payout_status', {
+      p_batch_id: batchId,
+      p_proof: await np.proof(batchId),
+      p_status: 'WAITING',
+    });
+    return json({
+      ok: true, batch_id: batchId, status: 'awaiting_2fa',
+      amount: payout.amount, currency, fee, auto_verified: false,
+    });
+  } catch (err) {
+    if (err instanceof NpError) return json({ error: err.message }, err.status ?? 502);
+    return json({ error: err instanceof Error ? err.message : 'payout failed' }, 502);
+  }
+}
+
+/** POST /api/payouts/:batchId/verify — admin: verify with a pasted 2FA code. */
+async function handleVerifyPayout(
+  request: Request,
+  env: Env,
+  batchId: string,
+): Promise<Response> {
+  const np = npClient(env);
+  if (!np) return json({ error: 'payments not configured' }, 503);
+  const auth = await requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
+  const sb = supabaseClient(env);
+  if (!sb) return json({ error: 'supabase not configured' }, 500);
+
+  let body: { code?: unknown } = {};
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+  const code = typeof body.code === 'string' ? body.code.trim() : '';
+  if (!/^\d{6}$/.test(code)) return json({ error: 'code must be 6 digits' }, 400);
+
+  try {
+    await np.verifyPayout(batchId, code);
+  } catch (err) {
+    return json(
+      { error: err instanceof Error ? err.message : 'verify failed' },
+      err instanceof NpError ? (err.status ?? 502) : 502,
+    );
+  }
+  try {
+    await supabaseRpc(sb, 'np_verify_payout', { p_batch_id: batchId, p_actor: auth.user.id }, auth.jwt);
+  } catch {
+    // Batch may already be verified (e.g. TOTP ran first) — not fatal.
+  }
+  return json({ ok: true, batch_id: batchId, status: 'verified' });
+}
+
+/** GET /api/payouts/:batchId/status — admin: re-fetch + sync (settles on FINISHED). */
+async function handlePayoutStatus(
+  request: Request,
+  env: Env,
+  batchId: string,
+): Promise<Response> {
+  const np = npClient(env);
+  if (!np) return json({ error: 'payments not configured' }, 503);
+  const auth = await requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
+  const sb = supabaseClient(env);
+  if (!sb) return json({ error: 'supabase not configured' }, 500);
+
+  try {
+    const batch = await np.getPayout(batchId);
+    const status = String(batch.status ?? '');
+    const synced = await supabaseRpc<string>(sb, 'np_sync_payout_status', {
+      p_batch_id: batchId,
+      p_proof: await np.proof(batchId),
+      p_status: status,
+    });
+    return json({ ok: true, batch_id: batchId, status: synced, nowpayments_status: status });
+  } catch (err) {
+    return json(
+      { error: err instanceof Error ? err.message : 'status check failed' },
+      err instanceof NpError ? (err.status ?? 502) : 502,
+    );
+  }
+}
+
+/** GET /api/payments/balance — admin: NOWPayments custody balances. */
+async function handleCustodyBalance(request: Request, env: Env): Promise<Response> {
+  const np = npClient(env);
+  if (!np) return json({ error: 'payments not configured' }, 503);
+  const auth = await requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
+  try {
+    const balances = await np.getBalance();
+    return json({ ok: true, balances });
+  } catch (err) {
+    return json(
+      { error: err instanceof Error ? err.message : 'balance check failed' },
+      err instanceof NpError ? (err.status ?? 502) : 502,
+    );
+  }
+}
+
+/** POST /api/payments/validate-address — signed-in user: validate a payout
+ *  wallet address with NOWPayments before saving it. */
+async function handleValidateAddress(request: Request, env: Env): Promise<Response> {
+  const np = npClient(env);
+  if (!np) return json({ error: 'payments not configured' }, 503);
+  const auth = await requireUser(request, env);
+  if (auth instanceof Response) return auth;
+
+  let body: { address?: unknown; currency?: unknown } = {};
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+  const address = typeof body.address === 'string' ? body.address.trim() : '';
+  const currency =
+    typeof body.currency === 'string' && body.currency
+      ? body.currency
+      : DEFAULT_PAYOUT_CURRENCY;
+  if (!address) return json({ error: 'address is required' }, 400);
+  try {
+    await np.validateAddress(address, currency);
+    return json({ ok: true, valid: true, address, currency });
+  } catch (err) {
+    return json(
+      { ok: false, valid: false, error: err instanceof Error ? err.message : 'invalid address' },
+      422,
+    );
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -408,6 +894,31 @@ export default {
       const conversions = await store.listConversions();
       const conversion = conversions.find((c) => c.clickId === click.clickId);
       return json({ click, conversion: conversion ?? null });
+    }
+
+    // NOWPayments all-rounder (migration 010)
+    if (request.method === 'POST' && path === '/api/payments/deposits') {
+      return handleCreateDeposit(request, env);
+    }
+    if (request.method === 'POST' && path === '/api/ipn/nowpayments') {
+      return handleIpn(request, env);
+    }
+    if (request.method === 'POST' && path === '/api/payouts/execute') {
+      return handleExecutePayout(request, env);
+    }
+    const verifyMatch = path.match(/^\/api\/payouts\/([^/]+)\/verify$/);
+    if (request.method === 'POST' && verifyMatch) {
+      return handleVerifyPayout(request, env, decodeURIComponent(verifyMatch[1]));
+    }
+    const payoutStatusMatch = path.match(/^\/api\/payouts\/([^/]+)\/status$/);
+    if (request.method === 'GET' && payoutStatusMatch) {
+      return handlePayoutStatus(request, env, decodeURIComponent(payoutStatusMatch[1]));
+    }
+    if (request.method === 'GET' && path === '/api/payments/balance') {
+      return handleCustodyBalance(request, env);
+    }
+    if (request.method === 'POST' && path === '/api/payments/validate-address') {
+      return handleValidateAddress(request, env);
     }
 
     return json({ error: 'not found' }, 404);

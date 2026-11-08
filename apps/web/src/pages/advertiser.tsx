@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { getCampaigns, getClicks, getConversions, getOffers, getProfiles, getStats } from '../lib/data'
+import { getCampaigns, getClicks, getConversions, getMyAdvertiserBalances, getMyDeposits, getOffers, getProfiles, getStats, isDemoMode } from '../lib/data'
+import { createDeposit } from '../lib/payments'
+import type { AdvertiserBalance, AdvertiserDeposit } from '../lib/types'
 import { demoDailySeries } from '../lib/demo-data'
 import { logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
 import { useAuth } from '../lib/auth'
@@ -176,14 +178,75 @@ export function AdvertiserReports() {
 }
 
 export function AdvertiserBilling() {
+  const [deposits, setDeposits] = useState<AdvertiserDeposit[]>([])
+  const [balances, setBalances] = useState<AdvertiserBalance[]>([])
+  const [amount, setAmount] = useState('')
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (isDemoMode) return
+    getMyDeposits().then(setDeposits)
+    getMyAdvertiserBalances().then(setBalances)
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('deposit') === 'success') setNotice('Payment received — your balance updates once NOWPayments confirms it (usually a few minutes).')
+    if (q.get('deposit') === 'cancelled') setNotice('Deposit cancelled — nothing was charged.')
+  }, [])
+  const balanceUsd = balances.find((b) => b.currency === 'USD')?.balance ?? 0
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    const value = Number(amount)
+    if (!Number.isFinite(value) || value < 10) { setError('Minimum deposit is $10.'); return }
+    setBusy(true)
+    setError('')
+    const r = await createDeposit(value)
+    setBusy(false)
+    if (r.error) { setError(r.error); return }
+    const url = typeof r.invoice_url === 'string' ? r.invoice_url : ''
+    if (!url) { setError('NOWPayments returned no payment page. Try again.'); return }
+    window.location.href = url
+  }
   return (
     <div className="space-y-4">
       <Card title="Billing">
-        <p className="text-sm text-slate-600">Billing is based on approved conversions in the commission ledger. No payment integration is part of this MVP — invoices and payouts are administered outside the app and reconciled against the ledger.</p>
+        <p className="text-sm text-slate-600">Billing is based on approved conversions in the commission ledger. Deposits are paid in crypto through NOWPayments and priced in USD — pick any coin on the payment page.</p>
       </Card>
-      <Card title="Current balance (demo sample)">
-        <Stat label="Payable (approved, unpaid)" value="$102.00" sub="From demo ledger data — not real" icon="banknote" />
-      </Card>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Stat label="Available balance" value={`$${balanceUsd.toFixed(2)}`} sub="Spendable credit from confirmed deposits" icon="banknote" />
+        <Stat label="Deposits" value={String(deposits.length)} sub="All time" icon="wallet" />
+      </div>
+      {isDemoMode ? (
+        <Card title="Current balance (demo sample)">
+          <Stat label="Payable (approved, unpaid)" value="$102.00" sub="From demo ledger data — not real" icon="banknote" />
+        </Card>
+      ) : (
+        <>
+          <Card title="Add funds">
+            <form onSubmit={submit} className="flex gap-2">
+              <input className={inputCls} type="number" min="10" step="0.01" placeholder="Amount (USD, min $10)" aria-label="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <button className={btnCls} disabled={busy}>{busy ? 'Creating…' : 'Deposit with crypto'}</button>
+            </form>
+            {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+            {notice && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
+            <p className="mt-3 text-xs text-slate-400">You are redirected to NOWPayments to pay. Your balance is credited only once the payment is confirmed on-chain — underpaid deposits are held for manual review, never auto-credited.</p>
+          </Card>
+          <Card title="Deposits">
+            {deposits.length === 0 ? <Empty text="No deposits yet." /> : (
+              <table className="w-full text-sm">
+                <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Amount</th><th>Paid in</th><th>Status</th></tr></thead>
+                <tbody>{deposits.map((d) => (
+                  <tr key={d.id} className="border-t border-slate-100">
+                    <td className="py-2">{d.createdAt.slice(0, 10)}</td>
+                    <td>${d.amountUsd.toFixed(2)} {d.currency}</td>
+                    <td>{d.npPayCurrency ? `${d.npPayAmount ?? ''} ${d.npPayCurrency}` : '—'}</td>
+                    <td>{d.status}{d.adminNote ? ` — ${d.adminNote}` : ''}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            )}
+          </Card>
+        </>
+      )}
     </div>
   )
 }

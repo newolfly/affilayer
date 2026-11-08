@@ -130,6 +130,56 @@ export interface PayoutRequest {
   updatedAt?: string;
 }
 
+/** Advertiser deposit (migration 010, NOWPayments). Amounts in USD. */
+export interface AdvertiserDeposit {
+  id: string;
+  advertiserId: string;
+  amountUsd: number;
+  currency: string;
+  npPaymentId?: string;
+  npInvoiceId?: string;
+  npPayAddress?: string;
+  npPayAmount?: number;
+  npPayCurrency?: string;
+  orderId: string;
+  status: 'waiting' | 'finished' | 'partially_paid' | 'failed' | 'expired' | 'refunded';
+  actuallyPaid?: number;
+  outcomeAmount?: number;
+  outcomeCurrency?: string;
+  adminNote?: string;
+  confirmedAt?: string;
+  createdAt: string;
+}
+
+export interface AdvertiserBalance {
+  advertiserId: string;
+  currency: string;
+  balance: number;
+  updatedAt?: string;
+}
+
+/** NOWPayments payout batch for an approved payout request (migration 010). */
+export interface NpPayout {
+  id: string;
+  batchId: string;
+  withdrawalId?: string;
+  payoutRequestId: string;
+  affiliateId: string;
+  address: string;
+  currency: string;
+  amount: number;
+  fee?: number;
+  status: 'created' | 'awaiting_2fa' | 'verified' | 'processing' | 'finished' | 'rejected' | 'failed';
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/** Affiliate payout wallet (affiliate_profiles.payout_currency/address). */
+export interface PayoutWallet {
+  currency: string;
+  address?: string;
+}
+
 /** A user profile (auth user + role + onboarding details). */
 export interface Profile {
   id: string;
