@@ -1,0 +1,55 @@
+# AffiLayer — Worker conversion ledger-id bug (Phase-2 audit, 9 Nov 2026)
+# NOT APPLIED. Apply with `git apply` (or by hand) + redeploy the Worker.
+#
+# BUG: handleConversion() calls `await store.recordConversion(conversion)`
+# and DISCARDS the return value. SupabaseStore.recordConversion() returns
+# the conversion with the DB-generated uuid as `id`, but the handler then
+# builds the ledger entry with `conversionId: conversion.id` — the
+# pre-DB randomUUID (the text `conversion_id`). The ledger FK
+# commission_ledger_conversion_id_fkey references conversions(id), so the
+# insert fails 23503, the handler throws, Cloudflare returns 500
+# (error 1101), and the conversion is left ledger-less. A retry returns
+# duplicate:true BEFORE the ledger step, so the ledger entry is NEVER
+# created for that conversion. Every real (Postgres) conversion via the
+# Worker is affected; demo offers are not (InMemoryStore preserves id).
+# Live proof 9 Nov 2026: three signed /conversion calls (audit-flow-1/2/3)
+# each returned 500 error 1101 while the conversion row existed in
+# Postgres with NO ledger row; direct RPC with the text conversion_id
+# reproduced the 409 FK violation.
+#
+# FIX: use the returned conversion (DB uuid) for the ledger entry.
+# Same latent bug in services/tracking/src/routes.ts (pg-store preserves
+# the id, so it only bites if that service ever uses SupabaseStore).
+
+--- a/services/tracking-worker/src/index.ts
++++ b/services/tracking-worker/src/index.ts
+@@
+-  await store.recordConversion(conversion);
++  const recordedConversion = await store.recordConversion(conversion);
+ 
+   const commission = computeCommission(payout, offer?.payoutModel ?? 'CPA', offer?.rateBps);
+   const ledgerEntry = await store.recordLedgerEntry({
+     id: crypto.randomUUID(),
+-    conversionId: conversion.id,
++    conversionId: recordedConversion.id,
+     affiliateCode: conversion.affiliateCode ?? '',
+     offerId,
+     amount: commission,
+     currency,
+     status: 'pending',
+     createdAt: new Date().toISOString(),
+   });
+--- a/services/tracking/src/routes.ts
++++ b/services/tracking/src/routes.ts
+@@
+-    await store.recordConversion(conversion);
++    const recordedConversion = await store.recordConversion(conversion);
+@@
+-      conversionId: conversion.id,
++      conversionId: recordedConversion.id,
++
++# NOTE (deliberately NOT changed): the postback vars `conversion_id` and
++# the 201 response keep using `conversion.id` (the text conversion_id) —
++# that is the externally visible id the API already returns. Only the
++# ledger entry must use the DB uuid, because its FK references
++# conversions(id).
