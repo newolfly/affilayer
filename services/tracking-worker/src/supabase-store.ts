@@ -35,10 +35,12 @@ export interface SupabaseStoreOptions {
   anonKey: string;
   /**
    * NP_WORKER_PROOF (wrangler secret, shared with the DB
-   * worker_secrets.np_ipn_proof). The 012 list RPCs require it: with a
-   * valid proof the Worker reads all rows as before; without it the
-   * lists raise insufficient_privilege. Missing secret = loud failure
-   * (no silent partial stats) so a misconfigured deploy is visible.
+   * worker_secrets.np_ipn_proof). The 012 list RPCs and the 013
+   * single-row RPCs (get_click, find_conversion, get_offer,
+   * list_offers) require it: with a valid proof the Worker reads rows
+   * as before; without it the calls raise insufficient_privilege.
+   * Missing secret = loud failure (no silent partial stats) so a
+   * misconfigured deploy is visible.
    */
   workerProofSecret?: string;
 }
@@ -134,18 +136,31 @@ export class SupabaseStore implements Store {
   constructor(private opts: SupabaseStoreOptions) {}
 
   /**
-   * Worker proof for the 012 list RPCs: hex(HMAC-SHA256(function name,
-   * NP_WORKER_PROOF)). The subject is the function name so a proof
-   * minted for one list cannot be replayed against the other (or
-   * against 010's deposit/batch subjects). Throws when the secret is
-   * not configured — the lists must fail loudly, never silently return
-   * partial (demo-only) stats.
+   * Worker proof for the 012 list RPCs and the 013 single-row RPCs:
+   * hex(HMAC-SHA256(function name, NP_WORKER_PROOF)). The subject is
+   * the function name so a proof minted for one function cannot be
+   * replayed against another (or against 010's deposit/batch
+   * subjects). Throws when the secret is not configured — the calls
+   * must fail loudly, never silently return partial (demo-only) data.
    */
-  private async listProof(fnName: 'tracking_list_clicks' | 'tracking_list_conversions'): Promise<string> {
+  private async workerProofFor(
+    fnName:
+      | 'tracking_list_clicks'
+      | 'tracking_list_conversions'
+      | 'tracking_get_click'
+      | 'tracking_find_conversion'
+      | 'tracking_get_offer'
+      | 'tracking_list_offers',
+  ): Promise<string> {
     if (!this.opts.workerProofSecret) {
-      throw new Error(`supabase list ${fnName}: NP_WORKER_PROOF is not configured`);
+      throw new Error(`supabase ${fnName}: NP_WORKER_PROOF is not configured`);
     }
     return workerProof(fnName, this.opts.workerProofSecret);
+  }
+
+  /** Back-compat alias used by the list calls. */
+  private async listProof(fnName: 'tracking_list_clicks' | 'tracking_list_conversions'): Promise<string> {
+    return this.workerProofFor(fnName);
   }
 
   private async rpc<T>(fn: string, params: Record<string, unknown>): Promise<T> {
@@ -169,14 +184,20 @@ export class SupabaseStore implements Store {
     const demo = await this.memory.getOffer(id);
     if (demo) return demo;
     if (!isRealOfferId(id)) return undefined;
-    const row = await this.rpc<Row | null>('tracking_get_offer', { p_offer_id: id });
+    const row = await this.rpc<Row | null>('tracking_get_offer', {
+      p_offer_id: id,
+      p_proof: await this.workerProofFor('tracking_get_offer'),
+    });
     if (!row) return undefined;
     return mapOffer(row);
   }
 
   async listOffers(): Promise<Offer[]> {
     const demo = await this.memory.listOffers();
-    const rows = await this.rpc<Row[]>('tracking_list_offers', { p_limit: 100 });
+    const rows = await this.rpc<Row[]>('tracking_list_offers', {
+      p_limit: 100,
+      p_proof: await this.workerProofFor('tracking_list_offers'),
+    });
     return [...demo, ...rows.map(mapOffer)];
   }
 
@@ -208,7 +229,10 @@ export class SupabaseStore implements Store {
   async getClick(clickId: string): Promise<Click | undefined> {
     const demo = await this.memory.getClick(clickId);
     if (demo) return demo;
-    const row = await this.rpc<Row | null>('tracking_get_click', { p_click_id: clickId });
+    const row = await this.rpc<Row | null>('tracking_get_click', {
+      p_click_id: clickId,
+      p_proof: await this.workerProofFor('tracking_get_click'),
+    });
     if (!row) return undefined;
     return mapClick(row);
   }
@@ -257,6 +281,7 @@ export class SupabaseStore implements Store {
       p_idempotency_key: null,
       p_click_id: null,
       p_offer_id: null,
+      p_proof: await this.workerProofFor('tracking_find_conversion'),
     });
     if (!row) return undefined;
     return mapConversion(row);
@@ -270,6 +295,7 @@ export class SupabaseStore implements Store {
       p_idempotency_key: key,
       p_click_id: null,
       p_offer_id: null,
+      p_proof: await this.workerProofFor('tracking_find_conversion'),
     });
     if (!row) return undefined;
     return mapConversion(row);
@@ -286,6 +312,7 @@ export class SupabaseStore implements Store {
       p_idempotency_key: null,
       p_click_id: clickId,
       p_offer_id: offerId,
+      p_proof: await this.workerProofFor('tracking_find_conversion'),
     });
     if (!row) return undefined;
     return mapConversion(row);
