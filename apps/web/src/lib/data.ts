@@ -246,6 +246,23 @@ export async function getTickets(): Promise<SupportTicket[]> {
   return (data as Row[]).map(mapTicket)
 }
 
+/** File a support ticket for the signed-in user (Supabase mode only).
+ *  The public contact form uses this — a message must reach the team,
+ *  never just localStorage. RLS allows the insert when profile_id is
+ *  the caller's own id. */
+export async function createTicket(subject: string, description: string): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Tickets are not available in demo mode.' }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Sign in to send a message.' }
+  const { error } = await supabase.from('support_tickets').insert({
+    profile_id: user.id,
+    subject,
+    description,
+    category: 'contact',
+  })
+  return error ? { error: error.message } : {}
+}
+
 export function computeStats(clicks: Click[], conversions: Conversion[]): Stats {
   const approved = conversions.filter((c) => c.status === 'approved')
   const revenue = approved.reduce((s, c) => s + c.payout, 0)

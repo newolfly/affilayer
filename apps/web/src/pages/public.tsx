@@ -7,7 +7,8 @@ import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
 import { FAQ_GROUPS } from '../lib/faq-data'
 import { useLocale, useT, localizePath } from '../lib/i18n'
-import { isDemoMode } from '../lib/data'
+import { isDemoMode, createTicket } from '../lib/data'
+import { useAuth } from '../lib/auth'
 import { COUNTRIES } from '../lib/geo-data'
 
 const VERTICALS = ['Dating', 'Finance', 'Gaming', 'Sweepstakes', 'Nutra', 'iGaming']
@@ -265,18 +266,46 @@ export function BenefitsSection() {
 
 export function ContactForm() {
   const t = useT()
+  const { user, loading } = useAuth()
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
   const [sent, setSent] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  const submit = (e: FormEvent) => {
+  // Supabase mode, signed out: the form cannot reach anyone (tickets
+  // need a signed-in profile), so don't render a form that pretends
+  // otherwise — point at sign-in or email instead. (H-8)
+  const showSignInNote = !isDemoMode && !loading && !user
+
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
-    try {
-      const prev = JSON.parse(localStorage.getItem('affilayer-contact') ?? '[]') as unknown[]
-      localStorage.setItem('affilayer-contact', JSON.stringify([...prev, { ...form, at: new Date().toISOString() }]))
-    } catch {
-      /* localStorage unavailable — the confirmation below still applies */
+    setError(null)
+    if (isDemoMode) {
+      // Demo: nothing leaves the browser; the note below says so.
+      try {
+        const prev = JSON.parse(localStorage.getItem('affilayer-contact') ?? '[]') as unknown[]
+        localStorage.setItem('affilayer-contact', JSON.stringify([...prev, { ...form, at: new Date().toISOString() }]))
+      } catch {
+        /* localStorage unavailable — the confirmation below still applies */
+      }
+      setSent(true)
+      return
+    }
+    if (!user) {
+      setError('Sign in to send a message.')
+      return
+    }
+    setSending(true)
+    const res = await createTicket(
+      `${form.name} — ${form.subject}`,
+      `${form.message}\n\nFrom: ${form.name} <${form.email}>`,
+    )
+    setSending(false)
+    if (res.error) {
+      setError(res.error)
+      return
     }
     setSent(true)
   }
@@ -299,6 +328,12 @@ export function ContactForm() {
             <p className="mt-2 text-sm text-amber-400">Demo mode — your message was saved in this browser only and was not sent. Email support@affilayer.com to reach us.</p>
           )}
         </div>
+      ) : showSignInNote ? (
+        <div className="mx-auto mt-8 max-w-lg rounded-xl border border-slate-700 bg-slate-800/60 p-6 text-center">
+          <p className="text-sm text-slate-300">
+            To send us a message, <Link to="/login" className="font-semibold text-amber-400 underline">sign in</Link> first — or email <a href="mailto:support@affilayer.com" className="font-semibold text-amber-400 underline">support@affilayer.com</a> directly.
+          </p>
+        </div>
       ) : (
         <form onSubmit={submit} className="mx-auto mt-8 max-w-lg space-y-3">
           <div>
@@ -320,7 +355,10 @@ export function ContactForm() {
           {isDemoMode && (
             <p className="text-sm text-amber-400">Demo mode — this form saves your message in this browser only. Nothing is sent to us; email support@affilayer.com to reach a real person.</p>
           )}
-          <button className="pill-btn w-full">{t('contact.send')}</button>
+          {error && (
+            <p className="text-sm text-red-400">{error}</p>
+          )}
+          <button className="pill-btn w-full" disabled={sending}>{sending ? 'Sending…' : t('contact.send')}</button>
         </form>
       )}
     </Reveal>
