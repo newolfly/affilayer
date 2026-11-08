@@ -41,7 +41,7 @@
 - Verticals: Dating, Finance, Gaming, Sweepstakes, Nutra, iGaming
 - Payout schedule: manual and admin-approved, Net30 by default
 - Tracking link format: /c/{affiliate_code}/{offer_id}, up to five sub-parameters
-- Applications reviewed by the team, typically within 2 business days
+- Applications reviewed by the team
 - Languages: English, Spanish, Portuguese (public pages); dashboards English-only
 - Country pages: /geo/us, /geo/uk, /geo/ca, /geo/au, /geo/de, /geo/fr, /geo/br, /geo/in
 - No bonus or referral program at launch

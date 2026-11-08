@@ -656,7 +656,7 @@ export function Faq() {
       />
       <PageHighlights
         items={[
-          { icon: 'user', text: 'Joining — free to join; applications reviewed by our team, typically within 2 business days.' },
+          { icon: 'user', text: 'Joining — free to join; applications reviewed by our team.' },
           { icon: 'link', text: 'Running traffic — direct offers or one SmartLink, every click tracked with a unique click ID.' },
           { icon: 'banknote', text: 'Getting paid — manual, admin-approved payouts, Net30 by default.' },
         ]}
@@ -814,7 +814,7 @@ export function Partner() {
       <div className="mt-4 space-y-4">
         {[
           { n: '1', t: 'Tell us about yourself', d: 'Email partner@affilayer.com or use the contact form — who you are, what you bring, and what you need.' },
-          { n: '2', t: 'We talk it through', d: 'A real person replies, usually within 2 business days, and we agree the shape of the partnership.' },
+          { n: '2', t: 'We talk it through', d: 'A real person replies, and we agree the shape of the partnership.' },
           { n: '3', t: 'Start small, grow', d: 'We start with one offer, one audience, or one integration — and grow what works.' },
         ].map((s) => (
           <Reveal key={s.n}>

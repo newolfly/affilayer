@@ -80,9 +80,9 @@ export const COUNTRIES: Country[] = [
     code: 'in',
     name: { en: 'India', es: 'India', pt: 'Índia' },
     intro: {
-      en: 'Affiliates in India can run direct offers or route traffic through SmartLink, with the same tracking, ledger and manual payout review as every other country. Applications are reviewed by our team, typically within 2 business days.',
-      es: 'Los afiliados en la India pueden promocionar ofertas directas o enviar tráfico a través de SmartLink, con el mismo seguimiento, libro contable y revisión manual de pagos que en cualquier otro país. Nuestro equipo revisa las solicitudes, normalmente en 2 días hábiles.',
-      pt: 'Os afiliados na Índia podem promover ofertas diretas ou enviar tráfego pelo SmartLink, com o mesmo rastreamento, livro-razão e revisão manual de pagamentos de qualquer outro país. Nossa equipe analisa as inscrições, normalmente em 2 dias úteis.',
+      en: 'Affiliates in India can run direct offers or route traffic through SmartLink, with the same tracking, ledger and manual payout review as every other country. Applications are reviewed by our team.',
+      es: 'Los afiliados en la India pueden promocionar ofertas directas o enviar tráfico a través de SmartLink, con el mismo seguimiento, libro contable y revisión manual de pagos que en cualquier otro país. Nuestro equipo revisa las solicitudes.',
+      pt: 'Os afiliados na Índia podem promover ofertas diretas ou enviar tráfego pelo SmartLink, com o mesmo rastreamento, livro-razão e revisão manual de pagamentos de qualquer outro país. Nossa equipe analisa as inscrições.',
     },
   },
 ]

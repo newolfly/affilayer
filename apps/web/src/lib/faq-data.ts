@@ -30,7 +30,7 @@ export const FAQ_GROUPS: { group: string; items: { q: string; a: string }[] }[] 
       },
       {
         q: 'How long does approval take?',
-        a: 'Applications are reviewed by our team, typically within 2 business days. You can check your status on the approval page at any time.',
+        a: 'Applications are reviewed by our team. You can check your status on the approval page at any time.',
       },
       {
         q: 'Why was my application declined?',
