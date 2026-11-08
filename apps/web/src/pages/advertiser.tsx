@@ -12,9 +12,9 @@ import type { Campaign, Offer, PayoutModel } from '../lib/types'
 import { ReportFiltersForm } from './affiliate'
 import type { ReportFilters } from '../lib/data'
 
-const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
+const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
 const labelCls = 'mb-1 block text-sm font-medium text-slate-700'
-const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2 text-sm font-semibold text-[#0B1220]'
+const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-[#0B1220]'
 
 export function AdvertiserDashboard() {
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, revenue: 0 })
@@ -134,10 +134,10 @@ export function AdvertiserAffiliates() {
   return (
     <Card title="Affiliates">
       {profiles.length === 0 ? <Empty text="No affiliates yet." /> : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Name</th><th>Email</th><th>Code</th><th>Status</th></tr></thead>
           <tbody>{profiles.map((p) => <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.fullName ?? '—'}</td><td>{p.email}</td><td className="font-mono">{p.affiliateCode ?? '—'}</td><td>{p.status}</td></tr>)}</tbody>
-        </table>
+        </table></div>
       )}
     </Card>
   )
@@ -149,10 +149,10 @@ export function AdvertiserConversions() {
   return (
     <Card title="Conversions">
       {convs.length === 0 ? <Empty text="No conversions yet." /> : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Click ID</th><th>Offer</th><th>Payout</th><th>Status</th></tr></thead>
           <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.createdAt.slice(0, 10)}</td><td className="font-mono">{c.clickId ?? '—'}</td><td>{c.offerId}</td><td>${c.payout.toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
-        </table>
+        </table></div>
       )}
       <p className="mt-3 text-xs text-slate-400">Status changes go through approve/reject functions with ledger state-transition checks; this UI is read-only in the MVP.</p>
     </Card>
@@ -232,7 +232,7 @@ export function AdvertiserBilling() {
           </Card>
           <Card title="Deposits">
             {deposits.length === 0 ? <Empty text="No deposits yet." /> : (
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
                 <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Amount</th><th>Paid in</th><th>Status</th></tr></thead>
                 <tbody>{deposits.map((d) => (
                   <tr key={d.id} className="border-t border-slate-100">
@@ -242,7 +242,7 @@ export function AdvertiserBilling() {
                     <td>{d.status}{d.adminNote ? ` — ${d.adminNote}` : ''}</td>
                   </tr>
                 ))}</tbody>
-              </table>
+              </table></div>
             )}
           </Card>
         </>

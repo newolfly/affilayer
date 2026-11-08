@@ -35,6 +35,24 @@ const NODE_BOXES = [
   { x: 444, y: 158 },
 ] as const
 
+/** Mobile (below md) node slots: a 2×2 grid around the hub, near 1:1 scale
+ *  so labels stay readable. The 640-wide desktop art squeezed to a 390px
+ *  screen renders its 11.5px labels at ~6.4px computed; the stacked
+ *  variant renders 15px labels at ~15px. Order is TL, TR, BL, BR. */
+const MOBILE_NODE_BOXES = [
+  { x: 8, y: 12 },
+  { x: 188, y: 12 },
+  { x: 8, y: 284 },
+  { x: 188, y: 284 },
+] as const
+
+const MOBILE_NODE_PATHS = [
+  'M90 60 L146 130',
+  'M270 60 L214 130',
+  'M90 284 L146 206',
+  'M270 284 L214 206',
+] as const
+
 const NODE_PATHS = [
   'M196 48 L276 92',
   'M196 180 L276 132',
@@ -66,7 +84,7 @@ export function PageArt({
         role="img"
         aria-label={label}
       >
-        <svg viewBox="0 0 640 230" className="w-full" fill="none">
+        <svg viewBox="0 0 640 230" className="hidden w-full md:block" fill="none">
           <defs>
             <linearGradient id={gid} x1="0" y1="0" x2="640" y2="0" gradientUnits="userSpaceOnUse">
               <stop stopColor="#D97706" />
@@ -117,6 +135,51 @@ export function PageArt({
             </g>
           </g>
           <text x="320" y="200" textAnchor="middle" fontFamily="inherit" fontSize="12" fontWeight="600" fill="#94a3b8">
+            {caption}
+          </text>
+        </svg>
+        {/* Mobile variant (below md): same hub + nodes, stacked 2×2 at near
+          * 1:1 scale — 15px labels instead of ~6.4px computed. Shown instead
+          * of the desktop art, never alongside it. */}
+        <svg viewBox="0 0 360 344" className="mx-auto w-full max-w-[400px] md:hidden" fill="none">
+          <defs>
+            <linearGradient id={`${gid}-m`} x1="0" y1="0" x2="360" y2="0" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#D97706" />
+              <stop offset="1" stopColor="#FBBF24" />
+            </linearGradient>
+          </defs>
+          <rect x="1" y="1" width="358" height="342" rx="16" fill="#111C30" stroke="#1E2A3F" />
+          <ellipse cx="180" cy="168" rx="160" ry="80" fill="#F59E0B" opacity="0.08" />
+          <path d="M16 168 H344" stroke={`url(#${gid}-m)`} strokeWidth="2" strokeDasharray="5 6" className="art-path" />
+          <g stroke={`url(#${gid}-m)`} strokeWidth="1.5">
+            {MOBILE_NODE_PATHS.slice(0, nodes.length).map((d) => (
+              <path key={d} d={d} />
+            ))}
+          </g>
+          <g fontFamily="inherit" fontSize="15" fontWeight="700" fill="#e2e8f0" textAnchor="middle">
+            {nodes.slice(0, 4).map((n, i) => {
+              const wide = n.length * 9 > 152
+              return (
+                <g key={n}>
+                  <rect x={MOBILE_NODE_BOXES[i].x} y={MOBILE_NODE_BOXES[i].y} width="164" height="48" rx="12" fill="#0F1B2E" stroke="#1E2A3F" />
+                  <text
+                    x={MOBILE_NODE_BOXES[i].x + 82}
+                    y={MOBILE_NODE_BOXES[i].y + 30}
+                    {...(wide ? { textLength: 152, lengthAdjust: 'spacingAndGlyphs' as const } : {})}
+                  >{n}</text>
+                </g>
+              )
+            })}
+          </g>
+          <g className="art-float">
+            <circle cx="180" cy="168" r="46" fill="#0F1B2E" stroke={`url(#${gid}-m)`} strokeWidth="2.5" />
+            <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="4.5" fill="none">
+              <path d="M180 140 L167 188" stroke="#D97706" />
+              <path d="M180 140 L193 188" stroke="#f59e0b" />
+              <path d="M172 172h16" stroke="#FBBF24" />
+            </g>
+          </g>
+          <text x="180" y="250" textAnchor="middle" fontFamily="inherit" fontSize="13" fontWeight="600" fill="#94a3b8">
             {caption}
           </text>
         </svg>

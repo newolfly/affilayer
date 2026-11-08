@@ -11,10 +11,10 @@ import { detectFraudSignals, ledgerTransition } from '@affilayer/shared'
 import { useAuth } from '../lib/auth'
 import type { Campaign, Conversion, NpPayout, Offer, PayoutRequest, Profile } from '../lib/types'
 
-const inputCls = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
-const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-3 py-1.5 text-sm font-semibold text-[#0B1220] disabled:opacity-50'
-const ghostCls = 'rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50'
-const dangerCls = 'rounded-lg border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50'
+const inputCls = 'rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
+const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-3 py-2.5 text-sm font-semibold text-[#0B1220] disabled:opacity-50'
+const ghostCls = 'rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50'
+const dangerCls = 'rounded-lg border border-red-300 px-3 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50'
 
 export function AdminOverview() {
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, pending: 0, revenue: 0 })
@@ -39,10 +39,10 @@ function ProfilesTable({ filter }: { filter?: (p: Profile) => boolean }) {
   return (
     <Card title="Users">
       {list.length === 0 ? <Empty text="No users match." /> : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
           <tbody>{list.map((p) => <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.fullName ?? '—'}</td><td>{p.email}</td><td>{p.role}</td><td>{p.status}</td></tr>)}</tbody>
-        </table>
+        </table></div>
       )}
       <p className="mt-3 text-xs text-slate-400">Approvals, rejections and suspensions are handled in Compliance → KYC review. This table is read-only.</p>
     </Card>
@@ -200,7 +200,7 @@ export function AdminConversions() {
     <Card title="Conversions">
       {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {conversions.length === 0 ? <Empty text="No conversions yet." /> : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Click ID</th><th>Offer</th><th>Affiliate</th><th>Payout</th><th>Status</th><th /></tr></thead>
           <tbody>{conversions.map((c) => (
             <tr key={c.id} className="border-t border-slate-100">
@@ -216,7 +216,7 @@ export function AdminConversions() {
               </td>
             </tr>
           ))}</tbody>
-        </table>
+        </table></div>
       )}
       <p className="mt-3 text-xs text-slate-400">Approvals follow the ledger state machine (pending → approved / rejected). Approved conversions can be reversed later; rejected ones are terminal.</p>
     </Card>
@@ -243,10 +243,10 @@ export function AdminLedger() {
     <Card title="Commission ledger">
       <p className="mb-3 text-sm text-slate-500">Append-only ledger (immutable trigger in the database). Entries mirror conversion status: pending → approved → reversed.</p>
       {convs.length === 0 ? <Empty text="No ledger entries yet." /> : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Conversion</th><th>Affiliate</th><th>Amount</th><th>Status</th></tr></thead>
           <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2 font-mono">{c.id}</td><td>{c.affiliateCode ?? '—'}</td><td>${c.payout.toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
-        </table>
+        </table></div>
       )}
     </Card>
   )
@@ -336,7 +336,7 @@ export function AdminPayouts() {
         {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         {notice && <p className="mb-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
         {payouts.length === 0 ? <Empty text="No payout requests yet." /> : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Affiliate</th><th>Amount</th><th>Method</th><th>Status</th><th>NOWPayments</th><th /></tr></thead>
             <tbody>{payouts.map((p) => {
               const np = npByRequest.get(p.id)
@@ -370,7 +370,7 @@ export function AdminPayouts() {
                 </td>
               </tr>
             )})}</tbody>
-          </table>
+          </table></div>
         )}
       </Card>
     </div>
@@ -487,7 +487,7 @@ export function AdminAuditLogs() {
         </select>
       </div>
       {filtered.length === 0 ? <Empty text="No audit entries match the filters." /> : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Detail</th></tr></thead>
           <tbody>{filtered.map((e) => (
             <tr key={e.id} className="border-t border-slate-100">
@@ -497,7 +497,7 @@ export function AdminAuditLogs() {
               <td>{e.detail}</td>
             </tr>
           ))}</tbody>
-        </table>
+        </table></div>
       )}
     </Card>
   )

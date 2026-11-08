@@ -10,9 +10,9 @@ import { supabase } from '../lib/supabase'
 import { demoProfiles } from '../lib/demo-data'
 import type { Role } from '../lib/types'
 
-const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
+const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
 const labelCls = 'mb-1 block text-sm font-medium text-slate-700'
-const btnCls = 'w-full rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2 text-sm font-semibold text-[#0B1220]'
+const btnCls = 'w-full rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-3 text-sm font-semibold text-[#0B1220]'
 
 export function Login() {
   const { signIn, signInDemo, signInDemoCredentials } = useAuth()
@@ -46,12 +46,12 @@ export function Login() {
           <button
             type="button"
             onClick={() => setProduct('cpa')}
-            className={`rounded-lg px-3 py-2 text-sm font-semibold ${product === 'cpa' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
+            className={`rounded-lg px-3 py-2.5 text-sm font-semibold ${product === 'cpa' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
           >CPA offers</button>
           <button
             type="button"
             onClick={() => setProduct('smartlink')}
-            className={`rounded-lg px-3 py-2 text-sm font-semibold ${product === 'smartlink' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
+            className={`rounded-lg px-3 py-2.5 text-sm font-semibold ${product === 'smartlink' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
           >SmartLink</button>
         </div>
         <p className="mt-3 text-sm text-slate-500">
@@ -93,7 +93,7 @@ export function Login() {
                 <button
                   key={p.id}
                   onClick={() => { signInDemo(p.id); navigate('/app') }}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left text-sm hover:bg-slate-50"
                 >
                   {p.fullName} — {p.role} ({p.status})
                 </button>
@@ -225,7 +225,7 @@ export function Register() {
               <div><label className={labelCls}>Messenger ID</label><input className={inputCls} placeholder="@username" value={messengerId} onChange={(e) => setMessengerId(e.target.value)} /></div>
             </div>
             <button className={btnCls}>Create account</button>
-            <button type="button" onClick={() => { signInDemo('demo-aff-1'); navigate('/onboarding') }} className="w-full text-sm text-amber-700 underline">Demo: continue as Demo Affiliate</button>
+            <button type="button" onClick={() => { signInDemo('demo-aff-1'); navigate('/onboarding') }} className="w-full py-2 text-sm text-amber-700 underline">Demo: continue as Demo Affiliate</button>
           </form>
         )}
       </div>

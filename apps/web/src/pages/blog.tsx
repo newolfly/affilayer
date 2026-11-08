@@ -41,7 +41,7 @@ export function Blog() {
           <button
             key={c}
             onClick={() => setTab(c)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            className={`rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
               tab === c ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 text-[#0B1220]' : 'border border-slate-600 text-slate-300 hover:border-amber-400 hover:text-white'
             }`}
           >

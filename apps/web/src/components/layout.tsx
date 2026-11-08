@@ -105,7 +105,7 @@ export function LanguageSwitcher() {
           key={l.code}
           to={target(l.code)}
           aria-current={l.code === locale ? 'true' : undefined}
-          className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+          className={`rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
             l.code === locale ? 'bg-[#1E2A3F] text-white' : 'text-slate-400 hover:text-amber-300'
           }`}
         >
@@ -158,7 +158,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-[#070D1A] text-slate-200">
       <header className={`sticky top-0 z-40 border-b border-slate-800 bg-[#070D1A]/90 backdrop-blur transition-shadow ${scrolled ? 'shadow-lg shadow-black/30' : ''}`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3">
           <Logo />
           <nav className="hidden shrink-0 gap-6 xl:flex" aria-label="Main">
             {publicLinks.map((l) => (
@@ -174,16 +174,16 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           <div className="flex shrink-0 items-center gap-2">
             <LanguageSwitcher />
             {user ? (
-              <Link to="/app" className="pill-btn whitespace-nowrap !px-4 !py-2 !text-sm">{t('nav.dashboard')}</Link>
+              <Link to="/app" className="pill-btn whitespace-nowrap !px-4 !py-2.5 !text-sm">{t('nav.dashboard')}</Link>
             ) : (
               <>
-                <Link to="/login" className="hidden whitespace-nowrap rounded-full border border-slate-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-slate-400 sm:inline-block">{t('nav.login')}</Link>
-                <Link to="/register" className="pill-btn whitespace-nowrap !px-4 !py-2 !text-sm">{t('nav.register')}</Link>
+                <Link to="/login" className="hidden whitespace-nowrap rounded-full border border-slate-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:border-slate-400 sm:inline-block">{t('nav.login')}</Link>
+                <Link to="/register" className="pill-btn whitespace-nowrap !px-4 !py-2.5 !text-sm">{t('nav.register')}</Link>
               </>
             )}
             <button
               type="button"
-              className="rounded-lg border border-slate-700 p-2 text-slate-200 hover:bg-slate-800 xl:hidden"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-700 p-2 text-slate-200 hover:bg-slate-800 xl:hidden"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -200,7 +200,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                   key={l.to}
                   to={l.to}
                   onClick={() => setMenuOpen(false)}
-                  className={({ isActive }) => `rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-slate-800 font-semibold text-white' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}
+                  className={({ isActive }) => `rounded-lg px-3 py-2.5 text-sm ${isActive ? 'bg-slate-800 font-semibold text-white' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}
                 >
                   {l.label}
                 </NavLink>
@@ -348,11 +348,11 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       <header className="sticky top-0 z-40 bg-[#070D1A] text-white shadow-md shadow-black/20">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="rounded-lg border border-slate-700 p-2 text-slate-200 hover:bg-slate-800 md:hidden"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-700 p-2 text-slate-200 hover:bg-slate-800 md:hidden"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -374,7 +374,7 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
             </span>
             <button
               onClick={async () => { await signOut(); navigate('/login') }}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 hover:bg-slate-800"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-2 hover:bg-slate-800"
             >
               <Icon name="logout" className="h-4 w-4" /> Log out
             </button>
@@ -389,7 +389,7 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
                   to={n.to}
                   end
                   onClick={() => setMenuOpen(false)}
-                  className={({ isActive }) => `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-slate-800 font-semibold text-white' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}
+                  className={({ isActive }) => `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm ${isActive ? 'bg-slate-800 font-semibold text-white' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}
                 >
                   <Icon name={n.icon} className="h-4 w-4 shrink-0" />
                   {n.label}
@@ -477,9 +477,9 @@ export function FirstSteps({ role }: { role: 'affiliate' | 'advertiser' }) {
                 onClick={() => toggle(i)}
                 aria-pressed={done}
                 aria-label={`Mark "${s.label}" as ${done ? 'not done' : 'done'}`}
-                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${done ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-300 text-transparent hover:border-amber-400'}`}
+                className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${done ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-300 text-transparent hover:border-amber-400'}`}
               >
-                <Icon name="check" className="h-3.5 w-3.5" />
+                <Icon name="check" className="h-4 w-4" />
               </button>
               <div className="min-w-0 flex-1">
                 <p className={`text-sm font-semibold ${done ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{i + 1}. {s.label}</p>

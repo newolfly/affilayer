@@ -43,7 +43,7 @@ function HeroIllustration() {
       role="img"
       aria-label="Illustration: the AffiLayer network hub connecting CPA, CPL, CPS and SmartLink offers through one tracked path"
     >
-      <svg viewBox="0 0 640 250" className="w-full" fill="none">
+      <svg viewBox="0 0 640 250" className="hidden w-full md:block" fill="none">
         <defs>
           <linearGradient id="hero-grad" x1="0" y1="0" x2="640" y2="0" gradientUnits="userSpaceOnUse">
             <stop stopColor="#D97706" />
@@ -91,6 +91,49 @@ function HeroIllustration() {
           </g>
           <text x="320" y="200" textAnchor="middle" fontFamily="inherit" fontSize="12" fontWeight="600" fill="#94a3b8">one tracked path</text>
         </g>
+      </svg>
+      {/* Mobile variant (below md): same hub + offer nodes, stacked 2×2 at
+        * near 1:1 scale — 15px labels instead of ~7.3px computed at 390px.
+        * Static: the pointer parallax is mouse-only and never runs on touch. */}
+      <svg viewBox="0 0 360 344" className="mx-auto w-full max-w-[400px] md:hidden" fill="none">
+        <defs>
+          <linearGradient id="hero-grad-m" x1="0" y1="0" x2="360" y2="0" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#D97706" />
+            <stop offset="1" stopColor="#FBBF24" />
+          </linearGradient>
+        </defs>
+        <path d="M16 168 H344" stroke="url(#hero-grad-m)" strokeWidth="2" strokeDasharray="6 6" className="hero-path" />
+        <g stroke="#1E2A3F" strokeWidth="1.5">
+          <line x1="90" y1="60" x2="146" y2="130" />
+          <line x1="270" y1="60" x2="214" y2="130" />
+          <line x1="90" y1="284" x2="146" y2="206" />
+          <line x1="270" y1="284" x2="214" y2="206" />
+        </g>
+        <g fontFamily="inherit" fontSize="15" fontWeight="700" fill="#e2e8f0" textAnchor="middle">
+          <g>
+            <rect x="8" y="12" width="164" height="48" rx="12" fill="#111C30" stroke="#1E2A3F" />
+            <text x="90" y="42">CPA offer</text>
+          </g>
+          <g>
+            <rect x="188" y="12" width="164" height="48" rx="12" fill="#111C30" stroke="#1E2A3F" />
+            <text x="270" y="42">CPS offer</text>
+          </g>
+          <g>
+            <rect x="8" y="284" width="164" height="48" rx="12" fill="#111C30" stroke="#1E2A3F" />
+            <text x="90" y="314">CPL offer</text>
+          </g>
+          <g>
+            <rect x="188" y="284" width="164" height="48" rx="12" fill="#111C30" stroke="#1E2A3F" />
+            <text x="270" y="314">SmartLink</text>
+          </g>
+        </g>
+        <circle cx="180" cy="168" r="52" fill="#111C30" stroke="url(#hero-grad-m)" strokeWidth="2.5" />
+        <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="5" fill="none">
+          <path d="M180 138 167 194" stroke="#D97706" />
+          <path d="M180 138 193 194" stroke="#f59e0b" />
+          <path d="M169 175h22" stroke="#FBBF24" />
+        </g>
+        <text x="180" y="250" textAnchor="middle" fontFamily="inherit" fontSize="13" fontWeight="600" fill="#94a3b8">one tracked path</text>
       </svg>
     </div>
   )

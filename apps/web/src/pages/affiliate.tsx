@@ -12,8 +12,8 @@ import { DEFAULT_SETTINGS, logAudit, newId, updateDemo, useDemoState } from '../
 import { trackingLink } from '../lib/tracking'
 import type { Click, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet } from '../lib/types'
 
-const inputCls = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
-const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2 text-sm font-semibold text-[#0B1220]'
+const inputCls = 'rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
+const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-[#0B1220]'
 
 function useLoad<T>(fn: () => Promise<T>, initial: T) {
   const [data, setData] = useState<T>(initial)
@@ -74,7 +74,7 @@ export function AffiliateOffers() {
         </select>
       </div>
       {filtered.length === 0 ? <Empty text="No offers match your filters." /> : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Offer</th><th>Vertical</th><th>Payout</th><th>GEO</th><th>Status</th><th /></tr></thead>
           <tbody>
             {filtered.map((o) => (
@@ -85,7 +85,7 @@ export function AffiliateOffers() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </Card>
   )
@@ -232,10 +232,10 @@ export function AffiliateReports() {
       </Card>
       <Card title="By offer">
         {byOffer.length === 0 ? <Empty text="No data for the selected filters." /> : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Offer</th><th>Clicks</th><th>Conversions</th></tr></thead>
             <tbody>{byOffer.map(([id, v]) => <tr key={id} className="border-t border-slate-100"><td className="py-2">{id}</td><td>{v.clicks}</td><td>{v.convs}</td></tr>)}</tbody>
-          </table>
+          </table></div>
         )}
       </Card>
       <Card title="Clicks"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
@@ -291,10 +291,10 @@ export function AffiliateEarnings() {
       </div>
       <Card title="Conversions">
         {convs.length === 0 ? <Empty text="No conversions yet." /> : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Offer</th><th>Payout</th><th>Status</th></tr></thead>
             <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.createdAt.slice(0, 10)}</td><td>{c.offerId}</td><td>${c.payout.toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
-          </table>
+          </table></div>
         )}
       </Card>
     </div>
@@ -403,12 +403,12 @@ export function AffiliatePayouts() {
       </Card>
       <Card title="Payout history">
         {mine.length === 0 ? <Empty text="No payouts yet." /> : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Amount</th><th>Method</th><th>Status</th><th>NOWPayments</th></tr></thead>
             <tbody>{mine.map((p) => { const np = npByRequest.get(p.id); return (
               <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.createdAt.slice(0, 10)}</td><td>${p.amount.toFixed(2)} {p.currency}</td><td>{p.method ?? '—'}</td><td>{p.status}</td><td>{np ? `${np.currency} · ${np.status}` : '—'}</td></tr>
             ) })}</tbody>
-          </table>
+          </table></div>
         )}
       </Card>
     </div>
