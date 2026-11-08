@@ -1,6 +1,6 @@
 import type { Locale } from './i18n'
 
-export type CountryCode = 'us' | 'uk' | 'ca' | 'au' | 'de' | 'fr' | 'br' | 'in'
+export type CountryCode = 'us' | 'uk' | 'ca' | 'au' | 'de' | 'fr' | 'br' | 'in' | 'es' | 'mx' | 'ar'
 
 export interface Country {
   code: CountryCode
@@ -83,6 +83,33 @@ export const COUNTRIES: Country[] = [
       en: 'Affiliates in India can run direct offers or route traffic through SmartLink, with the same tracking, ledger and manual payout review as every other country. Applications are reviewed by our team.',
       es: 'Los afiliados en la India pueden promocionar ofertas directas o enviar tráfico a través de SmartLink, con el mismo seguimiento, libro contable y revisión manual de pagos que en cualquier otro país. Nuestro equipo revisa las solicitudes.',
       pt: 'Os afiliados na Índia podem promover ofertas diretas ou enviar tráfego pelo SmartLink, com o mesmo rastreamento, livro-razão e revisão manual de pagamentos de qualquer outro país. Nossa equipe analisa as inscrições.',
+    },
+  },
+  {
+    code: 'es',
+    name: { en: 'Spain', es: 'España', pt: 'Espanha' },
+    intro: {
+      en: 'Affiliates in Spain can run direct CPA offers or route mixed traffic through one SmartLink. Finance offers commonly target Spanish traffic, and each offer states the countries it accepts up front, so you only promote where the advertiser wants traffic.',
+      es: 'Los afiliados en España pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. Las ofertas de Finanzas suelen buscar tráfico español, y cada oferta indica desde el principio los países que acepta, así que solo promocionas donde el anunciante quiere tráfico.',
+      pt: 'Os afiliados na Espanha podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. As ofertas de Finanças costumam buscar tráfego espanhol, e cada oferta indica desde o início os países que aceita, para que você só promova onde o anunciante deseja tráfego.',
+    },
+  },
+  {
+    code: 'mx',
+    name: { en: 'Mexico', es: 'México', pt: 'México' },
+    intro: {
+      en: 'Affiliates in Mexico can run direct CPA offers or route mixed traffic through one SmartLink. Mexico is one of the largest Spanish-speaking markets, and Finance offers commonly target it — each offer states the countries it accepts, so you only promote where the advertiser wants traffic.',
+      es: 'Los afiliados en México pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. México es uno de los mercados hispanohablantes más grandes, y las ofertas de Finanzas suelen buscarlo; cada oferta indica los países que acepta, así que solo promocionas donde el anunciante quiere tráfico.',
+      pt: 'Os afiliados no México podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. O México é um dos maiores mercados de língua espanhola, e as ofertas de Finanças costumam buscá-lo; cada oferta indica os países que aceita, para que você só promova onde o anunciante deseja tráfego.',
+    },
+  },
+  {
+    code: 'ar',
+    name: { en: 'Argentina', es: 'Argentina', pt: 'Argentina' },
+    intro: {
+      en: 'Affiliates in Argentina can run direct CPA offers or route mixed traffic through one SmartLink. Finance offers commonly target Argentine traffic, and commissions are recorded in USD in the ledger — each offer states the countries it accepts, so you only promote where the advertiser wants traffic.',
+      es: 'Los afiliados en Argentina pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. Las ofertas de Finanzas suelen buscar tráfico argentino, y las comisiones se registran en USD en el libro contable; cada oferta indica los países que acepta, así que solo promocionás donde el anunciante quiere tráfico.',
+      pt: 'Os afiliados na Argentina podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. As ofertas de Finanças costumam buscar tráfego argentino, e as comissões são registradas em USD no livro-razão; cada oferta indica os países que aceita, para que você só promova onde o anunciante deseja tráfego.',
     },
   },
 ]

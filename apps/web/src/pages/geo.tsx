@@ -5,6 +5,7 @@ import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
 import { useLocale, useT, localizePath } from '../lib/i18n'
 import { COUNTRIES, countryByCode } from '../lib/geo-data'
+import { geoSeoByCode } from '../lib/geo-seo-data'
 import { FunnelSteps } from './public'
 
 const BULLET_ICONS: IconName[] = ['link', 'tag', 'file', 'banknote']
@@ -23,8 +24,8 @@ export function GeoIndex() {
       </p>
       <PageArt
         variant="geo"
-        label="Illustration: the AffiLayer hub connecting eight country pages, one ledger and Net30 payouts"
-        nodes={['8 countries', 'One ledger', 'Net30 payouts', 'One network']}
+        label="Illustration: the AffiLayer hub connecting eleven country pages, one ledger and Net30 payouts"
+        nodes={['11 countries', 'One ledger', 'Net30 payouts', 'One network']}
         caption="one network, every country"
       />
       <PageHighlights
@@ -82,6 +83,10 @@ export function GeoPage() {
   if (!country) return <Navigate to={localizePath('/geo', locale)} replace />
 
   const name = country.name[locale]
+  /** SEO-targeted content (Finance vertical, Spanish register per
+   *  country) renders only on the Spanish pages. English and Portuguese
+   *  versions of these countries keep the standard geo page. */
+  const seo = locale === 'es' ? geoSeoByCode(code ?? '') : undefined
   const affiliateSteps = [1, 2, 3, 4, 5].map((n) => ({
     n: String(n),
     t: t(`aff.funnel.${n}.t` as `aff.funnel.${1 | 2 | 3 | 4 | 5}.t`),
@@ -106,6 +111,11 @@ export function GeoPage() {
       </h1>
       <Slogan className="mt-4">{t('geo.page.slogan', { country: name })}</Slogan>
       <p className="mt-4 max-w-3xl text-slate-300">{country.intro[locale]}</p>
+      {seo && (
+        <p className="mt-4 max-w-3xl rounded-xl border border-amber-500/40 bg-amber-500/10 p-5 leading-relaxed text-slate-200">
+          {seo.answer}
+        </p>
+      )}
       <PageArt
         variant="country"
         label={`Illustration: the AffiLayer hub for ${name} — CPA, CPL and CPS offers, SmartLink and Net30 payouts`}
@@ -131,28 +141,94 @@ export function GeoPage() {
         ))}
       </div>
 
+      {seo && (
+        <section className="mt-14">
+          <h2 className="text-2xl font-bold text-white">{t('geo.seo.payoutTable')}</h2>
+          <div className="mt-4 overflow-x-auto rounded-xl bg-white p-5 text-slate-900">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="py-2 pr-4 font-bold">{t('geo.seo.col.model')}</th>
+                  <th className="py-2 pr-4 font-bold">{t('geo.seo.col.what')}</th>
+                  <th className="py-2 font-bold">{t('geo.seo.col.how')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {seo.payoutRows.map((row) => (
+                  <tr key={row.model} className="border-b border-slate-100 align-top last:border-0">
+                    <td className="py-3 pr-4 font-bold whitespace-nowrap">{row.model}</td>
+                    <td className="py-3 pr-4 leading-relaxed text-slate-700">{row.what}</td>
+                    <td className="py-3 leading-relaxed text-slate-700">{row.how}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <FunnelSteps heading={t('geo.page.forAff', { country: name })} steps={affiliateSteps} />
       <FunnelSteps heading={t('geo.page.forAdv', { country: name })} steps={advertiserSteps} />
 
-      <section className="mt-14">
-        <h2 className="text-xl font-bold text-white">
-          {t('geo.page.qaTitle', { country: name })}
-        </h2>
-        <div className="mt-4 space-y-3">
-          {[1, 2, 3].map((n) => (
-            <Reveal key={n}>
-              <details className="lift rounded-xl bg-white p-5 text-slate-900">
-                <summary className="cursor-pointer font-semibold">
-                  {t(`geo.qa.${n}.q` as `geo.qa.${1 | 2 | 3}.q`, { country: name })}
-                </summary>
-                <p className="mt-2 text-sm text-slate-600">
-                  {t(`geo.qa.${n}.a` as `geo.qa.${1 | 2 | 3}.a`, { country: name })}
-                </p>
-              </details>
-            </Reveal>
-          ))}
-        </div>
-      </section>
+      {seo && (
+        <>
+          <section className="mt-14">
+            <h2 className="text-2xl font-bold text-white">
+              {t('geo.seo.payoutMethods', { country: name })}
+            </h2>
+            <p className="mt-4 max-w-3xl leading-relaxed text-slate-300">{seo.payoutNote}</p>
+          </section>
+
+          <section className="mt-14">
+            <h2 className="text-2xl font-bold text-white">
+              {t('geo.seo.countryNotes', { country: name })}
+            </h2>
+            <ul className="mt-4 max-w-3xl list-disc space-y-2 pl-5 text-slate-300">
+              {seo.countryNotes.map((note) => (
+                <li key={note.slice(0, 24)} className="leading-relaxed">{note}</li>
+              ))}
+            </ul>
+          </section>
+        </>
+      )}
+
+      {seo ? (
+        <section className="mt-14">
+          <h2 className="text-xl font-bold text-white">
+            {t('geo.seo.faqTitle', { country: name })}
+          </h2>
+          <div className="mt-4 space-y-3">
+            {seo.faq.map((item) => (
+              <Reveal key={item.q}>
+                <details className="lift rounded-xl bg-white p-5 text-slate-900">
+                  <summary className="cursor-pointer font-semibold">{item.q}</summary>
+                  <p className="mt-2 text-sm text-slate-600">{item.a}</p>
+                </details>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section className="mt-14">
+          <h2 className="text-xl font-bold text-white">
+            {t('geo.page.qaTitle', { country: name })}
+          </h2>
+          <div className="mt-4 space-y-3">
+            {[1, 2, 3].map((n) => (
+              <Reveal key={n}>
+                <details className="lift rounded-xl bg-white p-5 text-slate-900">
+                  <summary className="cursor-pointer font-semibold">
+                    {t(`geo.qa.${n}.q` as `geo.qa.${1 | 2 | 3}.q`, { country: name })}
+                  </summary>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {t(`geo.qa.${n}.a` as `geo.qa.${1 | 2 | 3}.a`, { country: name })}
+                  </p>
+                </details>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="mt-10 flex flex-wrap gap-3">
         <Link to="/register" className="pill-btn">{t('aff.register')}</Link>

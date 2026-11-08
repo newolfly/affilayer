@@ -56,6 +56,9 @@ ROUTES = {
     "/geo/fr": ["CPA affiliate network in France", "Can I join AffiLayer from France?"],
     "/geo/br": ["CPA affiliate network in Brazil", "Can I join AffiLayer from Brazil?"],
     "/geo/in": ["CPA affiliate network in India", "Can I join AffiLayer from India?"],
+    "/geo/es": ["CPA affiliate network in Spain", "Can I join AffiLayer from Spain?"],
+    "/geo/mx": ["CPA affiliate network in Mexico", "Can I join AffiLayer from Mexico?"],
+    "/geo/ar": ["CPA affiliate network in Argentina", "Can I join AffiLayer from Argentina?"],
     "/es/": ["Una nueva red CPA", "Convierte tráfico de", "Explorar por país"],
     "/es/affiliates": ["Para afiliados", "Tu camino hacia tu primer pago"],
     "/es/advertisers": ["Para anunciantes", "Tu camino hacia tu primer cliente"],
@@ -69,6 +72,9 @@ ROUTES = {
     "/es/geo/fr": ["Red de afiliados CPA en Francia", "¿Puedo unirme a AffiLayer desde Francia?"],
     "/es/geo/br": ["Red de afiliados CPA en Brasil", "¿Puedo unirme a AffiLayer desde Brasil?"],
     "/es/geo/in": ["Red de afiliados CPA en India", "¿Puedo unirme a AffiLayer desde India?"],
+    "/es/geo/es": ["Red de afiliados CPA en España", "¿Cómo pagan las ofertas de Finanzas en España?", "podéis ganar comisiones"],
+    "/es/geo/mx": ["Red de afiliados CPA en México", "¿Cómo pagan las ofertas de Finanzas en México?", "puedes ganar comisiones"],
+    "/es/geo/ar": ["Red de afiliados CPA en Argentina", "¿Cómo pagan las ofertas de Finanzas en Argentina?", "podés ganar comisiones"],
     "/pt/": ["Uma nova rede CPA", "Transforme tráfego de", "Explorar por país"],
     "/pt/affiliates": ["Para afiliados", "Seu caminho até o primeiro pagamento"],
     "/pt/advertisers": ["Para anunciantes", "Seu caminho até o primeiro cliente"],
@@ -82,6 +88,9 @@ ROUTES = {
     "/pt/geo/fr": ["Rede de afiliados CPA em França", "Posso entrar na AffiLayer a partir de França?"],
     "/pt/geo/br": ["Rede de afiliados CPA em Brasil", "Posso entrar na AffiLayer a partir de Brasil?"],
     "/pt/geo/in": ["Rede de afiliados CPA em Índia", "Posso entrar na AffiLayer a partir de Índia?"],
+    "/pt/geo/es": ["Rede de afiliados CPA em Espanha", "Posso entrar na AffiLayer a partir de Espanha?"],
+    "/pt/geo/mx": ["Rede de afiliados CPA em México", "Posso entrar na AffiLayer a partir de México?"],
+    "/pt/geo/ar": ["Rede de afiliados CPA em Argentina", "Posso entrar na AffiLayer a partir de Argentina?"],
 }
 
 PORT = 4173

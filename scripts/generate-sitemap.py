@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "apps" / "web" / "public" / "sitemap.xml"
 SITE = "https://affilayer.com"
-LASTMOD = "2026-11-07"
+LASTMOD = "2026-11-09"
 
 # (path, changefreq, priority)
 EN = [
@@ -33,7 +33,7 @@ EN = [
     ("/privacy", "yearly", "0.4"),
     ("/geo", "monthly", "0.8"),
 ]
-GEO_CODES = ["us", "uk", "ca", "au", "de", "fr", "br", "in"]
+GEO_CODES = ["us", "uk", "ca", "au", "de", "fr", "br", "in", "es", "mx", "ar"]
 LOCALISED = ["", "/affiliates", "/advertisers", "/how-it-works", "/geo"] + [f"/geo/{c}" for c in GEO_CODES]
 
 URLS = list(EN)

@@ -6,6 +6,7 @@ import { DICT } from './i18n-dict'
 import { localeFromPath, basePath, alternatesFor } from './i18n'
 import type { Locale } from './i18n'
 import { countryByCode } from './geo-data'
+import { geoSeoByCode } from './geo-seo-data'
 
 const SITE_URL = 'https://affilayer.com'
 const OG_IMAGE = `${SITE_URL}/og-image.png`
@@ -346,28 +347,44 @@ function geoCountryMeta(path: string, locale: Locale): SeoMeta | null {
     pt: `Promova ofertas de CPA em ${name} com a AffiLayer: rastreamento completo, livro-razão auditável e pagamentos manuais Net30.`,
   }
   const d = DICT[locale]
-  const faqLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: [1, 2, 3].map((n) => ({
-      '@type': 'Question',
-      name: d[`geo.qa.${n}.q` as `geo.qa.${1 | 2 | 3}.q`].replaceAll('{country}', name),
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: d[`geo.qa.${n}.a` as `geo.qa.${1 | 2 | 3}.a`].replaceAll('{country}', name),
-      },
-    })),
-  }
+  /** Spanish Finance pages (es/mx/ar) take their title, description and
+   *  FAQPage from the SEO data file — single source with the visible page,
+   *  so markup and text can never drift apart. */
+  const seo = locale === 'es' ? geoSeoByCode(m[1]) : undefined
+  const faqLd = seo
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: seo.faq.map((item) => ({
+          '@type': 'Question',
+          name: item.q,
+          acceptedAnswer: { '@type': 'Answer', text: item.a },
+        })),
+      }
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [1, 2, 3].map((n) => ({
+          '@type': 'Question',
+          name: d[`geo.qa.${n}.q` as `geo.qa.${1 | 2 | 3}.q`].replaceAll('{country}', name),
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: d[`geo.qa.${n}.a` as `geo.qa.${1 | 2 | 3}.a`].replaceAll('{country}', name),
+          },
+        })),
+      }
+  const title = seo?.seoTitle ?? titles[locale]
+  const description = seo?.seoDescription ?? descs[locale]
   const crumbs = breadcrumb([
     { name: HOME_NAME[locale], path: locale === 'en' ? '/' : `/${locale}` },
     { name: d['nav.countries'], path: locale === 'en' ? '/geo' : `/${locale}/geo` },
     { name, path: localizedPath },
   ])
   return {
-    title: titles[locale],
-    description: descs[locale],
+    title,
+    description,
     jsonLd: [
-      webPage(localizedPath, titles[locale].replace(' | AffiLayer', ''), descs[locale], locale),
+      webPage(localizedPath, title.replace(' | AffiLayer', ''), description, locale),
       crumbs,
       faqLd,
     ],

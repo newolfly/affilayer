@@ -63,9 +63,13 @@ under /es/ and Portuguese under /pt/ (for example /es/geo/us and
 
 Country pages live under /geo/: United States (/geo/us), United Kingdom
 (/geo/uk), Canada (/geo/ca), Australia (/geo/au), Germany (/geo/de), France
-(/geo/fr), Brazil (/geo/br) and India (/geo/in). Each page describes the same
+(/geo/fr), Brazil (/geo/br), India (/geo/in), Spain (/geo/es), Mexico
+(/geo/mx) and Argentina (/geo/ar). Each page describes the same
 global product — tracking, ledger, manual Net30 payouts — with no local
-offices, staff or country-specific offer counts claimed. AffiLayer is open
+offices, staff or country-specific offer counts claimed. The Spanish pages
+for Spain, Mexico and Argentina add Finance-vertical detail (payout models
+CPA / CPL / CPS in USD, payout notes, country notes) written in each
+country's Spanish register. AffiLayer is open
 worldwide; there is no restricted country list.
 
 ## Pages
@@ -80,6 +84,9 @@ worldwide; there is no restricted country list.
 - France — https://affilayer.com/geo/fr
 - Brazil — https://affilayer.com/geo/br
 - India — https://affilayer.com/geo/in
+- Spain — https://affilayer.com/geo/es
+- Mexico — https://affilayer.com/geo/mx
+- Argentina — https://affilayer.com/geo/ar
 - About — https://affilayer.com/about
 - Advantages — https://affilayer.com/advantages
 - For advertisers — https://affilayer.com/advertisers

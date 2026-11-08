@@ -18,7 +18,17 @@ export const LOCALIZED_BASE_PATHS: string[] = [
   '/',
  '/affiliates', '/advertisers', '/how-it-works', '/geo',
   '/geo/us', '/geo/uk', '/geo/ca', '/geo/au', '/geo/de', '/geo/fr', '/geo/br', '/geo/in',
+  '/geo/es', '/geo/mx', '/geo/ar',
 ]
+
+/** Region codes for the geo pages whose Spanish copy is written for one
+ *  country (Spain / Mexico / Argentina). Every other geo page uses
+ *  generic Spanish, so its hreflang stays language-only ("es"). */
+export const GEO_REGION_HREFLANG: Record<string, string> = {
+  es: 'es-ES',
+  mx: 'es-MX',
+  ar: 'es-AR',
+}
 
 /** Locale from the first URL segment: /es/geo/us -> 'es', /pt -> 'pt', anything else -> 'en'. */
 export function localeFromPath(pathname: string): Locale {
@@ -40,11 +50,16 @@ export function localizePath(base: string, locale: Locale): string {
   return base === '/' ? `/${locale}` : `/${locale}${base}`
 }
 
-/** hreflang alternates for a base path, or null when the page is English-only. */
-export function alternatesFor(base: string): { locale: Locale; href: string }[] | null {
+/** hreflang alternates for a base path, or null when the page is English-only.
+ *  Geo pages whose Spanish copy is written for one country (es/mx/ar) get
+ *  the language-region code (es-ES / es-MX / es-AR) on the Spanish
+ *  alternate; every other page keeps the language-only code. */
+export function alternatesFor(base: string): { locale: string; href: string }[] | null {
   if (!LOCALIZED_BASE_PATHS.includes(base)) return null
+  const geo = base.match(/^\/geo\/([a-z]{2})$/)
+  const esCode = geo && GEO_REGION_HREFLANG[geo[1]] ? GEO_REGION_HREFLANG[geo[1]] : 'es'
   return (['en', 'es', 'pt'] as Locale[]).map((l) => ({
-    locale: l,
+    locale: l === 'es' ? esCode : l,
     href: `https://affilayer.com${localizePath(base, l)}`,
   }))
 }

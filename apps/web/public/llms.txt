@@ -19,7 +19,7 @@
 ## Pages
 
 - [Home](https://affilayer.com/): what AffiLayer is, direct offers, SmartLink, benefits
-- [Countries](https://affilayer.com/geo): country pages for the US, UK, Canada, Australia, Germany, France, Brazil and India
+- [Countries](https://affilayer.com/geo): country pages for the US, UK, Canada, Australia, Germany, France, Brazil, India, Spain, Mexico and Argentina
 - [About](https://affilayer.com/about): the network, its operator, and its three principles
 - [Advantages](https://affilayer.com/advantages): what AffiLayer does differently
 - [For advertisers](https://affilayer.com/advertisers): publish offers, approve affiliates, control spend
@@ -43,6 +43,6 @@
 - Tracking link format: /c/{affiliate_code}/{offer_id}, up to five sub-parameters
 - Applications reviewed by the team
 - Languages: English, Spanish, Portuguese (public pages); dashboards English-only
-- Country pages: /geo/us, /geo/uk, /geo/ca, /geo/au, /geo/de, /geo/fr, /geo/br, /geo/in
+- Country pages: /geo/us, /geo/uk, /geo/ca, /geo/au, /geo/de, /geo/fr, /geo/br, /geo/in, /geo/es, /geo/mx, /geo/ar
 - No bonus or referral program at launch
 - Chat traffic and incentivised traffic are not accepted
