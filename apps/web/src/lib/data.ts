@@ -69,7 +69,7 @@ export function mapClick(r: Row): Click {
 export function mapConversion(r: Row): Conversion {
   return {
     id: String(r.id), clickId: String(r.click_id ?? ''), offerId: String(r.offer_id ?? ''),
-    affiliateCode: str(r, 'affiliate_code'), payout: num(r, 'payout') ?? 0, currency: String(r.currency ?? 'USD'),
+    affiliateCode: str(r, 'affiliate_code'), affiliateId: str(r, 'affiliate_id'), payout: num(r, 'payout') ?? 0, currency: String(r.currency ?? 'USD'),
     status: (r.status as Conversion['status']) ?? 'pending', idempotencyKey: String(r.idempotency_key ?? ''),
     sub1: str(r, 'sub1'), createdAt: String(r.created_at ?? ''),
   }
@@ -87,10 +87,14 @@ export function mapProfile(r: Row): Profile {
 }
 
 export function mapPayout(r: Row): PayoutRequest {
+  // The database status is 'pending'; the UI calls that state 'requested'.
+  // Without this translation the admin action buttons (which check for
+  // 'requested') never render for a live payout request.
+  const dbStatus = String(r.status ?? 'pending')
   return {
-    id: String(r.id), affiliateCode: String(r.affiliate_code ?? ''), amount: num(r, 'amount') ?? 0,
-    currency: String(r.currency ?? 'USD'), status: (r.status as PayoutRequest['status']) ?? 'requested',
-    method: str(r, 'method'), createdAt: String(r.created_at ?? ''),
+    id: String(r.id), affiliateCode: String(r.affiliate_code ?? ''), affiliateId: str(r, 'affiliate_id'), amount: num(r, 'amount') ?? 0,
+    currency: String(r.currency ?? 'USD'), status: (dbStatus === 'pending' ? 'requested' : dbStatus) as PayoutRequest['status'],
+    method: str(r, 'payment_method') ?? str(r, 'method'), createdAt: String(r.created_at ?? ''),
   }
 }
 
@@ -169,7 +173,70 @@ export async function getPayouts(): Promise<PayoutRequest[]> {
   if (!isSupabaseConfigured || !supabase) return getDemoState().payouts
   const { data, error } = await supabase.from('payout_requests').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
-  return (data as Row[]).map(mapPayout)
+  // payout_requests carries only affiliate_id — resolve a display name for
+  // the admin table from affiliate_profiles (code) or profiles (email).
+  const rows = (data as Row[]).map(mapPayout)
+  const { data: codes } = await supabase.from('affiliate_profiles').select('profile_id, affiliate_code')
+  const { data: profs } = await supabase.from('profiles').select('id, email')
+  const codeById = new Map(((codes as Row[] | null) ?? []).map((c) => [String(c.profile_id), String(c.affiliate_code ?? '')]))
+  const emailById = new Map(((profs as Row[] | null) ?? []).map((p) => [String(p.id), String(p.email ?? '')]))
+  for (const p of rows) {
+    if (!p.affiliateCode && p.affiliateId) p.affiliateCode = codeById.get(p.affiliateId) ?? emailById.get(p.affiliateId) ?? ''
+  }
+  return rows
+}
+
+/** Admin financial actions (H-5). In Supabase mode these call the
+ *  SECURITY DEFINER RPCs (003 approve/reject_conversion, 008 payout
+ *  RPCs), which enforce the admin gate and the ledger state machine.
+ *  Demo mode keeps the old local behaviour — the callers branch. */
+
+export async function decideConversion(id: string, to: 'approved' | 'rejected', actorId: string): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { error } = await supabase.rpc(to === 'approved' ? 'approve_conversion' : 'reject_conversion', {
+    p_conversion_id: id, p_actor: actorId,
+  })
+  return error ? { error: error.message } : {}
+}
+
+export async function decidePayout(
+  id: string,
+  to: 'approved' | 'rejected' | 'paid',
+  actorId: string,
+  opts?: { reason?: string; provider?: string; transactionRef?: string },
+): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const fn = to === 'approved' ? 'approve_payout_request' : to === 'rejected' ? 'reject_payout_request' : 'complete_payout_request'
+  const params: Record<string, unknown> = { p_request_id: id, p_actor: actorId }
+  if (to === 'rejected' && opts?.reason) params.p_reason = opts.reason
+  if (to === 'paid') {
+    if (opts?.provider) params.p_provider = opts.provider
+    if (opts?.transactionRef) params.p_transaction_ref = opts.transactionRef
+  }
+  const { error } = await supabase.rpc(fn, params)
+  return error ? { error: error.message } : {}
+}
+
+/** Affiliate payout request. RLS allows an affiliate to INSERT their own
+ *  row (affiliate_id = auth.uid()); the amount/status review is the
+ *  admin's job via decidePayout. */
+export async function requestPayout(amount: number, currency: string, method: string): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You are not signed in.' }
+  const { error } = await supabase.from('payout_requests').insert({
+    affiliate_id: user.id, amount, currency, payment_method: method,
+  })
+  return error ? { error: error.message } : {}
+}
+
+/** The affiliate's saved payment method (affiliate_profiles), if any. */
+export async function getMyAffiliateProfile(): Promise<{ paymentMethod?: string }> {
+  if (!isSupabaseConfigured || !supabase) return {}
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return {}
+  const { data } = await supabase.from('affiliate_profiles').select('payment_method').eq('profile_id', user.id).maybeSingle()
+  return { paymentMethod: (data as Row | null)?.payment_method as string | undefined }
 }
 
 export async function getTickets(): Promise<SupportTicket[]> {

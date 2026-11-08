@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Card, Empty, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { getClicks, getConversions, getStats } from '../lib/data'
+import { decideConversion, decidePayout, getClicks, getConversions, getPayouts, getStats, isDemoMode } from '../lib/data'
 import { demoDailySeries } from '../lib/demo-data'
 import { logAudit, newId, resetDemo, updateDemo, useDemoState } from '../lib/demo-store'
 import type { NetworkSettings } from '../lib/demo-store'
 import { detectFraudSignals, ledgerTransition } from '@affilayer/shared'
 import { useAuth } from '../lib/auth'
-import type { Campaign, Offer, PayoutRequest, Profile } from '../lib/types'
+import type { Campaign, Conversion, Offer, PayoutRequest, Profile } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
 const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-3 py-1.5 text-sm font-semibold text-[#0B1220] disabled:opacity-50'
@@ -174,16 +174,30 @@ export function AdminCampaigns() {
 
 export function AdminConversions() {
   const { user } = useAuth()
-  const { conversions } = useDemoState()
+  const { conversions: demoConversions } = useDemoState()
+  const [liveConversions, setLiveConversions] = useState<Conversion[] | null>(null)
+  const [error, setError] = useState('')
   const actor = user?.email ?? 'admin'
-  const decide = (id: string, to: 'approved' | 'rejected') => {
+  // Supabase mode reads live rows; demo mode reads the demo store.
+  useEffect(() => { if (!isDemoMode) getConversions().then(setLiveConversions) }, [])
+  const conversions = isDemoMode ? demoConversions : (liveConversions ?? [])
+  const decide = async (id: string, to: 'approved' | 'rejected') => {
     const conv = conversions.find((c) => c.id === id)
     if (!conv || !ledgerTransition(conv.status, to)) return
-    updateDemo((s) => { const t = s.conversions.find((x) => x.id === id); if (t) t.status = to })
-    logAudit(actor, `conversion.${to}`, 'conversion', id, `Conversion ${id} ${to} (payout $${conv.payout.toFixed(2)} ${conv.currency}).`)
+    if (isDemoMode) {
+      updateDemo((s) => { const t = s.conversions.find((x) => x.id === id); if (t) t.status = to })
+      logAudit(actor, `conversion.${to}`, 'conversion', id, `Conversion ${id} ${to} (payout $${conv.payout.toFixed(2)} ${conv.currency}).`)
+      return
+    }
+    if (!user) return
+    const r = await decideConversion(id, to, user.id)
+    if (r.error) { setError(r.error); return }
+    setError('')
+    getConversions().then(setLiveConversions)
   }
   return (
     <Card title="Conversions">
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {conversions.length === 0 ? <Empty text="No conversions yet." /> : (
         <table className="w-full text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Click ID</th><th>Offer</th><th>Affiliate</th><th>Payout</th><th>Status</th><th /></tr></thead>
@@ -239,12 +253,28 @@ export function AdminLedger() {
 
 export function AdminPayouts() {
   const { user } = useAuth()
-  const { payouts } = useDemoState()
+  const { payouts: demoPayouts } = useDemoState()
+  const [livePayouts, setLivePayouts] = useState<PayoutRequest[] | null>(null)
+  const [error, setError] = useState('')
   const actor = user?.email ?? 'admin'
+  // Supabase mode reads live rows; demo mode reads the demo store.
+  useEffect(() => { if (!isDemoMode) getPayouts().then(setLivePayouts) }, [])
+  const payouts = isDemoMode ? demoPayouts : (livePayouts ?? [])
   const payable = payouts.filter((p) => p.status === 'approved').reduce((s, p) => s + p.amount, 0)
-  const setStatus = (p: PayoutRequest, status: PayoutRequest['status']) => {
-    updateDemo((s) => { const t = s.payouts.find((x) => x.id === p.id); if (t) t.status = status })
-    logAudit(actor, `payout.${status}`, 'payout', p.id, `Payout $${p.amount.toFixed(2)} ${p.currency} to ${p.affiliateCode} → ${status}.`)
+  const setStatus = async (p: PayoutRequest, status: PayoutRequest['status']) => {
+    if (isDemoMode) {
+      updateDemo((s) => { const t = s.payouts.find((x) => x.id === p.id); if (t) t.status = status })
+      logAudit(actor, `payout.${status}`, 'payout', p.id, `Payout $${p.amount.toFixed(2)} ${p.currency} to ${p.affiliateCode} → ${status}.`)
+      return
+    }
+    if (!user) return
+    // approved = approve (reserves the ledger balance), rejected = reject,
+    // paid = complete (records the settlement after money moved outside).
+    const to = status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : 'paid'
+    const r = await decidePayout(p.id, to, user.id)
+    if (r.error) { setError(r.error); return }
+    setError('')
+    getPayouts().then(setLivePayouts)
   }
   return (
     <div className="space-y-4">
@@ -254,6 +284,7 @@ export function AdminPayouts() {
       </div>
       <Card title="Payouts">
         <p className="mb-3 text-sm text-slate-500">Payout execution is manual and admin-approved in this MVP. Approving a request does not move money — payment happens outside the app and is reconciled here.</p>
+        {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         {payouts.length === 0 ? <Empty text="No payout requests yet." /> : (
           <table className="w-full text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Affiliate</th><th>Amount</th><th>Method</th><th>Status</th><th /></tr></thead>

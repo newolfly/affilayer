@@ -92,6 +92,9 @@ export interface Conversion {
   clickId: string;
   offerId: string;
   affiliateCode?: string;
+  /** Supabase-mode owner id (conversions.affiliate_id). Used to filter a
+   *  real affiliate's rows — real affiliates have no affiliate_code yet. */
+  affiliateId?: string;
   payout: number;
   currency: string;
   status: ConversionStatus;
@@ -117,6 +120,8 @@ export interface CommissionLedgerEntry {
 export interface PayoutRequest {
   id: string;
   affiliateCode: string;
+  /** Supabase-mode owner id (payout_requests.affiliate_id). */
+  affiliateId?: string;
   amount: number;
   currency: string;
   status: 'requested' | 'approved' | 'paid' | 'rejected';

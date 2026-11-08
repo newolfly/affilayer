@@ -4,12 +4,12 @@ import { Link, useParams } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
-import { getClicks, getConversions, getOffers, getStats, isDemoMode } from '../lib/data'
+import { getClicks, getConversions, getMyAffiliateProfile, getOffers, getPayouts, getStats, isDemoMode, requestPayout } from '../lib/data'
 import type { ReportFilters } from '../lib/data'
 import { demoDailySeries } from '../lib/demo-data'
-import { logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
+import { DEFAULT_SETTINGS, logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
 import { trackingLink } from '../lib/tracking'
-import type { Click, Conversion, Offer } from '../lib/types'
+import type { Click, Conversion, Offer, PayoutRequest } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900'
 const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2 text-sm font-semibold text-[#0B1220]'
@@ -302,29 +302,54 @@ export function AffiliateEarnings() {
 
 export function AffiliatePayouts() {
   const { user } = useAuth()
-  const { payouts, settings, conversions, profiles } = useDemoState()
-  const code = user?.affiliateCode ?? 'AFF-DEMO-001'
-  const mine = payouts.filter((p) => p.affiliateCode === code)
+  const demo = useDemoState()
+  const [live, setLive] = useState<{ payouts: PayoutRequest[]; conversions: Conversion[]; method: string } | null>(null)
   const [amount, setAmount] = useState('')
   const [requested, setRequested] = useState(false)
   const [error, setError] = useState('')
+  const code = user?.affiliateCode ?? 'AFF-DEMO-001'
+  // Supabase mode reads live rows; demo mode reads the demo store. There
+  // is no network-settings table yet, so Supabase mode uses the defaults.
+  const settings = isDemoMode ? demo.settings : DEFAULT_SETTINGS
+  useEffect(() => {
+    if (isDemoMode) return
+    Promise.all([getPayouts(), getConversions(), getMyAffiliateProfile()]).then(([payouts, conversions, ap]) =>
+      setLive({ payouts, conversions, method: ap.paymentMethod ?? 'Bank transfer' }),
+    )
+  }, [])
+  const payouts = isDemoMode ? demo.payouts : (live?.payouts ?? [])
+  const conversions = isDemoMode ? demo.conversions : (live?.conversions ?? [])
+  // Real affiliates have no affiliate_code yet — match live rows by owner
+  // id instead of by code.
+  const mine = isDemoMode
+    ? payouts.filter((p) => p.affiliateCode === code)
+    : payouts.filter((p) => p.affiliateId === user?.id)
   const approvedBalance = conversions
-    .filter((c) => c.affiliateCode === code && c.status === 'approved')
+    .filter((c) => (isDemoMode ? c.affiliateCode === code : c.affiliateId === user?.id) && c.status === 'approved')
     .reduce((s, c) => s + c.payout, 0)
-  const method = profiles.find((p) => p.affiliateCode === code)?.paymentMethod ?? 'Bank transfer'
-  const request = (e: FormEvent) => {
+  const method = isDemoMode
+    ? (demo.profiles.find((p) => p.affiliateCode === code)?.paymentMethod ?? 'Bank transfer')
+    : (live?.method ?? 'Bank transfer')
+  const request = async (e: FormEvent) => {
     e.preventDefault()
     const value = Number(amount)
     if (!Number.isFinite(value) || value <= 0) { setError('Enter an amount greater than 0.'); return }
     if (value < settings.minPayout) { setError(`Minimum payout is $${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}.`); return }
     if (value > approvedBalance) { setError(`Amount exceeds your approved balance of $${approvedBalance.toFixed(2)}.`); return }
-    updateDemo((s) => {
-      s.payouts.unshift({
-        id: newId('pay'), affiliateCode: code, amount: value, currency: settings.defaultCurrency,
-        status: 'requested', method, createdAt: new Date().toISOString(),
+    if (isDemoMode) {
+      updateDemo((s) => {
+        s.payouts.unshift({
+          id: newId('pay'), affiliateCode: code, amount: value, currency: settings.defaultCurrency,
+          status: 'requested', method, createdAt: new Date().toISOString(),
+        })
       })
-    })
-    logAudit(user?.email ?? code, 'payout.request', 'payout', code, `Payout requested: $${value.toFixed(2)} ${settings.defaultCurrency}.`)
+      logAudit(user?.email ?? code, 'payout.request', 'payout', code, `Payout requested: $${value.toFixed(2)} ${settings.defaultCurrency}.`)
+    } else {
+      const r = await requestPayout(value, settings.defaultCurrency, method)
+      if (r.error) { setError(r.error); return }
+      const payouts = await getPayouts()
+      setLive((prev) => (prev ? { ...prev, payouts } : prev))
+    }
     setAmount('')
     setError('')
     setRequested(true)
@@ -342,7 +367,7 @@ export function AffiliatePayouts() {
         </form>
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         {requested && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Payout request submitted for review.</p>}
-        <p className="mt-3 text-xs text-slate-400">Payouts are calculated from approved commissions in the ledger. Demo mode: requests are not sent anywhere.</p>
+        <p className="mt-3 text-xs text-slate-400">Payouts are calculated from approved commissions in the ledger. {isDemoMode ? 'Demo mode: requests are not sent anywhere.' : 'Requests are reviewed by the network admin.'}</p>
       </Card>
       <Card title="Payout history">
         {mine.length === 0 ? <Empty text="No payouts yet." /> : (
