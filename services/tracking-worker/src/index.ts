@@ -24,9 +24,23 @@
  * when the batch reports FINISHED. See
  * ~/workspace/work/affilayer-nowpayments-brief.md.
  *
- * Env: POSTBACK_SECRET (wrangler secret) — HMAC key for POST /conversion,
- * and the operator token (Authorization: Bearer <secret>) for /api/stats
- * and /api/clicks, which expose revenue and raw click data.
+ * Env: POSTBACK_SECRET (wrangler secret) — HMAC key for POST /conversion
+ * only. OPERATOR_TOKEN (wrangler secret) — Bearer token for /api/stats
+ * and /api/clicks, which expose revenue and raw click data. The two were
+ * one secret (R22): a leak of the advertiser HMAC key used to open the
+ * operator endpoints too. Until OPERATOR_TOKEN is set, isOperator()
+ * falls back to POSTBACK_SECRET so the live Worker keeps working; once
+ * it is set, POSTBACK_SECRET no longer opens those endpoints.
+ * Rotation: set the new value with `wrangler secret put <NAME>`, then
+ * redeploy; the old value stops working at the redeploy. Rotate
+ * POSTBACK_SECRET and OPERATOR_TOKEN independently — they must never
+ * share a value. NP_WORKER_PROOF rotates the same way (regenerate the
+ * row in worker_secrets, set the new secret, redeploy); the DB and the
+ * Worker must agree, so rotate it in one window. Per-advertiser HMAC
+ * secrets (one key per advertiser, verified per-offer in /conversion)
+ * are the follow-up — they need a DB column plus a Worker lookup and
+ * are not built yet; until then the single POSTBACK_SECRET signs every
+ * advertiser's conversions.
  * SUPABASE_URL + SUPABASE_ANON_KEY (wrangler [vars], both public values)
  * enable the durable store; without them the Worker runs fully in-memory
  * (demo mode).
@@ -69,6 +83,9 @@ import {
 
 export interface Env {
   POSTBACK_SECRET?: string;
+  /** Bearer token for /api/stats and /api/clicks. Falls back to
+   *  POSTBACK_SECRET until set (R22) — see isOperator(). */
+  OPERATOR_TOKEN?: string;
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
   NOWPAYMENTS_API_KEY?: string;
@@ -123,6 +140,14 @@ const ALLOWED_CURRENCIES = new Set([
 /** Per-conversion payout ceiling — blocks absurd values (e.g. 1e12). */
 const MAX_PAYOUT = 10000;
 
+/** Bare SmartLink clicks carry no affiliate (affiliate_code 'smartlink',
+ *  affiliate_id NULL), so their conversions cannot resolve an affiliate.
+ *  They attribute to the network's own house affiliate instead — its
+ *  commissions are never paid out (migration 016 rejects house payout
+ *  requests at the DB, and handleExecutePayout refuses them too). */
+const SMARTLINK_AFFILIATE_CODE = 'smartlink';
+const HOUSE_AFFILIATE_CODE = 'AFF-HOUSE';
+
 /** Best-effort per-IP click rate limit (per isolate): 60 clicks / 60s.
  *  Not a security boundary — it only slows automated click floods. */
 const clickRate = new Map<string, number[]>();
@@ -142,10 +167,16 @@ function clickRateLimited(ip: string | undefined): boolean {
 }
 
 /** Operator endpoints (/api/stats, /api/clicks) are not public: they
- *  expose revenue and raw click data (IP, user agent). The POSTBACK_SECRET
- *  doubles as the operator token — Bearer auth, never a query param. */
+ *  expose revenue and raw click data (IP, user agent). Auth is Bearer
+ *  OPERATOR_TOKEN when set, falling back to POSTBACK_SECRET until the
+ *  separate operator token is provisioned (R22). The fallback exists so
+ *  the live Worker keeps working; once OPERATOR_TOKEN is set, the
+ *  POSTBACK_SECRET no longer opens these endpoints — a leak of the
+ *  advertiser HMAC secret must not expose all stats. Bearer auth, never
+ *  a query param. */
 function isOperator(request: Request, env: Env): boolean {
-  return !!env.POSTBACK_SECRET && request.headers.get('authorization') === `Bearer ${env.POSTBACK_SECRET}`;
+  const token = env.OPERATOR_TOKEN ?? env.POSTBACK_SECRET;
+  return !!token && request.headers.get('authorization') === `Bearer ${token}`;
 }
 
 function geoFrom(request: Request): string | undefined {
@@ -246,11 +277,17 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
   if (click.offerId !== offerId) return json({ error: 'click_id does not belong to offer_id' }, 422);
   const offer = await store.getOffer(offerId);
   if (!offer) return json({ error: 'unknown offer_id' }, 422);
+  // Bare SmartLink clicks carry no affiliate — attribute their
+  // conversions to the house affiliate (never paid out).
+  const affiliateCode =
+    click.affiliateCode === SMARTLINK_AFFILIATE_CODE || !click.affiliateCode
+      ? HOUSE_AFFILIATE_CODE
+      : click.affiliateCode;
   const conversion: Conversion = {
     id: crypto.randomUUID(),
     clickId,
     offerId,
-    affiliateCode: click?.affiliateCode,
+    affiliateCode,
     payout,
     currency,
     status: 'pending',
@@ -258,12 +295,12 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
     sub1,
     createdAt: new Date().toISOString(),
   };
-  await store.recordConversion(conversion);
+  const recordedConversion = await store.recordConversion(conversion);
 
   const commission = computeCommission(payout, offer?.payoutModel ?? 'CPA', offer?.rateBps);
   const ledgerEntry = await store.recordLedgerEntry({
     id: crypto.randomUUID(),
-    conversionId: conversion.id,
+    conversionId: recordedConversion.id,
     affiliateCode: conversion.affiliateCode ?? '',
     offerId,
     amount: commission,
@@ -560,6 +597,7 @@ interface PayoutRequestRow {
 
 interface AffiliateWalletRow {
   profile_id: string;
+  affiliate_code: string | null;
   payout_address: string | null;
   payout_currency: string | null;
 }
@@ -601,10 +639,17 @@ async function handleExecutePayout(request: Request, env: Env): Promise<Response
     const wallets = await supabaseSelect<AffiliateWalletRow>(
       sb,
       'affiliate_profiles',
-      `select=profile_id,payout_address,payout_currency&profile_id=eq.${encodeURIComponent(payout.affiliate_id)}`,
+      `select=profile_id,affiliate_code,payout_address,payout_currency&profile_id=eq.${encodeURIComponent(payout.affiliate_id)}`,
       auth.jwt,
     );
     const wallet = wallets[0];
+    // The house affiliate's commissions are never paid out: a house payout
+    // request cannot be created (migration 016 rejects it at the DB), and
+    // the executor refuses one even if it somehow exists — so a wallet
+    // added to the house profile later cannot make it payable.
+    if (wallet?.affiliate_code === HOUSE_AFFILIATE_CODE) {
+      return json({ error: 'house affiliate payouts are disabled' }, 403);
+    }
     const address = wallet?.payout_address ?? null;
     const currency = wallet?.payout_currency || DEFAULT_PAYOUT_CURRENCY;
     if (!address) {
@@ -824,6 +869,11 @@ export default {
       const store = getStore(env);
       const offer = await store.getOffer(decodeURIComponent(offerId));
       if (!offer) return json({ error: 'offer not found' }, 404);
+      // Paused (or draft/ended) offers never redirect: a paused offer must
+      // not keep collecting clicks (R24 — demo-offer-3 was 'paused' yet 302'd).
+      // SmartLink already excludes non-active offers via isOfferEligible in
+      // smartlinkPick; this is the direct-link equivalent.
+      if (offer.status !== 'active') return json({ error: 'offer not found' }, 404);
       const click = recordClickFields(request, url, decodeURIComponent(affiliateCode), decodeURIComponent(offerId));
       // Best-effort: a failed durable write must never break the redirect.
       try {

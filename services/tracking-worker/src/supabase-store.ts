@@ -136,12 +136,13 @@ export class SupabaseStore implements Store {
   constructor(private opts: SupabaseStoreOptions) {}
 
   /**
-   * Worker proof for the 012 list RPCs and the 013 single-row RPCs:
-   * hex(HMAC-SHA256(function name, NP_WORKER_PROOF)). The subject is
-   * the function name so a proof minted for one function cannot be
-   * replayed against another (or against 010's deposit/batch
-   * subjects). Throws when the secret is not configured — the calls
-   * must fail loudly, never silently return partial (demo-only) data.
+   * Worker proof for the 012 list RPCs, the 013 single-row RPCs, and
+   * the 014 write/resolve RPCs: hex(HMAC-SHA256(function name,
+   * NP_WORKER_PROOF)). The subject is the function name so a proof
+   * minted for one function cannot be replayed against another (or
+   * against 010's deposit/batch subjects). Throws when the secret is
+   * not configured — the calls must fail loudly, never silently
+   * return partial (demo-only) data.
    */
   private async workerProofFor(
     fnName:
@@ -150,7 +151,11 @@ export class SupabaseStore implements Store {
       | 'tracking_get_click'
       | 'tracking_find_conversion'
       | 'tracking_get_offer'
-      | 'tracking_list_offers',
+      | 'tracking_list_offers'
+      | 'tracking_record_click'
+      | 'tracking_record_conversion'
+      | 'tracking_record_ledger_entry'
+      | 'tracking_resolve_affiliate',
   ): Promise<string> {
     if (!this.opts.workerProofSecret) {
       throw new Error(`supabase ${fnName}: NP_WORKER_PROOF is not configured`);
@@ -221,6 +226,7 @@ export class SupabaseStore implements Store {
         p_sub4: click.sub4 ?? null,
         p_sub5: click.sub5 ?? null,
         p_is_smartlink: click.smartlink ?? false,
+        p_proof: await this.workerProofFor('tracking_record_click'),
       },
     );
     return { ...click, id: res.id ?? click.id };
@@ -266,6 +272,7 @@ export class SupabaseStore implements Store {
         p_status: conversion.status,
         p_idempotency_key: conversion.idempotencyKey,
         p_sub1: conversion.sub1 ?? null,
+        p_proof: await this.workerProofFor('tracking_record_conversion'),
       },
     );
     // The DB uuid is the conversion's canonical id from here on — the
@@ -338,7 +345,10 @@ export class SupabaseStore implements Store {
     // The conversionId here is the DB uuid (recordConversion returns it).
     const affiliate = await this.rpc<{ profile_id: string } | null>(
       'tracking_resolve_affiliate',
-      { p_affiliate_code: entry.affiliateCode },
+      {
+        p_affiliate_code: entry.affiliateCode,
+        p_proof: await this.workerProofFor('tracking_resolve_affiliate'),
+      },
     );
     if (!affiliate?.profile_id) {
       throw new Error(`supabase ledger: cannot resolve affiliate ${entry.affiliateCode}`);
@@ -351,6 +361,7 @@ export class SupabaseStore implements Store {
         p_offer_id: entry.offerId,
         p_amount: entry.amount,
         p_currency: entry.currency,
+        p_proof: await this.workerProofFor('tracking_record_ledger_entry'),
       },
     );
     return { ...entry, id: res.id ?? entry.id };

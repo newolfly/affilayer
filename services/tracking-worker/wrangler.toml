@@ -21,6 +21,20 @@ zone_id = "17c94ce53fca917182d3fd91512eb811"
 # [vars]
 # POSTBACK_SECRET = ""
 
+# Secret (set with: wrangler secret put OPERATOR_TOKEN). R22.
+# Bearer token for the operator endpoints /api/stats and /api/clicks.
+# Until it is set, those endpoints fall back to POSTBACK_SECRET (see
+# isOperator() in src/index.ts); once set, POSTBACK_SECRET no longer
+# opens them. The two secrets must never share a value: POSTBACK_SECRET
+# is handed to advertisers (it signs their conversions), OPERATOR_TOKEN
+# is operator-only and must never be given to an advertiser.
+# Rotation (each secret independently): `wrangler secret put <NAME>`
+# with the new value, then redeploy; the old value stops working at the
+# redeploy. NP_WORKER_PROOF rotates the same way, except the DB row in
+# worker_secrets must be regenerated first — DB and Worker must agree,
+# so do that one in a single window. Per-advertiser HMAC secrets are
+# the follow-up (one key per advertiser, verified per-offer); not built.
+
 # NOWPayments all-rounder (migration 010) — wrangler secrets, never values:
 #   NOWPAYMENTS_API_KEY   — the 'AffiLayer' API key.
 #   NOWPAYMENTS_EMAIL / NOWPAYMENTS_PASSWORD — dashboard login; only used

@@ -140,6 +140,22 @@ check('smartlink -> 302', smartRes.status === 302, `got ${smartRes.status}`);
 const smartLoc = smartRes.headers.get('Location') ?? '';
 check('smartlink picks highest payout (demo-offer-1)', smartLoc.startsWith('https://example.com/finance-card?click_id=clk_'), smartLoc);
 
+// R24: a paused offer never redirects, even though it exists.
+const pausedRes = await call(new Request('https://go.affilayer.test/c/AFF1/demo-offer-3', { method: 'GET' }));
+check('paused demo-offer-3 -> 404 (no 302)', pausedRes.status === 404, `got ${pausedRes.status}`);
+
+// R22: separate OPERATOR_TOKEN. Once it is set, the POSTBACK_SECRET
+// (the advertiser HMAC key) must no longer open the operator endpoints.
+const OPERATOR = 'test-operator-token-do-not-use-in-production';
+const envOp = { POSTBACK_SECRET: SECRET, OPERATOR_TOKEN: OPERATOR };
+const callOp = (req) => worker.fetch(req, envOp);
+const statsOldSecret = await callOp(new Request('https://go.affilayer.test/api/stats', { method: 'GET', headers: auth }));
+check('stats with POSTBACK_SECRET bearer -> 401 once OPERATOR_TOKEN is set', statsOldSecret.status === 401, `got ${statsOldSecret.status}`);
+const statsOp = await callOp(new Request('https://go.affilayer.test/api/stats', { method: 'GET', headers: { Authorization: `Bearer ${OPERATOR}` } }));
+check('stats with OPERATOR_TOKEN bearer -> 200', statsOp.status === 200, `got ${statsOp.status}`);
+const statsOpNoAuth = await callOp(new Request('https://go.affilayer.test/api/stats', { method: 'GET' }));
+check('stats with OPERATOR_TOKEN set, no bearer -> 401', statsOpNoAuth.status === 401, `got ${statsOpNoAuth.status}`);
+
 const healthRes = await call(new Request('https://go.affilayer.test/health', { method: 'GET' }));
 check('health ok', healthRes.status === 200 && (await healthRes.json()).ok === true);
 

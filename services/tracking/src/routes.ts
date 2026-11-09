@@ -31,6 +31,12 @@ interface ConversionBody {
   sub1?: unknown;
 }
 
+/** Bare SmartLink clicks carry no affiliate (affiliate_code 'smartlink',
+ *  affiliate_id NULL). Their conversions attribute to the network's own
+ *  house affiliate instead — its commissions are never paid out. */
+const SMARTLINK_AFFILIATE_CODE = 'smartlink';
+const HOUSE_AFFILIATE_CODE = 'AFF-HOUSE';
+
 function appendQuery(url: string, key: string, value: string): string {
   const sep = url.includes('?') ? '&' : '?';
   return `${url}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
@@ -178,11 +184,19 @@ export async function buildApp(opts: TrackingAppOptions = {}): Promise<FastifyIn
 
     const click = await store.getClick(clickId);
     const offer = await store.getOffer(offerId);
+    // Bare SmartLink clicks carry no affiliate — attribute their
+    // conversions to the house affiliate (never paid out). Unknown clicks
+    // still fail: the RPC rejects an unknown click_id before resolving
+    // the affiliate.
+    const affiliateCode =
+      click && (click.affiliateCode === SMARTLINK_AFFILIATE_CODE || !click.affiliateCode)
+        ? HOUSE_AFFILIATE_CODE
+        : click?.affiliateCode;
     const conversion: Conversion = {
       id: randomUUID(),
       clickId,
       offerId,
-      affiliateCode: click?.affiliateCode,
+      affiliateCode,
       payout,
       currency,
       status: 'pending',
@@ -190,12 +204,12 @@ export async function buildApp(opts: TrackingAppOptions = {}): Promise<FastifyIn
       sub1,
       createdAt: new Date().toISOString(),
     };
-    await store.recordConversion(conversion);
+    const recordedConversion = await store.recordConversion(conversion);
 
     const commission = computeCommission(payout, offer?.payoutModel ?? 'CPA', offer?.rateBps);
     const ledgerEntry = await store.recordLedgerEntry({
       id: randomUUID(),
-      conversionId: conversion.id,
+      conversionId: recordedConversion.id,
       affiliateCode: conversion.affiliateCode ?? '',
       offerId,
       amount: commission,
