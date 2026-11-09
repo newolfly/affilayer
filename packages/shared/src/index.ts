@@ -285,6 +285,25 @@ export function expandPostbackMacros(template: string, vars: Record<string, stri
   });
 }
 
+/**
+ * Device class parsed from a User-Agent string — the only trustworthy
+ * device signal on the tracking edge (H-08: the `?device=` query param
+ * is spoofable and must never feed eligibility). Returns undefined when
+ * there is no UA to parse, so eligibility treats it as "no restriction"
+ * rather than blocking the click. Tablet is checked first: iPadOS
+ * UAs contain "Mobile", and Android tablets omit it.
+ */
+export function deviceFromUserAgent(ua?: string): 'desktop' | 'mobile' | 'tablet' | undefined {
+  if (!ua || ua.trim() === '') return undefined;
+  if (/ipad|tablet|playbook|silk/i.test(ua) || (/android/i.test(ua) && !/mobile/i.test(ua))) {
+    return 'tablet';
+  }
+  if (/mobi|iphone|ipod|android|blackberry|iemobile|opera mini|windows phone/i.test(ua)) {
+    return 'mobile';
+  }
+  return 'desktop';
+}
+
 /** `clk_` + 24 hex chars, via globalThis.crypto (isomorphic, no Node-only dep). */
 export function generateClickId(): string {
   const bytes = new Uint8Array(12);

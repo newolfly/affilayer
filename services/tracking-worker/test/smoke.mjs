@@ -159,6 +159,110 @@ check('stats with OPERATOR_TOKEN set, no bearer -> 401', statsOpNoAuth.status ==
 const healthRes = await call(new Request('https://go.affilayer.test/health', { method: 'GET' }));
 check('health ok', healthRes.status === 200 && (await healthRes.json()).ok === true);
 
+// --- H-07/P0-5: security headers on every response -----------------------
+import {
+  ensureLedgerEntry,
+  isAffiliateNotApprovedError,
+  isCapReachedError,
+} from '../dist/index.js';
+import { DEMO_OFFERS, InMemoryStore } from '../dist/store.js';
+
+const SEC_HEADERS = {
+  'strict-transport-security': 'max-age=31536000; includeSubDomains',
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+  'content-security-policy': "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+};
+const checkHeaders = (name, res) => {
+  for (const [k, v] of Object.entries(SEC_HEADERS)) {
+    check(`${name} header ${k}`, res.headers.get(k) === v, `got ${res.headers.get(k)}`);
+  }
+};
+
+const health2 = await call(new Request('https://go.affilayer.test/health', { method: 'GET' }));
+checkHeaders('health', health2);
+const click302 = await call(new Request('https://go.affilayer.test/c/AFF1/demo-offer-1', { method: 'GET' }));
+check('headers: 302 keeps Location', click302.status === 302 && (click302.headers.get('Location') ?? '').includes('click_id=clk_'), `got ${click302.status}`);
+checkHeaders('302 redirect', click302);
+const err404 = await call(new Request('https://go.affilayer.test/c/AFF1/demo-offer-3', { method: 'GET' }));
+checkHeaders('404 error', err404);
+
+// --- H-08/P1-6: geo/device enforcement on direct links --------------------
+const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+const IPAD_UA = 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
+const getClick = (path, headers = {}) => call(new Request(`https://go.affilayer.test${path}`, { method: 'GET', headers }));
+
+// demo-offer-1 allows countries US/GB, devices desktop/mobile.
+const geoDe = await getClick('/c/AFF1/demo-offer-1', { 'cf-ipcountry': 'DE' });
+check('geo-blocked direct click (DE vs US/GB) -> 404', geoDe.status === 404, `got ${geoDe.status}`);
+const geoUs = await getClick('/c/AFF1/demo-offer-1', { 'cf-ipcountry': 'US' });
+check('geo-allowed direct click (US) -> 302', geoUs.status === 302, `got ${geoUs.status}`);
+const geoSpoofRescue = await getClick('/c/AFF1/demo-offer-1?country=US', { 'cf-ipcountry': 'DE' });
+check('?country=US cannot rescue a DE visitor -> 404', geoSpoofRescue.status === 404, `got ${geoSpoofRescue.status}`);
+const geoSpoofBlock = await getClick('/c/AFF1/demo-offer-1?country=FR', { 'cf-ipcountry': 'US' });
+check('?country=FR cannot block a US visitor -> 302', geoSpoofBlock.status === 302, `got ${geoSpoofBlock.status}`);
+const devTablet = await getClick('/c/AFF1/demo-offer-1', { 'cf-ipcountry': 'US', 'user-agent': IPAD_UA });
+check('tablet UA blocked on desktop/mobile-only offer -> 404', devTablet.status === 404, `got ${devTablet.status}`);
+const devTabletSpoof = await getClick('/c/AFF1/demo-offer-1?device=desktop', { 'cf-ipcountry': 'US', 'user-agent': IPAD_UA });
+check('?device=desktop cannot rescue a tablet UA -> 404', devTabletSpoof.status === 404, `got ${devTabletSpoof.status}`);
+const devMobile = await getClick('/c/AFF1/demo-offer-1', { 'cf-ipcountry': 'US', 'user-agent': IPHONE_UA });
+check('iPhone UA -> 302', devMobile.status === 302, `got ${devMobile.status}`);
+// The recorded click carries the header-derived country/device, not the query.
+const mobileClickId = new URL(devMobile.headers.get('Location') ?? '').searchParams.get('click_id');
+const mobileLookup = await call(new Request(`https://go.affilayer.test/api/clicks/${mobileClickId}`, { method: 'GET', headers: auth }));
+const mobileClick = await mobileLookup.json();
+check('recorded click country=device from headers', mobileClick.click?.country === 'US' && mobileClick.click?.device === 'mobile', JSON.stringify(mobileClick.click));
+
+// --- H-08/P1-6: SmartLink pick uses headers, never ?country= --------------
+const smartSpoof = await getClick('/s/abc?country=FR');
+const smartSpoofLoc = smartSpoof.headers.get('Location') ?? '';
+check('smartlink ?country=FR ignored -> still picks demo-offer-1', smartSpoof.status === 302 && smartSpoofLoc.startsWith('https://example.com/finance-card?click_id=clk_'), `got ${smartSpoof.status} ${smartSpoofLoc}`);
+const smartFr = await getClick('/s/abc', { 'cf-ipcountry': 'FR' });
+check('smartlink cf-ipcountry FR -> 404 (no offer covers FR)', smartFr.status === 404, `got ${smartFr.status}`);
+const smartFrSpoof = await getClick('/s/abc?country=US', { 'cf-ipcountry': 'FR' });
+check('smartlink ?country=US cannot rescue FR visitor -> 404', smartFrSpoof.status === 404, `got ${smartFrSpoof.status}`);
+const smartCa = await getClick('/s/abc', { 'cf-ipcountry': 'CA' });
+const smartCaLoc = smartCa.headers.get('Location') ?? '';
+check('smartlink cf-ipcountry CA -> demo-offer-2 (shop)', smartCa.status === 302 && smartCaLoc.startsWith('https://example.com/shop?click_id=clk_'), `got ${smartCa.status} ${smartCaLoc}`);
+const smartTablet = await getClick('/s/abc', { 'cf-ipcountry': 'US', 'user-agent': IPAD_UA });
+const smartTabletLoc = smartTablet.headers.get('Location') ?? '';
+check('smartlink tablet UA (US) -> demo-offer-2 (tablet allowed)', smartTablet.status === 302 && smartTabletLoc.startsWith('https://example.com/shop?click_id=clk_'), `got ${smartTablet.status} ${smartTabletLoc}`);
+
+// --- M-14: duplicate-path ledger backfill (unit level) ---------------------
+// A conversion written straight to the store has no ledger row —
+// exactly the crash-between-writes state. ensureLedgerEntry must
+// create it once, and a second call must not duplicate it.
+const unitStore = new InMemoryStore();
+const unitConv = {
+  id: 'conv-unit-1', clickId: 'clk_unit1', offerId: 'demo-offer-1', affiliateCode: 'AFF1',
+  payout: 45, currency: 'USD', status: 'pending', idempotencyKey: 'idem-unit-1',
+  createdAt: new Date().toISOString(),
+};
+await unitStore.recordConversion(unitConv);
+check('backfill fixture: no ledger row yet', (await unitStore.listLedgerEntries()).length === 0);
+check('backfill creates the ledger row', (await ensureLedgerEntry(unitStore, unitConv, DEMO_OFFERS[0])) === true);
+const unitLedger = await unitStore.listLedgerEntries();
+check('backfill ledger amount is 45', unitLedger.length === 1 && unitLedger[0].amount === 45 && unitLedger[0].conversionId === 'conv-unit-1', JSON.stringify(unitLedger));
+check('backfill is idempotent (no second row)', (await ensureLedgerEntry(unitStore, unitConv, DEMO_OFFERS[0])) === true && (await unitStore.listLedgerEntries()).length === 1);
+
+// --- H-03: 022 error mapping matches the live migration strings -----------
+const rpcErr = (msg) => new Error(`supabase rpc tracking_record_conversion failed: 400 {"code":"42501","message":"${msg}"}`);
+check('matcher: conversion not-approved', isAffiliateNotApprovedError(rpcErr('tracking_record_conversion: affiliate not approved (status pending)')) === true);
+check('matcher: click not-approved', isAffiliateNotApprovedError(new Error('supabase rpc tracking_record_click failed: 400 {"message":"tracking_record_click: affiliate not approved (status suspended)"}')) === true);
+check('matcher: daily cap', isCapReachedError(rpcErr('tracking_record_click: offer 00000000-0000-0000-0000-000000000000 daily cap reached (10 clicks today, cap 10)')) === true);
+check('matcher: monthly cap', isCapReachedError(rpcErr('tracking_record_click: offer 00000000-0000-0000-0000-000000000000 monthly cap reached (300 clicks this month, cap 300)')) === true);
+check('matcher: unrelated error is neither', isAffiliateNotApprovedError(new Error('supabase rpc tracking_record_click failed: 500 boom')) === false && isCapReachedError(new Error('supabase rpc tracking_record_click failed: 500 boom')) === false);
+
+// --- M-14 end-to-end: replaying the original conversion must not double-count
+const replay2 = await postConversion({
+  click_id: clickId, offer_id: 'demo-offer-1', payout: 45, currency: 'USD', idempotency_key: 'idem-smoke-1', sub1: 'hello',
+});
+check('replay after backfill work -> still 200 duplicate', replay2.status === 200 && (await replay2.json()).duplicate === true, `got ${replay2.status}`);
+const stats2Res = await call(new Request('https://go.affilayer.test/api/stats', { method: 'GET', headers: auth }));
+const stats2 = await stats2Res.json();
+check('stats after replays: still 1 conversion, commission 45 (no double ledger)', stats2.conversions === 1 && stats2.commission === 45 && stats2.revenue === 45, JSON.stringify(stats2));
+
 if (failures > 0) {
   console.log(`${failures} failure(s)`);
   process.exit(1);

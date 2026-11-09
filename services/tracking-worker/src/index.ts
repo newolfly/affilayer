@@ -53,10 +53,13 @@
  */
 import {
   computeCommission,
+  deviceFromUserAgent,
   generateClickId,
+  isOfferEligible,
   smartlinkPick,
   type Click,
   type Conversion,
+  type Offer,
 } from '@affilayer/shared';
 import { InMemoryStore } from './store.js';
 import { SupabaseStore } from './supabase-store.js';
@@ -115,6 +118,46 @@ function json(data: unknown, status = 200): Response {
     status,
     headers: { 'content-type': 'application/json' },
   });
+}
+
+/**
+ * Security headers (H-07/P0-5, Worker half). The Worker serves only
+ * JSON + 302 redirects — never HTML documents — so the policy is
+ * strict: no document source at all, no framing. Applied in one place
+ * (the fetch wrapper) so every route gets them, including /health and
+ * error responses. A new Response is built so the original status,
+ * Location header (302s) and body survive untouched.
+ */
+const SECURITY_HEADERS: Record<string, string> = {
+  'strict-transport-security': 'max-age=31536000; includeSubDomains',
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+  'content-security-policy': "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+};
+
+function withSecurityHeaders(res: Response): Response {
+  const headers = new Headers(res.headers);
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+/**
+ * 022 error mapping (H-03). The DB raises these as PostgREST errors
+ * whose message survives inside the store's thrown Error
+ * ("supabase rpc tracking_record_* failed: 400 {...\"message\":
+ * \"tracking_record_click: affiliate not approved (status pending)\"...}"),
+ * so match on the stable substrings from migration 022, not on the
+ * HTTP status. Caps raise "... daily cap reached (N clicks today, cap
+ * N)" / "... monthly cap reached (N clicks this month, cap N)".
+ */
+export function isAffiliateNotApprovedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? '');
+  return msg.includes('affiliate not approved');
+}
+
+export function isCapReachedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? '');
+  return msg.includes('cap reached');
 }
 
 function appendQuery(url: string, key: string, value: string): string {
@@ -185,6 +228,12 @@ function geoFrom(request: Request): string | undefined {
   return request.headers.get('cf-ipcountry') ?? undefined;
 }
 
+function deviceFrom(request: Request): string | undefined {
+  // Device comes from the User-Agent only — never the spoofable
+  // ?device= query param (H-08).
+  return deviceFromUserAgent(request.headers.get('user-agent') ?? undefined);
+}
+
 function recordClickFields(
   request: Request,
   url: URL,
@@ -207,10 +256,37 @@ function recordClickFields(
     ip: clientIp(request),
     userAgent: request.headers.get('user-agent') ?? undefined,
     country: geoFrom(request),
-    device: url.searchParams.get('device') ?? undefined,
+    device: deviceFrom(request),
     createdAt: new Date().toISOString(),
     ...extra,
   };
+}
+
+/**
+ * Best-effort click write for the redirect handlers — with one
+ * exception: a click the DB *rejects* (022) is not a transient failure
+ * and must not redirect. A pending/unapproved affiliate gets a clear
+ * 403 (H-03), a capped offer a 409; anything else (DB blip, proof
+ * misconfig) keeps the old behaviour — log it and redirect anyway so a
+ * durable-write outage never breaks the redirect.
+ */
+async function recordClickOrReject(
+  store: Store,
+  click: Click,
+): Promise<Response | null> {
+  try {
+    await store.recordClick(click);
+    return null;
+  } catch (err) {
+    if (isAffiliateNotApprovedError(err)) {
+      return json({ error: 'affiliate not approved' }, 403);
+    }
+    if (isCapReachedError(err)) {
+      return json({ error: 'offer cap reached' }, 409);
+    }
+    console.error('recordClick failed (redirecting anyway):', err);
+    return null;
+  }
 }
 
 interface ConversionBody {
@@ -221,6 +297,40 @@ interface ConversionBody {
   status?: unknown;
   idempotency_key?: unknown;
   sub1?: unknown;
+}
+
+/**
+ * M-14: ensure a conversion has its ledger row. Idempotent — the
+ * ledger has a unique index on conversion_id and recordLedgerEntry
+ * returns the existing row on a conflict, so a concurrent backfill is
+ * a no-op; an already-exists style error is likewise treated as
+ * success, never a 500. Returns true when a row exists afterwards.
+ */
+export async function ensureLedgerEntry(
+  store: Store,
+  conversion: Conversion,
+  offer: Offer,
+): Promise<boolean> {
+  const existing = await store.listLedgerEntries();
+  if (existing.some((e) => e.conversionId === conversion.id)) return true;
+  const commission = computeCommission(conversion.payout, offer.payoutModel ?? 'CPA', offer.rateBps);
+  try {
+    await store.recordLedgerEntry({
+      id: crypto.randomUUID(),
+      conversionId: conversion.id,
+      affiliateCode: conversion.affiliateCode ?? '',
+      offerId: conversion.offerId,
+      amount: commission,
+      currency: conversion.currency,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    });
+    return true;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err ?? '');
+    if (/duplicate|already exists|unique/i.test(msg)) return true;
+    throw err;
+  }
 }
 
 async function handleConversion(request: Request, env: Env): Promise<Response> {
@@ -267,6 +377,17 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
     (await store.findConversionByIdempotencyKey(idempotencyKey)) ??
     (await store.findConversionByClickAndOffer(clickId, offerId));
   if (existing) {
+    // M-14 backfill: a replay must not silently confirm a conversion
+    // whose ledger row was never written (e.g. the Worker crashed
+    // between recordConversion and recordLedgerEntry). Best-effort —
+    // a backfill failure never turns the duplicate 200 into a 500,
+    // and the response shape is unchanged.
+    try {
+      const offer = await store.getOffer(existing.offerId);
+      if (offer) await ensureLedgerEntry(store, existing, offer);
+    } catch (err) {
+      console.error('duplicate-path ledger backfill failed:', err, { conversionId: existing.id });
+    }
     return json({ ok: true, duplicate: true, conversion: existing }, 200);
   }
 
@@ -295,7 +416,18 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
     sub1,
     createdAt: new Date().toISOString(),
   };
-  const recordedConversion = await store.recordConversion(conversion);
+  let recordedConversion: Conversion;
+  try {
+    recordedConversion = await store.recordConversion(conversion);
+  } catch (err) {
+    // H-03 (022): the DB raises before inserting, so no conversion row
+    // exists — and the ledger write below is never reached, so no
+    // ledger entry is created for a rejected conversion either.
+    if (isAffiliateNotApprovedError(err)) {
+      return json({ error: 'affiliate not approved' }, 403);
+    }
+    throw err;
+  }
 
   const commission = computeCommission(payout, offer?.payoutModel ?? 'CPA', offer?.rateBps);
   const ledgerEntry = await store.recordLedgerEntry({
@@ -854,6 +986,20 @@ async function handleValidateAddress(request: Request, env: Env): Promise<Respon
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    // Every response leaves with the security headers (H-07), and an
+    // unexpected throw becomes a JSON 500 with headers instead of the
+    // runtime's bare 500. The 022 rejections in handleConversion are
+    // mapped to 403 there, not here.
+    try {
+      return withSecurityHeaders(await handleRequest(request, env));
+    } catch (err) {
+      console.error('worker fetch failed:', err);
+      return withSecurityHeaders(json({ error: 'internal error' }, 500));
+    }
+  },
+};
+
+async function handleRequest(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -874,13 +1020,21 @@ export default {
       // SmartLink already excludes non-active offers via isOfferEligible in
       // smartlinkPick; this is the direct-link equivalent.
       if (offer.status !== 'active') return json({ error: 'offer not found' }, 404);
-      const click = recordClickFields(request, url, decodeURIComponent(affiliateCode), decodeURIComponent(offerId));
-      // Best-effort: a failed durable write must never break the redirect.
-      try {
-        await store.recordClick(click);
-      } catch (err) {
-        console.error('recordClick failed (redirecting anyway):', err);
+      // H-08 geo/device enforcement: country is cf-ipcountry only and
+      // device is parsed from the User-Agent — never the spoofable
+      // ?country= / ?device= query params. An ineligible visitor gets
+      // the same 404 a paused/unknown offer gets, and no click is
+      // recorded. countries=[] (the live offer) means unrestricted.
+      // No traffic-source check here: there is no trustworthy header
+      // for it, and a spoofable ?source= must not decide eligibility.
+      if (!isOfferEligible(offer, { country: geoFrom(request), device: deviceFrom(request) })) {
+        return json({ error: 'offer not found' }, 404);
       }
+      const click = recordClickFields(request, url, decodeURIComponent(affiliateCode), decodeURIComponent(offerId));
+      // A 022 rejection (not approved / cap reached) answers instead
+      // of redirecting; a transient write failure still redirects.
+      const rejected = await recordClickOrReject(store, click);
+      if (rejected) return rejected;
       return new Response(null, {
         status: 302,
         headers: { Location: appendQuery(offer.landingUrl, 'click_id', click.clickId) },
@@ -901,22 +1055,24 @@ export default {
       const clicksByOffer = new Map<string, number>();
       for (const c of clicks) clicksByOffer.set(c.offerId, (clicksByOffer.get(c.offerId) ?? 0) + 1);
       const uncapped = offers.filter((o) => o.cap === undefined || (clicksByOffer.get(o.id) ?? 0) < o.cap);
+      // H-08: the pick uses cf-ipcountry and the User-Agent only.
+      // ?country= / ?device= must never steer it (live proof: ?country=FR
+      // excluded demo-offer-1). ?source= is not passed either — there is
+      // no trustworthy header for traffic source, so it cannot decide
+      // eligibility; it is still recorded on the click as metadata.
       const picked = smartlinkPick(uncapped, {
-        country: url.searchParams.get('country') ?? undefined,
-        device: url.searchParams.get('device') ?? undefined,
-        trafficSource: url.searchParams.get('source') ?? undefined,
+        country: geoFrom(request),
+        device: deviceFrom(request),
       });
       if (!picked) return json({ error: 'no eligible offer' }, 404);
       const click = recordClickFields(request, url, url.searchParams.get('affiliate_code') ?? 'smartlink', picked.id, {
         smartlink: true,
         smartlinkCode: decodeURIComponent(smartlinkCode),
       });
-      // Best-effort: a failed durable write must never break the redirect.
-      try {
-        await store.recordClick(click);
-      } catch (err) {
-        console.error('recordClick failed (redirecting anyway):', err);
-      }
+      // A 022 rejection (not approved / cap reached) answers instead
+      // of redirecting; a transient write failure still redirects.
+      const rejected = await recordClickOrReject(store, click);
+      if (rejected) return rejected;
       return new Response(null, {
         status: 302,
         headers: { Location: appendQuery(picked.landingUrl, 'click_id', click.clickId) },
@@ -972,5 +1128,4 @@ export default {
     }
 
     return json({ error: 'not found' }, 404);
-  },
-};
+}

@@ -165,6 +165,11 @@ export class InMemoryStore implements Store {
     return [...this.conversions];
   }
   async recordLedgerEntry(entry: CommissionLedgerEntry): Promise<CommissionLedgerEntry> {
+    // Mirror the DB's unique index on conversion_id (007): a second
+    // write for the same conversion (e.g. a concurrent M-14 backfill)
+    // returns the existing row instead of creating a duplicate.
+    const existing = this.ledger.find((e) => e.conversionId === entry.conversionId);
+    if (existing) return existing;
     this.ledger.push(entry);
     return entry;
   }

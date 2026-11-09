@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   computeCommission,
   detectFraudSignals,
+  deviceFromUserAgent,
   expandPostbackMacros,
   generateClickId,
   isOfferEligible,
@@ -58,6 +59,22 @@ describe('generateClickId', () => {
     const b = generateClickId();
     expect(a).toMatch(/^clk_[0-9a-f]{24}$/);
     expect(a).not.toBe(b);
+  });
+});
+
+describe('deviceFromUserAgent', () => {
+  it('parses mobile / tablet / desktop from real UA strings', () => {
+    expect(deviceFromUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1')).toBe('mobile');
+    expect(deviceFromUserAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36')).toBe('mobile');
+    // iPadOS UA contains "Mobile" — tablet check must win.
+    expect(deviceFromUserAgent('Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1')).toBe('tablet');
+    expect(deviceFromUserAgent('Mozilla/5.0 (Linux; Android 13; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36')).toBe('tablet');
+    expect(deviceFromUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36')).toBe('desktop');
+    expect(deviceFromUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36')).toBe('desktop');
+  });
+  it('returns undefined with no UA so eligibility does not block', () => {
+    expect(deviceFromUserAgent(undefined)).toBeUndefined();
+    expect(deviceFromUserAgent('')).toBeUndefined();
   });
 });
 
