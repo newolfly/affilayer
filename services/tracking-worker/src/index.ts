@@ -56,12 +56,22 @@ import {
   demoAffiliateStatus,
   deviceFromUserAgent,
   generateClickId,
+  isAffiliateNotApprovedError,
+  isCapReachedError,
   isDemoSmartlinkCode,
   isOfferEligible,
+  isUnknownAffiliateCodeError,
   smartlinkPick,
   type Click,
   type Conversion,
   type Offer,
+} from '@affilayer/shared';
+// Re-exported for the smoke test (test/smoke.mjs imports the matchers
+// from the Worker's dist entry point).
+export {
+  isAffiliateNotApprovedError,
+  isCapReachedError,
+  isUnknownAffiliateCodeError,
 } from '@affilayer/shared';
 import { InMemoryStore } from './store.js';
 import { SupabaseStore, isRealOfferId } from './supabase-store.js';
@@ -141,25 +151,6 @@ function withSecurityHeaders(res: Response): Response {
   const headers = new Headers(res.headers);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
-}
-
-/**
- * 022 error mapping (H-03). The DB raises these as PostgREST errors
- * whose message survives inside the store's thrown Error
- * ("supabase rpc tracking_record_* failed: 400 {...\"message\":
- * \"tracking_record_click: affiliate not approved (status pending)\"...}"),
- * so match on the stable substrings from migration 022, not on the
- * HTTP status. Caps raise "... daily cap reached (N clicks today, cap
- * N)" / "... monthly cap reached (N clicks this month, cap N)".
- */
-export function isAffiliateNotApprovedError(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err ?? '');
-  return msg.includes('affiliate not approved');
-}
-
-export function isCapReachedError(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err ?? '');
-  return msg.includes('cap reached');
 }
 
 function appendQuery(url: string, key: string, value: string): string {
@@ -265,12 +256,20 @@ function recordClickFields(
 }
 
 /**
- * Best-effort click write for the redirect handlers — with one
- * exception: a click the DB *rejects* (022) is not a transient failure
+ * Best-effort click write for the redirect handlers — with two
+ * exceptions: a click the DB *rejects* (022) is not a transient failure
  * and must not redirect. A pending/unapproved affiliate gets a clear
- * 403 (H-03), a capped offer a 409; anything else (DB blip, proof
- * misconfig) keeps the old behaviour — log it and redirect anyway so a
- * durable-write outage never breaks the redirect.
+ * 403 (H-03), an unknown affiliate code a 404 (M-13), a capped offer
+ * a 409; anything else (DB blip, proof misconfig) keeps the old
+ * behaviour — log it and redirect anyway so a durable-write outage
+ * never breaks the redirect.
+ *
+ * M-13: the 022 RPC raises "unknown affiliate_code" BEFORE inserting,
+ * so no click row exists — the validation IS the recorder's own
+ * lookup (same source of truth, no extra round-trip, no check-then-
+ * act race). The 'smartlink' sentinel is exempt by the RPC itself,
+ * and the RPC checks unknown-code before approval status, so a
+ * pending code reaches the 403 below, never the 404.
  */
 async function recordClickOrReject(
   store: Store,
@@ -293,6 +292,12 @@ async function recordClickOrReject(
     await store.recordClick(click);
     return null;
   } catch (err) {
+    // M-13: unknown affiliate code — the click was never recorded, so
+    // redirecting would send converting traffic that can never pay.
+    // Same 404 shape as the offer-not-found check in the /c/ handler.
+    if (isUnknownAffiliateCodeError(err)) {
+      return json({ error: 'affiliate not found' }, 404);
+    }
     if (isAffiliateNotApprovedError(err)) {
       return json({ error: 'affiliate not approved' }, 403);
     }
@@ -1062,8 +1067,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         return json({ error: 'offer not found' }, 404);
       }
       const click = recordClickFields(request, url, decodeURIComponent(affiliateCode), decodeURIComponent(offerId));
-      // A 022 rejection (not approved / cap reached) answers instead
-      // of redirecting; a transient write failure still redirects.
+      // A 022 rejection (unknown code -> 404, not approved -> 403,
+      // cap reached -> 409) answers instead of redirecting; a transient
+      // write failure still redirects.
       const rejected = await recordClickOrReject(store, click);
       if (rejected) return rejected;
       return new Response(null, {
@@ -1111,8 +1117,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         smartlink: true,
         smartlinkCode: code,
       });
-      // A 022 rejection (not approved / cap reached) answers instead
-      // of redirecting; a transient write failure still redirects.
+      // A 022 rejection (unknown code -> 404, not approved -> 403,
+      // cap reached -> 409) answers instead of redirecting; a transient
+      // write failure still redirects.
       const rejected = await recordClickOrReject(store, click);
       if (rejected) return rejected;
       return new Response(null, {

@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { detectFraudSignals } from '@affilayer/shared';
+import { detectFraudSignals, type Click } from '@affilayer/shared';
 import { buildApp } from '../src/index.js';
 import { InMemoryStore } from '../src/store.js';
 import { computeSignature, deliverPostbacks, verifySignature } from '../src/postbacks.js';
@@ -199,6 +199,45 @@ describe('tracking service', () => {
       url: '/s/demo?country=US&device=mobile&affiliate_code=AFF-DEMO-001',
     });
     expect(apprSmart.statusCode).toBe(302);
+  });
+
+  it('M-13: store rejecting an unknown affiliate code -> 404 (not 302); not-approved -> 403', async () => {
+    // The in-memory store never raises the 022 strings (no affiliate
+    // DB), so stub recordClick to throw exactly what migration 022's
+    // tracking_record_click raises — this pins the handler mapping in
+    // routes.ts (recordClickOrReplyError). PgStore's raw INSERT never
+    // raises these today; the mapping bites once it moves to the RPC.
+    class RejectingStore extends InMemoryStore {
+      constructor(private readonly message: string) {
+        super();
+      }
+      override async recordClick(): Promise<Click> {
+        throw new Error(this.message);
+      }
+    }
+    const unknownStore = new RejectingStore(
+      'tracking_record_click: unknown affiliate_code AFF-NOPE-XYZ99',
+    );
+    const unknownApp = await buildApp({ store: unknownStore, postbackSecret: SECRET });
+    const unknownDirect = await unknownApp.inject({ method: 'GET', url: '/c/AFF-NOPE-XYZ99/offer-a' });
+    expect(unknownDirect.statusCode).toBe(404);
+    expect(unknownDirect.json()).toEqual({ error: 'affiliate not found' });
+    expect(await unknownStore.listClicks()).toHaveLength(0);
+    const unknownSmart = await unknownApp.inject({
+      method: 'GET',
+      url: '/s/demo?country=US&device=mobile&affiliate_code=AFF-NOPE-XYZ99',
+    });
+    expect(unknownSmart.statusCode).toBe(404);
+    expect(await unknownStore.listClicks()).toHaveLength(0);
+
+    const pendingStore = new RejectingStore(
+      'tracking_record_click: affiliate not approved (status pending)',
+    );
+    const pendingApp = await buildApp({ store: pendingStore, postbackSecret: SECRET });
+    const pendingDirect = await pendingApp.inject({ method: 'GET', url: '/c/AFF-PENDING-001/offer-a' });
+    expect(pendingDirect.statusCode).toBe(403);
+    expect(pendingDirect.json()).toEqual({ error: 'affiliate not approved' });
+    expect(await pendingStore.listClicks()).toHaveLength(0);
   });
 
   it('unknown offer click -> 404', async () => {

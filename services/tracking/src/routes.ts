@@ -3,13 +3,16 @@
  * Stats come ONLY from recorded events — no fake stats, no payment integration.
  */
 import { randomUUID } from 'node:crypto';
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import Fastify from 'fastify';
 import {
   computeCommission,
   demoAffiliateStatus,
   generateClickId,
+  isAffiliateNotApprovedError,
+  isCapReachedError,
   isDemoSmartlinkCode,
+  isUnknownAffiliateCodeError,
   smartlinkPick,
   type Click,
   type Conversion,
@@ -51,6 +54,44 @@ function demoAffiliateBlocked(store: Store, affiliateCode: string): boolean {
   if (!(store instanceof InMemoryStore)) return false;
   const status = demoAffiliateStatus(affiliateCode);
   return status !== undefined && status !== 'approved';
+}
+
+/**
+ * M-13 (mirror of the Worker's recordClickOrReject): a click the store
+ * rejects is not a transient failure. An unknown affiliate code is a
+ * 404 (same shape as offer-not-found), not-approved a 403, a reached
+ * cap a 409 — the 022 strings, matched in shared. Anything else is
+ * rethrown (Fastify 500, as before). Returns true when it already
+ * replied with an error, so the caller must not redirect.
+ *
+ * Only bites when the store raises the 022 strings. PgStore's raw
+ * INSERT bypasses the RPC gate, so until it moves to
+ * tracking_record_click the legacy Postgres path still 302s unknown
+ * codes; the Worker is the live path.
+ */
+async function recordClickOrReplyError(
+  store: Store,
+  click: Click,
+  reply: FastifyReply,
+): Promise<boolean> {
+  try {
+    await store.recordClick(click);
+    return false;
+  } catch (err) {
+    if (isUnknownAffiliateCodeError(err)) {
+      reply.code(404).send({ error: 'affiliate not found' });
+      return true;
+    }
+    if (isAffiliateNotApprovedError(err)) {
+      reply.code(403).send({ error: 'affiliate not approved' });
+      return true;
+    }
+    if (isCapReachedError(err)) {
+      reply.code(409).send({ error: 'offer cap reached' });
+      return true;
+    }
+    throw err;
+  }
 }
 
 function appendQuery(url: string, key: string, value: string): string {
@@ -126,7 +167,7 @@ export async function buildApp(opts: TrackingAppOptions = {}): Promise<FastifyIn
         device: req.query.device,
         createdAt: new Date().toISOString(),
       };
-      await store.recordClick(click);
+      if (await recordClickOrReplyError(store, click, reply)) return;
       return reply.code(302).redirect(appendQuery(offer.landingUrl, 'click_id', clickId));
     },
   );
@@ -176,7 +217,7 @@ export async function buildApp(opts: TrackingAppOptions = {}): Promise<FastifyIn
         smartlinkCode,
         createdAt: new Date().toISOString(),
       };
-      await store.recordClick(click);
+      if (await recordClickOrReplyError(store, click, reply)) return;
       return reply.code(302).redirect(appendQuery(picked.landingUrl, 'click_id', clickId));
     },
   );

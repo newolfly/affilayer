@@ -164,6 +164,7 @@ import {
   ensureLedgerEntry,
   isAffiliateNotApprovedError,
   isCapReachedError,
+  isUnknownAffiliateCodeError,
 } from '../dist/index.js';
 import { DEMO_OFFERS, InMemoryStore } from '../dist/store.js';
 
@@ -244,6 +245,32 @@ const apprClick = await getClick('/c/AFF-DEMO-001/demo-offer-1', { 'cf-ipcountry
 check('approved demo-affiliate click -> 302', apprClick.status === 302, `got ${apprClick.status} ${apprClick.headers.get('Location') ?? ''}`);
 const apprSmart = await getClick('/s/demo?affiliate_code=AFF-DEMO-001', { 'cf-ipcountry': 'US' });
 check('approved demo-affiliate SmartLink click -> 302', apprSmart.status === 302, `got ${apprSmart.status}`);
+
+// --- M-13: unknown affiliate code -> 404 (Supabase mode) -----------------
+// The 404 fires where the 022 gate exists: the DB lookup in
+// tracking_record_click raises before inserting, and recordClickOrReject
+// maps it to 404. Demo mode has no affiliate DB — the in-memory store
+// accepts any code (AFF1 clicks above) — so demo mode keeps its sandbox
+// behaviour, and the unknown-code 404 is covered handler-level by
+// test/smoke-supabase.mjs (mock PostgREST, real UUID offer, 0 rows).
+// Matcher unit tests for the exact 022 strings:
+const unknownErr = (code) => new Error(`supabase rpc tracking_record_click failed: 400 {"code":"23503","message":"tracking_record_click: unknown affiliate_code ${code}"}`);
+check('matcher: unknown affiliate code', isUnknownAffiliateCodeError(unknownErr('AFF-NOPE-XYZ99')) === true);
+check('matcher: unknown code is not not-approved', isAffiliateNotApprovedError(unknownErr('AFF-NOPE-XYZ99')) === false);
+check('matcher: not-approved is not unknown code', isUnknownAffiliateCodeError(new Error('supabase rpc tracking_record_click failed: 400 {"message":"tracking_record_click: affiliate not approved (status pending)"}')) === false);
+check('matcher: cap is not unknown code', isUnknownAffiliateCodeError(new Error('supabase rpc tracking_record_click failed: 400 {"message":"tracking_record_click: offer 00000000-0000-0000-0000-000000000000 daily cap reached (10 clicks today, cap 10)"}')) === false);
+check('matcher: unrelated error is not unknown code', isUnknownAffiliateCodeError(new Error('supabase rpc tracking_record_click failed: 500 boom')) === false);
+// The 'smartlink' sentinel keeps its existing behaviour in demo mode:
+// bare SmartLink clicks (and an explicit ?affiliate_code=smartlink)
+// record with affiliate_id NULL and 302.
+const smartSentinel = await getClick('/s/demo?affiliate_code=smartlink', { 'cf-ipcountry': 'US' });
+const smartSentinelLoc = smartSentinel.headers.get('Location') ?? '';
+check('smartlink sentinel SmartLink click -> 302', smartSentinel.status === 302 && smartSentinelLoc.startsWith('https://example.com/finance-card?click_id=clk_'), `got ${smartSentinel.status} ${smartSentinelLoc}`);
+// Demo-mode sandbox, pinned: an arbitrary code still 302s here because
+// there is no affiliate DB to reject it — the 404 is a Supabase-mode
+// behaviour (see smoke-supabase.mjs).
+const demoUnknown = await getClick('/c/AFF-NOPE-XYZ99/demo-offer-1', { 'cf-ipcountry': 'US' });
+check('unknown code in demo mode -> 302 (sandbox, no affiliate DB)', demoUnknown.status === 302, `got ${demoUnknown.status}`);
 
 // --- M-14: duplicate-path ledger backfill (unit level) ---------------------
 // A conversion written straight to the store has no ledger row —

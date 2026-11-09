@@ -283,6 +283,38 @@ export function isDemoSmartlinkCode(code: string): boolean {
   return DEMO_SMARTLINK_CODES.includes(code);
 }
 
+/**
+ * Migration 022 error mapping (H-03 / M-13). The DB raises these as
+ * PostgREST errors whose message survives inside the store's thrown
+ * Error ("supabase rpc tracking_record_* failed: 400 {...\"message\":
+ * \"tracking_record_click: affiliate not approved (status pending)\"...}"),
+ * so match on the stable substrings from migration 022, not on the
+ * HTTP status. Caps raise "... daily cap reached (N clicks today, cap
+ * N)" / "... monthly cap reached (N clicks this month, cap N)".
+ * Unknown affiliate codes raise "tracking_record_click: unknown
+ * affiliate_code <code>" — the RPC raises BEFORE inserting, so no
+ * click row exists, and the handler must answer 404 instead of
+ * redirecting (M-13: the old code swallowed this error and 302'd
+ * with 0 rows in Postgres). The three rejections are mutually
+ * exclusive, and the RPC itself checks in this order — unknown code,
+ * then approval status, then caps — so a pending code can never 404
+ * and an unknown code can never 403.
+ */
+export function isUnknownAffiliateCodeError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? '');
+  return msg.includes('unknown affiliate_code');
+}
+
+export function isAffiliateNotApprovedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? '');
+  return msg.includes('affiliate not approved');
+}
+
+export function isCapReachedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? '');
+  return msg.includes('cap reached');
+}
+
 export interface FraudSignal {
   /** Rule that fired. Signals only — never auto-reject on these. */
   type: 'duplicate_click_id' | 'high_click_rate_ip' | 'empty_user_agent';
