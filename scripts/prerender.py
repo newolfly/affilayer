@@ -30,6 +30,11 @@ CHROME = next(
     None,
 )
 
+# Routes that intentionally carry no JSON-LD: noindex auth pages get no
+# structured data by design (seo.ts returns no jsonLd for them), so the
+# JSON-LD presence check below does not apply to them.
+NO_JSONLD = {"/login"}
+
 # route -> texts that must appear in the prerendered HTML (proves real content, not the shell)
 ROUTES = {
     "/": ["Why run traffic on", "Every commission written to an auditable ledger", "one tracked path"],
@@ -38,6 +43,7 @@ ROUTES = {
     "/advertisers": ["Publish offers", "Your path to your first customer"],
     "/affiliates": ["Generate tracking links", "Your path to your first payout"],
     "/how-it-works": ["Create an account"],
+    "/login": ["Log in", "Email or demo username", "Sign in to browse offers"],
     "/faq": ["What is AffiLayer?"],
     "/blog": ["AffiLayer is live"],
     "/blog/affilayer-is-live": ["AffiLayer is live: what the network offers on day one"],
@@ -150,7 +156,7 @@ def main() -> int:
             if missing:
                 failures.append(f"{route}: markers missing: {missing!r}")
                 continue
-            if 'id="affilayer-jsonld"' not in html:
+            if 'id="affilayer-jsonld"' not in html and route not in NO_JSONLD:
                 failures.append(f"{route}: JSON-LD script missing from prerendered HTML")
                 continue
             target = DIST / route.strip("/") / "index.html" if route != "/" else DIST / "index.html"

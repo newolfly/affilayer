@@ -160,8 +160,8 @@ export function AffiliateTrackingLinks() {
     <Card title="Tracking link generator">
       <p className="mb-4 text-sm text-slate-500">Links use the tracking service: <code>{'{TRACKING_URL}'}/c/{'{affiliate_code}'}/{'{offer_id}'}</code> with optional sub1–sub5 parameters.</p>
       <div className="space-y-3">
-        <div><label className="mb-1 block text-sm font-medium">Offer</label>
-          <select className={`${inputCls} w-full`} value={offerId} onChange={(e) => setOfferId(e.target.value)}>
+        <div><label className="mb-1 block text-sm font-medium" htmlFor="tlg-offer">Offer</label>
+          <select id="tlg-offer" className={`${inputCls} w-full`} value={offerId} onChange={(e) => setOfferId(e.target.value)}>
             <option value="">Select an offer…</option>
             {offers.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
@@ -188,17 +188,17 @@ export function ReportFiltersForm({ filters, setFilters }: { filters: ReportFilt
     <div className="mb-4 flex flex-wrap gap-2">
       <input type="date" className={inputCls} value={filters.from ?? ''} onChange={(e) => setFilters({ ...filters, from: e.target.value || undefined })} aria-label="From date" />
       <input type="date" className={inputCls} value={filters.to ?? ''} onChange={(e) => setFilters({ ...filters, to: e.target.value || undefined })} aria-label="To date" />
-      <select className={inputCls} value={filters.offerId ?? ''} onChange={(e) => setFilters({ ...filters, offerId: e.target.value || undefined })}>
+      <select className={inputCls} aria-label="Filter by offer" value={filters.offerId ?? ''} onChange={(e) => setFilters({ ...filters, offerId: e.target.value || undefined })}>
         <option value="">All offers</option>
         {offers.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
       </select>
-      <select className={inputCls} value={filters.country ?? ''} onChange={(e) => setFilters({ ...filters, country: e.target.value || undefined })}>
+      <select className={inputCls} aria-label="Filter by country" value={filters.country ?? ''} onChange={(e) => setFilters({ ...filters, country: e.target.value || undefined })}>
         <option value="">All countries</option>{['US', 'GB', 'CA', 'DE', 'FR'].map((c) => <option key={c}>{c}</option>)}
       </select>
-      <select className={inputCls} value={filters.device ?? ''} onChange={(e) => setFilters({ ...filters, device: e.target.value || undefined })}>
+      <select className={inputCls} aria-label="Filter by device" value={filters.device ?? ''} onChange={(e) => setFilters({ ...filters, device: e.target.value || undefined })}>
         <option value="">All devices</option>{['desktop', 'mobile', 'tablet'].map((d) => <option key={d}>{d}</option>)}
       </select>
-      <select className={inputCls} value={filters.source ?? ''} onChange={(e) => setFilters({ ...filters, source: e.target.value || undefined })}>
+      <select className={inputCls} aria-label="Filter by source" value={filters.source ?? ''} onChange={(e) => setFilters({ ...filters, source: e.target.value || undefined })}>
         <option value="">All sources</option>{['SEO', 'Social', 'Email', 'PPC', 'Content'].map((s) => <option key={s}>{s}</option>)}
       </select>
     </div>

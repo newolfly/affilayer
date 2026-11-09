@@ -333,7 +333,7 @@ export function Stat({ label, value, sub, icon }: { label: string; value: string
         )}
       </div>
       <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
-      {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
+      {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
     </div>
   )
 }

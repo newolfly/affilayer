@@ -44,7 +44,7 @@ function ProfilesTable({ filter }: { filter?: (p: Profile) => boolean }) {
           <tbody>{list.map((p) => <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.fullName ?? '—'}</td><td>{p.email}</td><td>{p.role}</td><td>{p.status}</td></tr>)}</tbody>
         </table></div>
       )}
-      <p className="mt-3 text-xs text-slate-400">Approvals, rejections and suspensions are handled in Compliance → KYC review. This table is read-only.</p>
+      <p className="mt-3 text-xs text-slate-500">Approvals, rejections and suspensions are handled in Compliance → KYC review. This table is read-only.</p>
     </Card>
   )
 }
@@ -130,21 +130,21 @@ export function AdminCampaigns() {
       <Card title="Create campaign">
         <form onSubmit={create} className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className="mb-1 block text-sm font-medium">Name</label><input className={`${inputCls} w-full`} required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Advertiser</label>
-              <select className={`${inputCls} w-full`} required value={form.advertiserId} onChange={(e) => setForm((f) => ({ ...f, advertiserId: e.target.value }))}>
+            <div><label className="mb-1 block text-sm font-medium" htmlFor="offer-name">Name</label><input id="offer-name" className={`${inputCls} w-full`} required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
+            <div><label className="mb-1 block text-sm font-medium" htmlFor="offer-advertiser">Advertiser</label>
+              <select id="offer-advertiser" className={`${inputCls} w-full`} required value={form.advertiserId} onChange={(e) => setForm((f) => ({ ...f, advertiserId: e.target.value }))}>
                 <option value="">Select…</option>
                 {advertisers.map((a) => <option key={a.id} value={a.id}>{a.fullName ?? a.email}</option>)}
               </select>
             </div>
-            <div><label className="mb-1 block text-sm font-medium">Budget</label><input className={`${inputCls} w-full`} type="number" min="0" step="0.01" value={form.budget} onChange={(e) => setForm((f) => ({ ...f, budget: e.target.value }))} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Currency</label>
-              <select className={`${inputCls} w-full`} value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}>
+            <div><label className="mb-1 block text-sm font-medium" htmlFor="offer-budget">Budget</label><input id="offer-budget" className={`${inputCls} w-full`} type="number" min="0" step="0.01" value={form.budget} onChange={(e) => setForm((f) => ({ ...f, budget: e.target.value }))} /></div>
+            <div><label className="mb-1 block text-sm font-medium" htmlFor="offer-currency">Currency</label>
+              <select id="offer-currency" className={`${inputCls} w-full`} value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}>
                 {['USD', 'EUR', 'GBP', 'BDT'].map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
           </div>
-          <div><label className="mb-1 block text-sm font-medium">Description</label><input className={`${inputCls} w-full`} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
+          <div><label className="mb-1 block text-sm font-medium" htmlFor="offer-description">Description</label><input id="offer-description" className={`${inputCls} w-full`} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
           <button className={btnCls}>Create campaign</button>
           {notice && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
         </form>
@@ -218,7 +218,7 @@ export function AdminConversions() {
           ))}</tbody>
         </table></div>
       )}
-      <p className="mt-3 text-xs text-slate-400">Approvals follow the ledger state machine (pending → approved / rejected). Approved conversions can be reversed later; rejected ones are terminal.</p>
+      <p className="mt-3 text-xs text-slate-500">Approvals follow the ledger state machine (pending → approved / rejected). Approved conversions can be reversed later; rejected ones are terminal.</p>
     </Card>
   )
 }
@@ -231,7 +231,7 @@ export function AdminFraud() {
     <Card title="Fraud signals">
       <p className="mb-3 text-sm text-slate-500">Rule-based signals only: duplicate click IDs, more than 10 clicks from one IP in 60 seconds, empty user agent. Signals never auto-reject a conversion — a person reviews them.</p>
       {signals.length === 0 ? <Empty text="No fraud signals in the current data." /> : signals.slice(0, 50).map((s, i) => <p key={`${s.type}-${i}`} className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{s.message}</p>)}
-      {signals.length > 50 && <p className="mt-2 text-xs text-slate-400">Showing 50 of {signals.length} signals.</p>}
+      {signals.length > 50 && <p className="mt-2 text-xs text-slate-500">Showing 50 of {signals.length} signals.</p>}
     </Card>
   )
 }
@@ -504,11 +504,11 @@ export function AdminAuditLogs() {
       <p className="mb-3 text-sm text-slate-500">Every action taken in this demo session is recorded here — offer and campaign changes, KYC decisions, payout decisions, suspensions. In a live deployment these entries come from the database audit table instead.</p>
       <div className="mb-4 flex flex-wrap gap-2">
         <input className={inputCls} placeholder="Search actor, action, detail…" aria-label="Search actor, action, detail" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select className={inputCls} value={entity} onChange={(e) => setEntity(e.target.value)}>
+        <select className={inputCls} aria-label="Filter by entity" value={entity} onChange={(e) => setEntity(e.target.value)}>
           <option value="">All entities</option>
           {entities.map((t) => <option key={t}>{t}</option>)}
         </select>
-        <select className={inputCls} value={action} onChange={(e) => setAction(e.target.value)}>
+        <select className={inputCls} aria-label="Filter by action" value={action} onChange={(e) => setAction(e.target.value)}>
           <option value="">All actions</option>
           {actions.map((a) => <option key={a}>{a}</option>)}
         </select>
@@ -569,16 +569,16 @@ export function AdminSettings() {
             <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errors.map((x) => <p key={x}>{x}</p>)}</div>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className="mb-1 block text-sm font-medium">Network name</label><input className={`${inputCls} w-full`} value={form.networkName} onChange={set('networkName')} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Support email</label><input className={`${inputCls} w-full`} type="email" value={form.supportEmail} onChange={set('supportEmail')} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Default currency</label>
-              <select className={`${inputCls} w-full`} value={form.defaultCurrency} onChange={set('defaultCurrency')}>
+            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-network-name">Network name</label><input id="set-network-name" className={`${inputCls} w-full`} value={form.networkName} onChange={set('networkName')} /></div>
+            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-support-email">Support email</label><input id="set-support-email" className={`${inputCls} w-full`} type="email" value={form.supportEmail} onChange={set('supportEmail')} /></div>
+            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-default-currency">Default currency</label>
+              <select id="set-default-currency" className={`${inputCls} w-full`} value={form.defaultCurrency} onChange={set('defaultCurrency')}>
                 {['USD', 'EUR', 'GBP', 'BDT'].map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
-            <div><label className="mb-1 block text-sm font-medium">Minimum payout (in default currency)</label><input className={`${inputCls} w-full`} type="number" min="0" step="0.01" value={form.minPayout} onChange={(e) => setForm((f) => ({ ...f, minPayout: Number(e.target.value) }))} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Payout day of month (1–28)</label><input className={`${inputCls} w-full`} type="number" min="1" max="28" step="1" value={form.payoutDay} onChange={(e) => setForm((f) => ({ ...f, payoutDay: Number(e.target.value) }))} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Payout schedule</label><input className={`${inputCls} w-full`} value={form.payoutSchedule} onChange={set('payoutSchedule')} /></div>
+            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-min-payout">Minimum payout (in default currency)</label><input id="set-min-payout" className={`${inputCls} w-full`} type="number" min="0" step="0.01" value={form.minPayout} onChange={(e) => setForm((f) => ({ ...f, minPayout: Number(e.target.value) }))} /></div>
+            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-payout-day">Payout day of month (1–28)</label><input id="set-payout-day" className={`${inputCls} w-full`} type="number" min="1" max="28" step="1" value={form.payoutDay} onChange={(e) => setForm((f) => ({ ...f, payoutDay: Number(e.target.value) }))} /></div>
+            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-payout-schedule">Payout schedule</label><input id="set-payout-schedule" className={`${inputCls} w-full`} value={form.payoutSchedule} onChange={set('payoutSchedule')} /></div>
           </div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.requireApproval} onChange={set('requireApproval')} /> New accounts require approval before they can run offers</label>
           <button className={btnCls}>Save settings</button>

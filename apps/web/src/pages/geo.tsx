@@ -35,7 +35,7 @@ export function GeoIndex() {
           { icon: 'file', text: t('geo.bullet.3') },
         ]}
       />
-      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-10 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
         {COUNTRIES.map((c, i) => (
           <Reveal key={c.code} delay={(i % 4) * 80}>
             <Link

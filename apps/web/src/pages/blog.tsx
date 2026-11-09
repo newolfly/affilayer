@@ -60,13 +60,13 @@ export function Blog() {
           {shown.map((p) => (
             <Reveal key={p.slug}>
             <article className="lift h-full rounded-xl bg-white p-6 text-slate-900">
-              <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">{p.category}</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">{p.category}</p>
               <h2 className="mt-2 text-lg font-bold">
-                <Link to={`/blog/${p.slug}`} className="transition-colors hover:text-amber-400">{p.title}</Link>
+                <Link to={`/blog/${p.slug}`} className="transition-colors hover:text-amber-700">{p.title}</Link>
               </h2>
               <p className="mt-2 text-sm text-slate-600">{p.excerpt}</p>
-              <p className="mt-3 text-xs text-slate-400">{p.date} · {p.author}</p>
-              <Link to={`/blog/${p.slug}`} className="mt-3 inline-block font-semibold text-amber-400 transition-colors hover:text-amber-300">Read more →</Link>
+              <p className="mt-3 text-xs text-slate-500">{p.date} · {p.author}</p>
+              <Link to={`/blog/${p.slug}`} className="mt-3 inline-block font-semibold text-amber-700 transition-colors hover:text-amber-800">Read more →</Link>
             </article>
             </Reveal>
           ))}

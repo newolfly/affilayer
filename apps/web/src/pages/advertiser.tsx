@@ -98,26 +98,26 @@ export function AdvertiserCreateOffer() {
   return (
     <Card title="Create offer">
       <form onSubmit={submit} className="space-y-3">
-        <div><label className={labelCls}>Name</label><input className={inputCls} required value={form.name} onChange={set('name')} /></div>
-        <div><label className={labelCls}>Description</label><textarea className={inputCls} rows={3} required value={form.description} onChange={set('description')} /></div>
+        <div><label className={labelCls} htmlFor="adv-name">Name</label><input id="adv-name" className={inputCls} required value={form.name} onChange={set('name')} /></div>
+        <div><label className={labelCls} htmlFor="adv-description">Description</label><textarea id="adv-description" className={inputCls} rows={3} required value={form.description} onChange={set('description')} /></div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div><label className={labelCls}>Vertical</label><input className={inputCls} required value={form.vertical} onChange={set('vertical')} /></div>
-          <div><label className={labelCls}>Conversion type</label><input className={inputCls} required value={form.conversionType} onChange={set('conversionType')} /></div>
-          <div><label className={labelCls}>Countries (comma-separated)</label><input className={inputCls} required value={form.countries} onChange={set('countries')} /></div>
-          <div><label className={labelCls}>Devices (comma-separated)</label><input className={inputCls} required value={form.devices} onChange={set('devices')} /></div>
-          <div><label className={labelCls}>Traffic sources (comma-separated)</label><input className={inputCls} required value={form.trafficSources} onChange={set('trafficSources')} /></div>
-          <div><label className={labelCls}>Landing URL</label><input className={inputCls} type="url" required value={form.landingUrl} onChange={set('landingUrl')} /></div>
-          <div><label className={labelCls}>Payout model</label>
-            <select className={inputCls} value={form.payoutModel} onChange={(e) => setForm((f) => ({ ...f, payoutModel: e.target.value as PayoutModel }))}>
+          <div><label className={labelCls} htmlFor="adv-vertical">Vertical</label><input id="adv-vertical" className={inputCls} required value={form.vertical} onChange={set('vertical')} /></div>
+          <div><label className={labelCls} htmlFor="adv-conversion-type">Conversion type</label><input id="adv-conversion-type" className={inputCls} required value={form.conversionType} onChange={set('conversionType')} /></div>
+          <div><label className={labelCls} htmlFor="adv-countries">Countries (comma-separated)</label><input id="adv-countries" className={inputCls} required value={form.countries} onChange={set('countries')} /></div>
+          <div><label className={labelCls} htmlFor="adv-devices">Devices (comma-separated)</label><input id="adv-devices" className={inputCls} required value={form.devices} onChange={set('devices')} /></div>
+          <div><label className={labelCls} htmlFor="adv-traffic-sources">Traffic sources (comma-separated)</label><input id="adv-traffic-sources" className={inputCls} required value={form.trafficSources} onChange={set('trafficSources')} /></div>
+          <div><label className={labelCls} htmlFor="adv-landing-url">Landing URL</label><input id="adv-landing-url" className={inputCls} type="url" required value={form.landingUrl} onChange={set('landingUrl')} /></div>
+          <div><label className={labelCls} htmlFor="adv-payout-model">Payout model</label>
+            <select id="adv-payout-model" className={inputCls} value={form.payoutModel} onChange={(e) => setForm((f) => ({ ...f, payoutModel: e.target.value as PayoutModel }))}>
               {(['CPA', 'CPL', 'CPS', 'CPC'] as PayoutModel[]).map((m) => <option key={m}>{m}</option>)}
             </select>
           </div>
-          <div><label className={labelCls}>Payout (amount{form.payoutModel === 'CPS' ? ' — for CPS this is the order value; set the commission rate below' : ''})</label><input className={inputCls} type="number" min="0" step="0.01" required value={form.payout} onChange={set('payout')} /></div>
-          {form.payoutModel === 'CPS' && (<div><label className={labelCls}>Commission rate (%)</label><input className={inputCls} type="number" min="0" max="100" step="0.01" required value={form.rate} onChange={set('rate')} /></div>)}
-          <div><label className={labelCls}>Currency</label><input className={inputCls} value={form.currency} onChange={set('currency')} /></div>
-          <div><label className={labelCls}>Creatives (URLs, comma-separated)</label><input className={inputCls} value={form.creatives} onChange={set('creatives')} /></div>
-          <div><label className={labelCls}>Daily cap</label><input className={inputCls} type="number" min="0" value={form.capDaily} onChange={set('capDaily')} /></div>
-          <div><label className={labelCls}>Total cap</label><input className={inputCls} type="number" min="0" value={form.capTotal} onChange={set('capTotal')} /></div>
+          <div><label className={labelCls} htmlFor="adv-payout">Payout (amount{form.payoutModel === 'CPS' ? ' — for CPS this is the order value; set the commission rate below' : ''})</label><input id="adv-payout" className={inputCls} type="number" min="0" step="0.01" required value={form.payout} onChange={set('payout')} /></div>
+          {form.payoutModel === 'CPS' && (<div><label className={labelCls} htmlFor="adv-rate">Commission rate (%)</label><input id="adv-rate" className={inputCls} type="number" min="0" max="100" step="0.01" required value={form.rate} onChange={set('rate')} /></div>)}
+          <div><label className={labelCls} htmlFor="adv-currency">Currency</label><input id="adv-currency" className={inputCls} value={form.currency} onChange={set('currency')} /></div>
+          <div><label className={labelCls} htmlFor="adv-creatives">Creatives (URLs, comma-separated)</label><input id="adv-creatives" className={inputCls} value={form.creatives} onChange={set('creatives')} /></div>
+          <div><label className={labelCls} htmlFor="adv-cap-daily">Daily cap</label><input id="adv-cap-daily" className={inputCls} type="number" min="0" value={form.capDaily} onChange={set('capDaily')} /></div>
+          <div><label className={labelCls} htmlFor="adv-cap-total">Total cap</label><input id="adv-cap-total" className={inputCls} type="number" min="0" value={form.capTotal} onChange={set('capTotal')} /></div>
         </div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.approvalRequired} onChange={set('approvalRequired')} /> Approval required for affiliates</label>
         <button className={btnCls}>Create offer</button>

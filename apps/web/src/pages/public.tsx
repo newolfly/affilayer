@@ -187,10 +187,12 @@ function Hero() {
           <Link to="/register" className="pill-btn">{t('home.ctaAffiliate')}</Link>
           <Link to="/register" className="pill-btn-outline">{t('home.ctaAdvertiser')}</Link>
         </div>
-        <p className="mt-4 text-sm">
-          <Link to="/login" className="font-semibold text-amber-400 hover:text-amber-300">{t('home.demoTry')} →</Link>
-          {' '}<span className="text-[#8A97A8]">{t('home.demoNote')}</span>
-        </p>
+        {isDemoMode && (
+          <p className="mt-4 text-sm">
+            <Link to="/login" className="font-semibold text-amber-400 hover:text-amber-300">{t('home.demoTry')} →</Link>
+            {' '}<span className="text-[#8A97A8]">{t('home.demoNote')}</span>
+          </p>
+        )}
         <p className="mt-4 text-xs text-[#8A97A8]">
           {t('home.note')}
         </p>
@@ -210,7 +212,7 @@ function BrowseByCountry() {
     <section className="mt-14">
       <h2 className="text-center text-3xl font-bold text-white">{t('browse.title')}</h2>
       <p className="mx-auto mt-3 max-w-2xl text-center text-slate-300">{t('browse.sub')}</p>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
         {COUNTRIES.map((c, i) => (
           <Reveal key={c.code} delay={(i % 4) * 80}>
             <Link
@@ -624,12 +626,21 @@ export function FunnelSteps({ heading, steps }: {
   heading: string
   steps: { n: string; t: string; d: string; to: string; cta: string; icon: IconName }[]
 }) {
+  // Column counts follow the step count so no row is left with a lone orphan:
+  // 4 steps -> 2x2 at md, 4 across at lg; 5 steps -> 3 across (3+2), no lg
+  // override; anything else keeps the previous 2/3 layout.
+  const gridCls = steps.length === 4
+    ? 'md:grid-cols-2 lg:grid-cols-4'
+    : steps.length === 5
+      ? 'md:grid-cols-3'
+      : 'md:grid-cols-2 lg:grid-cols-3'
+  const staggerCols = steps.length === 4 ? 4 : steps.length === 5 ? 3 : 3
   return (
     <section className="mt-14">
       <h2 className="text-center text-3xl font-bold text-white">{heading}</h2>
-      <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className={`mt-8 grid gap-4 ${gridCls}`}>
         {steps.map((s, i) => (
-          <Reveal key={s.t} delay={(i % 3) * 80}>
+          <Reveal key={s.t} delay={(i % staggerCols) * 80}>
           <div className="lift relative h-full rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6">
             <div className="flex items-center gap-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-sm font-bold text-[#0B1220]" aria-hidden>{s.n}</span>

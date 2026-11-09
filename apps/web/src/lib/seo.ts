@@ -213,14 +213,23 @@ function metaFor(pathname: string): SeoMeta {
       }
     }
   }
-  // App and auth routes are not public pages: generic title, never indexed.
+  // App and auth routes are not public pages: never indexed. Auth routes
+  // get their own title (matching their H1) instead of the homepage title.
+  const AUTH_TITLES: Record<string, string> = {
+    '/login': 'Log in | AffiLayer',
+    '/register': 'Create an account | AffiLayer',
+    '/onboarding': 'Onboarding | AffiLayer',
+    '/pending': 'Approval status | AffiLayer',
+    '/forgot-password': 'Forgot password | AffiLayer',
+    '/reset-password': 'Set a new password | AffiLayer',
+  }
   if (
     path === '/app' ||
     path.startsWith('/app/') ||
-    ['/login', '/register', '/onboarding', '/pending', '/forgot-password', '/reset-password'].includes(path)
+    path in AUTH_TITLES
   ) {
     return {
-      title: 'AffiLayer — Global CPA Affiliate Network',
+      title: AUTH_TITLES[path] ?? 'AffiLayer — Global CPA Affiliate Network',
       description:
         'AffiLayer is a new global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an auditable commission ledger.',
       noindex: true,
