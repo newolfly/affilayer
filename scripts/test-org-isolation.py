@@ -10,8 +10,9 @@ Proves, against the LIVE database with a real affiliate JWT, that:
   (iv)  a privileged actor (admin / service role) CAN still assign
          organization_id (positive control, trigger level);
   (v)   an affiliate CAN still update their own non-org fields;
-  (vi)  log_audit rejects a forged actor and accepts the caller's own id
-         (migration 018 binds p_actor_id to the JWT).
+  (vi)  log_audit rejects non-admin callers outright
+         (migration 021: admin-or-proof only; 018's actor binding
+         still applies to admin callers).
 
 Usage:
   python3 scripts/test-org-isolation.py
@@ -236,20 +237,10 @@ def main():
             "p_entity_type": "profile", "p_entity_id": uid,
             "p_details": {"test": "org-isolation"},
         })
-        audit_ok = status == 200 and res is not None
-        if audit_ok:
-            cur.execute(
-                "SELECT actor_id FROM audit_logs WHERE action = 'test.own'"
-                " AND entity_id = %s ORDER BY created_at DESC LIMIT 1", (uid,))
-            row = cur.fetchone()
-            audit_ok = row is not None and str(row[0]) == uid
-            if row is not None:
-                cur.execute(
-                    "DELETE FROM audit_logs WHERE action = 'test.own'"
-                    " AND entity_id = %s", (uid,))
-                conn.commit()
-        check("(vi) log_audit own actor accepted + recorded",
-              audit_ok, f"http={status} body={res}")
+        # Migration 021 restricts log_audit to admins or worker-proof, so
+        # even the caller's own actor is rejected for affiliates by design.
+        check("(vi) log_audit own actor rejected (admin-only)",
+              status in (401, 403), f"http={status} body={res}")
     finally:
         # --- cleanup: remove every trace of the throwaway affiliate ------
         cur.execute("DELETE FROM affiliate_profiles WHERE profile_id = %s", (uid,))
