@@ -78,6 +78,7 @@ import { SupabaseStore, isRealOfferId } from './supabase-store.js';
 import type { Store } from './store.js';
 import { deliverPostbacks, verifySignature } from './postbacks.js';
 import {
+  ALLOWED_PAYOUT_CURRENCIES,
   DEFAULT_PAYOUT_CURRENCY,
   MAX_DEPOSIT_USD,
   MIN_DEPOSIT_USD,
@@ -820,6 +821,14 @@ async function handleExecutePayout(request: Request, env: Env): Promise<Response
     }
     const address = wallet?.payout_address ?? null;
     const currency = wallet?.payout_currency || DEFAULT_PAYOUT_CURRENCY;
+    // H-03 (026): the ledger is USD-only and payouts go out as USDT
+    // TRC20. The wallet currency is affiliate-controlled (RLS
+    // update-own), so never pay it verbatim — reject anything outside
+    // the allowlist before any money moves. (The DB CHECK on
+    // affiliate_profiles.payout_currency backstops the save path.)
+    if (!(ALLOWED_PAYOUT_CURRENCIES as readonly string[]).includes(currency)) {
+      return json({ error: `payout currency ${currency} is not supported (only usdttrc20)` }, 422);
+    }
     if (!address) {
       return json({ error: 'affiliate has no payout wallet address on file' }, 422);
     }

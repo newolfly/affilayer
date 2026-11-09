@@ -29,6 +29,13 @@ export const NP_SANDBOX_BASE = 'https://api-sandbox.nowpayments.io/v1';
 /** Default payout currency: USDT on TRON (stablecoin, lowest-fee rail). */
 export const DEFAULT_PAYOUT_CURRENCY = 'usdttrc20';
 
+/** Payout currencies the executor will pay in (H-03, migration 026).
+ *  The ledger is USD-only; the wallet currency is affiliate-controlled
+ *  (RLS update-own), so anything outside this list is rejected in
+ *  handleExecutePayout before any money moves. The DB CHECK on
+ *  affiliate_profiles.payout_currency enforces the same list at save. */
+export const ALLOWED_PAYOUT_CURRENCIES = ['usdttrc20'] as const;
+
 /** Minimum advertiser deposit, USD (NOWPayments per-coin minimums are ~$10). */
 export const MIN_DEPOSIT_USD = 10;
 

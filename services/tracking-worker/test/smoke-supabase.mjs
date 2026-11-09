@@ -35,6 +35,25 @@ const OFFER = {
 const recordedClicks = [];
 let failures = 0;
 
+// H-03 (026): approved payout request + mutable wallet row for the
+// /api/payouts/execute allowlist cases. The mock DB has no CHECK to
+// enforce, so the test sets payout_currency per case.
+const PAYOUT_REQ_ID = '44444444-4444-4444-4444-444444444444';
+const AFF_ID = '55555555-5555-5555-5555-555555555555';
+const PAYOUT_REQUEST = {
+  id: PAYOUT_REQ_ID,
+  affiliate_id: AFF_ID,
+  amount: 0.01,
+  currency: 'USD',
+  status: 'approved',
+};
+let mockWallet = {
+  profile_id: AFF_ID,
+  affiliate_code: 'AFF-APPROVED-001',
+  payout_address: 'TSS9Dba7rjiYz7c8rtJPy74zMuF8aNFayJ',
+  payout_currency: 'btc',
+};
+
 function check(name, cond, extra = '') {
   if (cond) {
     console.log(`ok   ${name}`);
@@ -60,6 +79,21 @@ const server = http.createServer((req, res) => {
       res.writeHead(status, { 'content-type': 'application/json' });
       res.end(JSON.stringify(obj));
     };
+    // H-03 (026): auth + payout-execute mocks. requireAdmin verifies
+    // the JWT via Auth and is_admin via RPC; handleExecutePayout reads
+    // the payout request + wallet rows via PostgREST GETs.
+    if (req.method === 'GET' && url.pathname === '/auth/v1/user') {
+      return send(200, { id: 'admin-00000000-0000-4000-8000-000000000001', email: 'admin@test.local' });
+    }
+    if (req.method === 'GET' && url.pathname === '/rest/v1/payout_requests') {
+      return send(200, [PAYOUT_REQUEST]);
+    }
+    if (req.method === 'GET' && url.pathname === '/rest/v1/affiliate_profiles') {
+      return send(200, [mockWallet]);
+    }
+    if (fn === 'is_admin') {
+      return send(200, true);
+    }
     if (fn === 'tracking_get_offer') {
       return send(200, params.p_offer_id === OFFER_ID ? OFFER : null);
     }
@@ -110,9 +144,22 @@ const env = {
   SUPABASE_URL: `http://127.0.0.1:${port}`,
   SUPABASE_ANON_KEY: 'test-anon-key',
   NP_WORKER_PROOF: 'test-proof',
+  // H-03 cases need the payments module configured (else 503 before
+  // the currency check). Fake key: the allowlist fires before any
+  // NOWPayments call, so no network happens.
+  NOWPAYMENTS_ENV: 'production',
+  NOWPAYMENTS_API_KEY: 'test-api-key-do-not-use',
 };
 const call = (req) => worker.fetch(req, env);
 const getClick = (path) => call(new Request(`https://go.affilayer.test${path}`, { method: 'GET' }));
+const execPayout = (walletCurrency, walletAddress) => {
+  mockWallet = { ...mockWallet, payout_currency: walletCurrency, payout_address: walletAddress };
+  return call(new Request('https://go.affilayer.test/api/payouts/execute', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer test-admin-jwt', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ payout_request_id: PAYOUT_REQ_ID }),
+  }));
+};
 
 // M-13: unknown affiliate code + real offer -> 404, 0 rows recorded.
 const unknownRes = await getClick(`/c/AFF-NOPE-XYZ99/${OFFER_ID}`);
@@ -162,6 +209,21 @@ check('demo code recorded 0 further rows', recordedClicks.length === 3, `got ${r
 const noOfferRes = await getClick(`/c/AFF-APPROVED-001/${UNKNOWN_OFFER_ID}`);
 const noOfferBody = await noOfferRes.json();
 check('unknown offer -> 404 offer not found', noOfferRes.status === 404 && noOfferBody.error === 'offer not found', `got ${noOfferRes.status} ${JSON.stringify(noOfferBody)}`);
+
+// H-03 (026): payout currency allowlist in handleExecutePayout.
+// Wallet currency 'btc' (with an address) -> 422, rejected before any
+// money moves.
+const btcRes = await execPayout('btc', 'TSS9Dba7rjiYz7c8rtJPy74zMuF8aNFayJ');
+const btcBody = await btcRes.json();
+check('btc wallet currency -> 422', btcRes.status === 422, `got ${btcRes.status} ${JSON.stringify(btcBody)}`);
+check('btc 422 names the currency', typeof btcBody.error === 'string' && btcBody.error.includes('btc') && btcBody.error.includes('usdttrc20'), JSON.stringify(btcBody));
+
+// Wallet currency 'usdttrc20' with no address -> passes the currency
+// check and fails at the address check (422, different message).
+// Proves the allowlist lets the good currency through.
+const usdtRes = await execPayout('usdttrc20', null);
+const usdtBody = await usdtRes.json();
+check('usdttrc20 wallet passes currency check (fails at address)', usdtRes.status === 422 && usdtBody.error === 'affiliate has no payout wallet address on file', `got ${usdtRes.status} ${JSON.stringify(usdtBody)}`);
 
 server.close();
 
