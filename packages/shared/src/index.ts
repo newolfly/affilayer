@@ -236,6 +236,53 @@ export interface SmartLinkRule {
   createdAt?: string;
 }
 
+/**
+ * Demo-mode affiliate registry + SmartLink codes (M-08 / P1-12, Phase 1
+ * item 1.4). Mirrors the demo profiles in apps/web/src/lib/demo-data.ts
+ * (demo-aff-1 approved AFF-DEMO-001, demo-pend-1 pending AFF-DEMO-002) —
+ * that file is the single source of truth for the demo catalogue, so keep
+ * the codes and statuses in sync with it.
+ *
+ * Why here: the Worker (demo mode) and the legacy Fastify service both
+ * serve demo offers from an in-memory store with no affiliate DB, so the
+ * 022 approval gate (DB-side, real offers only) cannot see demo clicks.
+ * This registry is the demo path's equivalent: a known demo affiliate
+ * whose status is not 'approved' is blocked (403), exactly like the DB
+ * gate. Unknown codes are NOT blocked — demo mode is a sandbox and dev /
+ * smoke traffic uses arbitrary codes (AFF1); the DB gate still rejects
+ * unknown codes for real offers (022).
+ */
+export interface DemoAffiliate {
+  affiliateCode: string;
+  status: 'approved' | 'pending' | 'suspended' | 'rejected';
+}
+
+export const DEMO_AFFILIATES: ReadonlyArray<DemoAffiliate> = [
+  { affiliateCode: 'AFF-DEMO-001', status: 'approved' },
+  { affiliateCode: 'AFF-DEMO-002', status: 'pending' },
+];
+
+/** Approval status of a known demo affiliate, or undefined when the code
+ *  is not a demo affiliate (real codes, the 'smartlink' sentinel). */
+export function demoAffiliateStatus(affiliateCode: string): DemoAffiliate['status'] | undefined {
+  return DEMO_AFFILIATES.find((a) => a.affiliateCode === affiliateCode)?.status;
+}
+
+/**
+ * The demo SmartLink codes. No SmartLink registry exists anywhere else in
+ * the codebase — SmartLinkRule is a dead type, no UI creates codes, and no
+ * smartlinks table exists — so demo mode defines its one canonical code
+ * here. In demo mode /s/<code> 404s for anything else; in Supabase mode
+ * there is no per-code registry (a smartlinks table is the P1-12
+ * follow-up), so any code routes — but only to real offers, because demo
+ * offers are stripped from SupabaseStore.
+ */
+export const DEMO_SMARTLINK_CODES: ReadonlyArray<string> = ['demo'];
+
+export function isDemoSmartlinkCode(code: string): boolean {
+  return DEMO_SMARTLINK_CODES.includes(code);
+}
+
 export interface FraudSignal {
   /** Rule that fired. Signals only — never auto-reject on these. */
   type: 'duplicate_click_id' | 'high_click_rate_ip' | 'empty_user_agent';

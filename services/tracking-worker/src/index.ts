@@ -53,8 +53,10 @@
  */
 import {
   computeCommission,
+  demoAffiliateStatus,
   deviceFromUserAgent,
   generateClickId,
+  isDemoSmartlinkCode,
   isOfferEligible,
   smartlinkPick,
   type Click,
@@ -62,7 +64,7 @@ import {
   type Offer,
 } from '@affilayer/shared';
 import { InMemoryStore } from './store.js';
-import { SupabaseStore } from './supabase-store.js';
+import { SupabaseStore, isRealOfferId } from './supabase-store.js';
 import type { Store } from './store.js';
 import { deliverPostbacks, verifySignature } from './postbacks.js';
 import {
@@ -274,6 +276,19 @@ async function recordClickOrReject(
   store: Store,
   click: Click,
 ): Promise<Response | null> {
+  // M-08: the in-memory demo path bypassed the 022 approval gate — a
+  // pending affiliate's demo-offer click 302'd. Demo offers are non-UUID
+  // ids; a known demo affiliate whose status is not approved is rejected
+  // here, exactly like the DB gate rejects for real offers. Unknown codes
+  // (including the 'smartlink' sentinel) are not demo affiliates and pass
+  // — the DB gate still covers real offers. Placed here so it covers both
+  // the /c/ handler and the SmartLink handler.
+  if (!isRealOfferId(click.offerId)) {
+    const status = demoAffiliateStatus(click.affiliateCode);
+    if (status !== undefined && status !== 'approved') {
+      return json({ error: 'affiliate not approved' }, 403);
+    }
+  }
   try {
     await store.recordClick(click);
     return null;
@@ -305,12 +320,20 @@ interface ConversionBody {
  * returns the existing row on a conflict, so a concurrent backfill is
  * a no-op; an already-exists style error is likewise treated as
  * success, never a 500. Returns true when a row exists afterwards.
+ *
+ * M-08 fold-in: the backfill is status-guarded — only pending or
+ * approved conversions earn a ledger row (migration 001 status machine:
+ * pending / approved / rejected / reversed; 003 approves/rejects only
+ * from pending). Replaying a reversed/rejected conversion's idempotency
+ * key must never mint a `pending` row for a dead conversion, so those
+ * return false with no write.
  */
 export async function ensureLedgerEntry(
   store: Store,
   conversion: Conversion,
   offer: Offer,
 ): Promise<boolean> {
+  if (conversion.status !== 'pending' && conversion.status !== 'approved') return false;
   const existing = await store.listLedgerEntries();
   if (existing.some((e) => e.conversionId === conversion.id)) return true;
   const commission = computeCommission(conversion.payout, offer.payoutModel ?? 'CPA', offer.rateBps);
@@ -1054,6 +1077,17 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     if (request.method === 'GET' && smartMatch) {
       if (clickRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
       const [, smartlinkCode] = smartMatch;
+      const code = decodeURIComponent(smartlinkCode);
+      // M-08: SmartLink codes were never validated — any /s/<anything>
+      // 302'd, deterministically to demo-offer-1 in production. In demo
+      // mode (no Supabase) the code must be a known demo code, else 404.
+      // In Supabase mode there is no per-code registry (no smartlinks
+      // table — the P1-12 follow-up), so the code is not checked; the
+      // pick is real-offers-only because demo offers are stripped from
+      // SupabaseStore (see supabase-store.ts).
+      if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+        if (!isDemoSmartlinkCode(code)) return json({ error: 'smartlink not found' }, 404);
+      }
       const store = getStore(env);
       const offers = await store.listOffers();
       // Enforce per-offer click caps at the edge: offers that hit their
@@ -1075,7 +1109,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       if (!picked) return json({ error: 'no eligible offer' }, 404);
       const click = recordClickFields(request, url, url.searchParams.get('affiliate_code') ?? 'smartlink', picked.id, {
         smartlink: true,
-        smartlinkCode: decodeURIComponent(smartlinkCode),
+        smartlinkCode: code,
       });
       // A 022 rejection (not approved / cap reached) answers instead
       // of redirecting; a transient write failure still redirects.

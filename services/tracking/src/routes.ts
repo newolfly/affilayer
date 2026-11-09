@@ -7,7 +7,9 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import Fastify from 'fastify';
 import {
   computeCommission,
+  demoAffiliateStatus,
   generateClickId,
+  isDemoSmartlinkCode,
   smartlinkPick,
   type Click,
   type Conversion,
@@ -36,6 +38,20 @@ interface ConversionBody {
  *  house affiliate instead — its commissions are never paid out. */
 const SMARTLINK_AFFILIATE_CODE = 'smartlink';
 const HOUSE_AFFILIATE_CODE = 'AFF-HOUSE';
+
+/**
+ * M-08 (demo path, mirror of the Worker's recordClickOrReject gate): the
+ * in-memory store has no affiliate DB, so the 022 approval gate cannot
+ * see demo clicks. A known demo affiliate whose status is not 'approved'
+ * is blocked here — same 403 as the DB gate for real offers. Only
+ * applies when the store is the in-memory demo store (PgStore clicks go
+ * to Postgres, where the DB gate applies).
+ */
+function demoAffiliateBlocked(store: Store, affiliateCode: string): boolean {
+  if (!(store instanceof InMemoryStore)) return false;
+  const status = demoAffiliateStatus(affiliateCode);
+  return status !== undefined && status !== 'approved';
+}
 
 function appendQuery(url: string, key: string, value: string): string {
   const sep = url.includes('?') ? '&' : '?';
@@ -85,6 +101,11 @@ export async function buildApp(opts: TrackingAppOptions = {}): Promise<FastifyIn
       const { affiliateCode, offerId } = req.params;
       const offer = await store.getOffer(offerId);
       if (!offer) return reply.code(404).send({ error: 'offer not found' });
+      // M-08: pending demo affiliates are 403'd, same as the DB gate
+      // for real offers (see demoAffiliateBlocked above).
+      if (demoAffiliateBlocked(store, affiliateCode)) {
+        return reply.code(403).send({ error: 'affiliate not approved' });
+      }
 
       const clickId = generateClickId();
       const click: Click = {
@@ -115,6 +136,13 @@ export async function buildApp(opts: TrackingAppOptions = {}): Promise<FastifyIn
     '/s/:smartlinkCode',
     async (req, reply) => {
       const { smartlinkCode } = req.params;
+      // M-08: unknown SmartLink codes 404 instead of routing to a demo
+      // offer. Only the in-memory demo store validates codes — no
+      // registry exists for real offers (a smartlinks table is the
+      // P1-12 follow-up). Fastify already decodes the param.
+      if (store instanceof InMemoryStore && !isDemoSmartlinkCode(smartlinkCode)) {
+        return reply.code(404).send({ error: 'smartlink not found' });
+      }
       const offers = await store.listOffers();
       const picked = smartlinkPick(offers, {
         country: req.query.country,
@@ -122,6 +150,10 @@ export async function buildApp(opts: TrackingAppOptions = {}): Promise<FastifyIn
         trafficSource: req.query.source,
       });
       if (!picked) return reply.code(404).send({ error: 'no eligible offer' });
+      // M-08: pending demo affiliates are 403'd on SmartLink clicks too.
+      if (demoAffiliateBlocked(store, req.query.affiliate_code ?? 'smartlink')) {
+        return reply.code(403).send({ error: 'affiliate not approved' });
+      }
 
       const clickId = generateClickId();
       const click: Click = {

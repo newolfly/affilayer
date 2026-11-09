@@ -1,17 +1,24 @@
 /**
  * SupabaseStore — durable Store backed by Postgres RPCs (migration 007).
  *
- * Hybrid by design (see docs/H4-DURABLE-STORE-PLAN.md):
- *  - Demo offers (demo-offer-1/2/3) and their clicks/conversions live in
- *    the in-memory store — demo is explicitly not real, and demo ids are
- *    not UUIDs so they cannot go to Postgres (conversions.offer_id is
- *    NOT NULL uuid).
- *  - Real offers (UUIDs) resolve from the offers table and their
- *    clicks/conversions/ledger rows go to Postgres via SECURITY DEFINER
- *    RPCs, callable with the publishable anon key. No service_role key
- *    is involved anywhere.
- *  - Postback configs/events stay in-memory (delivery records, not
- *    financial truth).
+ * M-08 (P1-12): demo offers are NOT served here. When Supabase is
+ * configured this is the production store, and the old hybrid behaviour
+ * (demo offers merged into every list, demo clicks/conversions kept in
+ * per-isolate memory) routed real traffic to example.com demo pages and
+ * made SmartLink conversions 422 on a different isolate. Demo mode is
+ * the InMemoryStore only (getStore picks it when SUPABASE_URL /
+ * SUPABASE_ANON_KEY are unset) — the web app's demo mode depends on
+ * that, and it refuses demo credentials whenever Supabase is configured,
+ * so nothing legitimate needs demo offers from this store.
+ *
+ * Concretely: listOffers / listClicks / listConversions /
+ * listLedgerEntries return durable rows only; getOffer / getClick /
+ * getConversion / findConversion* return undefined for non-UUID ids;
+ * recordClick / recordConversion / recordLedgerEntry throw for non-UUID
+ * offer ids (unreachable via the handlers — getOffer 404s first — but
+ * loud rather than silently recording into isolate memory).
+ * Postback configs/events stay in-memory (delivery records, not
+ * financial truth).
  *
  * Env (wrangler [vars], both public values — never secrets):
  *   SUPABASE_URL, SUPABASE_ANON_KEY
@@ -131,6 +138,9 @@ function mapConversion(row: Row): Conversion {
 }
 
 export class SupabaseStore implements Store {
+  // In-memory only for postback configs/events (delivery records, not
+  // financial truth). Demo offers/clicks/conversions/ledger rows are NOT
+  // kept here (M-08) — see the header comment.
   private memory = new InMemoryStore();
 
   constructor(private opts: SupabaseStoreOptions) {}
@@ -186,8 +196,9 @@ export class SupabaseStore implements Store {
   }
 
   async getOffer(id: string): Promise<Offer | undefined> {
-    const demo = await this.memory.getOffer(id);
-    if (demo) return demo;
+    // M-08: demo offers are not served when Supabase is configured —
+    // a non-UUID id can only be a demo offer, and those live in the
+    // InMemoryStore (demo mode) only.
     if (!isRealOfferId(id)) return undefined;
     const row = await this.rpc<Row | null>('tracking_get_offer', {
       p_offer_id: id,
@@ -198,16 +209,20 @@ export class SupabaseStore implements Store {
   }
 
   async listOffers(): Promise<Offer[]> {
-    const demo = await this.memory.listOffers();
+    // M-08: durable rows only — no demo offers merged in.
     const rows = await this.rpc<Row[]>('tracking_list_offers', {
       p_limit: 100,
       p_proof: await this.workerProofFor('tracking_list_offers'),
     });
-    return [...demo, ...rows.map(mapOffer)];
+    return rows.map(mapOffer);
   }
 
   async recordClick(click: Click): Promise<Click> {
-    if (!isRealOfferId(click.offerId)) return this.memory.recordClick(click);
+    // M-08: demo-offer clicks are not recorded when Supabase is
+    // configured (unreachable via the handlers — getOffer 404s first).
+    if (!isRealOfferId(click.offerId)) {
+      throw new Error('supabase recordClick: demo offers are not served when Supabase is configured');
+    }
     const res = await this.rpc<{ id: string; click_id: string; duplicate: boolean }>(
       'tracking_record_click',
       {
@@ -233,8 +248,6 @@ export class SupabaseStore implements Store {
   }
 
   async getClick(clickId: string): Promise<Click | undefined> {
-    const demo = await this.memory.getClick(clickId);
-    if (demo) return demo;
     const row = await this.rpc<Row | null>('tracking_get_click', {
       p_click_id: clickId,
       p_proof: await this.workerProofFor('tracking_get_click'),
@@ -244,7 +257,6 @@ export class SupabaseStore implements Store {
   }
 
   async listClicks(): Promise<Click[]> {
-    const demo = await this.memory.listClicks();
     const rows = await this.rpc<Row[]>('tracking_list_clicks', {
       p_from: null,
       p_to: null,
@@ -253,12 +265,14 @@ export class SupabaseStore implements Store {
       p_limit: 1000,
       p_proof: await this.listProof('tracking_list_clicks'),
     });
-    return [...demo, ...rows.map(mapClick)];
+    return rows.map(mapClick);
   }
 
   async recordConversion(conversion: Conversion): Promise<Conversion> {
+    // M-08: demo conversions are not recorded when Supabase is
+    // configured (unreachable via the handlers — getClick 422s first).
     if (!isRealOfferId(conversion.offerId)) {
-      return this.memory.recordConversion(conversion);
+      throw new Error('supabase recordConversion: demo offers are not served when Supabase is configured');
     }
     const res = await this.rpc<{ id: string; conversion_id: string; duplicate: boolean }>(
       'tracking_record_conversion',
@@ -281,8 +295,6 @@ export class SupabaseStore implements Store {
   }
 
   async getConversion(id: string): Promise<Conversion | undefined> {
-    const demo = await this.memory.getConversion(id);
-    if (demo) return demo;
     const row = await this.rpc<Row | null>('tracking_find_conversion', {
       p_id: id,
       p_idempotency_key: null,
@@ -295,8 +307,6 @@ export class SupabaseStore implements Store {
   }
 
   async findConversionByIdempotencyKey(key: string): Promise<Conversion | undefined> {
-    const demo = await this.memory.findConversionByIdempotencyKey(key);
-    if (demo) return demo;
     const row = await this.rpc<Row | null>('tracking_find_conversion', {
       p_id: null,
       p_idempotency_key: key,
@@ -312,8 +322,6 @@ export class SupabaseStore implements Store {
     clickId: string,
     offerId: string,
   ): Promise<Conversion | undefined> {
-    const demo = await this.memory.findConversionByClickAndOffer(clickId, offerId);
-    if (demo) return demo;
     const row = await this.rpc<Row | null>('tracking_find_conversion', {
       p_id: null,
       p_idempotency_key: null,
@@ -326,7 +334,6 @@ export class SupabaseStore implements Store {
   }
 
   async listConversions(): Promise<Conversion[]> {
-    const demo = await this.memory.listConversions();
     const rows = await this.rpc<Row[]>('tracking_list_conversions', {
       p_from: null,
       p_to: null,
@@ -335,12 +342,14 @@ export class SupabaseStore implements Store {
       p_limit: 1000,
       p_proof: await this.listProof('tracking_list_conversions'),
     });
-    return [...demo, ...rows.map(mapConversion)];
+    return rows.map(mapConversion);
   }
 
   async recordLedgerEntry(entry: CommissionLedgerEntry): Promise<CommissionLedgerEntry> {
+    // M-08: demo ledger rows are not recorded when Supabase is
+    // configured (unreachable via the handlers — see recordConversion).
     if (!isRealOfferId(entry.offerId)) {
-      return this.memory.recordLedgerEntry(entry);
+      throw new Error('supabase recordLedgerEntry: demo offers are not served when Supabase is configured');
     }
     // The conversionId here is the DB uuid (recordConversion returns it).
     const affiliate = await this.rpc<{ profile_id: string } | null>(
@@ -368,7 +377,6 @@ export class SupabaseStore implements Store {
   }
 
   async listLedgerEntries(): Promise<CommissionLedgerEntry[]> {
-    const demo = await this.memory.listLedgerEntries();
     const rows = await this.rpc<Row[]>('tracking_list_conversions', {
       p_from: null,
       p_to: null,
@@ -391,7 +399,7 @@ export class SupabaseStore implements Store {
         createdAt: str(row.created_at) ?? new Date().toISOString(),
       });
     }
-    return [...demo, ...real];
+    return real;
   }
 
   // Postback configs/events stay in-memory (delivery records, not

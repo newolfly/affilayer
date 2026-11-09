@@ -162,8 +162,8 @@ describe('tracking service', () => {
 
   it('SmartLink pick is deterministic: highest payout wins (offer-b, $25)', async () => {
     const app = await buildApp({ store: new InMemoryStore(), postbackSecret: SECRET });
-    const first = await app.inject({ method: 'GET', url: '/s/main?country=US&device=mobile&source=search' });
-    const second = await app.inject({ method: 'GET', url: '/s/main?country=US&device=mobile&source=search' });
+    const first = await app.inject({ method: 'GET', url: '/s/demo?country=US&device=mobile&source=search' });
+    const second = await app.inject({ method: 'GET', url: '/s/demo?country=US&device=mobile&source=search' });
     expect(first.statusCode).toBe(302);
     expect(first.headers.location).toContain('https://example.com/landing-b');
     // Same landing URL both times (only the click_id differs).
@@ -175,6 +175,30 @@ describe('tracking service', () => {
     const lookup = await app.inject({ method: 'GET', url: `/api/clicks/${clickId}` });
     expect(lookup.json().click.smartlink).toBe(true);
     expect(lookup.json().click.offerId).toBe('offer-b');
+  });
+
+  it('M-08: unknown SmartLink code -> 404', async () => {
+    const app = await buildApp({ store: new InMemoryStore(), postbackSecret: SECRET });
+    const res = await app.inject({ method: 'GET', url: '/s/NOPE?country=US&device=mobile' });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('M-08: pending demo affiliate -> 403 on direct and SmartLink clicks; approved -> 302', async () => {
+    const app = await buildApp({ store: new InMemoryStore(), postbackSecret: SECRET });
+    const pendDirect = await app.inject({ method: 'GET', url: '/c/AFF-DEMO-002/offer-a' });
+    expect(pendDirect.statusCode).toBe(403);
+    const pendSmart = await app.inject({
+      method: 'GET',
+      url: '/s/demo?country=US&device=mobile&affiliate_code=AFF-DEMO-002',
+    });
+    expect(pendSmart.statusCode).toBe(403);
+    const apprDirect = await app.inject({ method: 'GET', url: '/c/AFF-DEMO-001/offer-a' });
+    expect(apprDirect.statusCode).toBe(302);
+    const apprSmart = await app.inject({
+      method: 'GET',
+      url: '/s/demo?country=US&device=mobile&affiliate_code=AFF-DEMO-001',
+    });
+    expect(apprSmart.statusCode).toBe(302);
   });
 
   it('unknown offer click -> 404', async () => {
