@@ -118,6 +118,94 @@ export async function getOffer(id: string): Promise<Offer | undefined> {
   return offers.find((o) => o.id === id)
 }
 
+export interface CreateOfferInput {
+  name: string
+  description: string
+  vertical: string
+  countries: string[]
+  devices: string[]
+  trafficSources: string[]
+  conversionType: string
+  payoutModel: Offer['payoutModel']
+  payout: number
+  /** CPS only: commission rate in basis points (1000 = 10%). */
+  rateBps?: number | null
+  currency: string
+  capDaily: number | null
+  capTotal: number | null
+  landingUrl: string
+  creatives: string[]
+  approvalRequired: boolean
+}
+
+/** Create a real offer (H-02). In Supabase mode this inserts into
+ *  `offers` with the caller's own identity as owner:
+ *  - organization_id comes from the caller's own `profiles` row
+ *    (readable via `profiles_select_own_or_admin`); the insert RLS
+ *    policy `offers_insert_member` admits exactly org members/admins,
+ *    so a caller with no organization cannot insert at all.
+ *  - advertiser_id is the caller's user id.
+ *  - campaign_id is left NULL: campaigns are optional (the column is
+ *    nullable, the campaigns table is empty) — no campaign UI is needed
+ *    to list an offer.
+ *  App-level gate on top of RLS: only advertisers (or admins) whose
+ *  account is approved may list an offer, so a pending account cannot
+ *  put a live offer in the marketplace (same lesson as H-03).
+ *  Returns the inserted offer mapped to the domain type, or an error
+ *  the caller must show instead of claiming success. Demo mode never
+ *  reaches this function — the caller keeps the demo-store path. */
+export async function createOffer(input: CreateOfferInput): Promise<{ offer?: Offer; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You are not signed in.' }
+  const currency = input.currency.trim().toUpperCase()
+  if (currency.length !== 3) return { error: 'Currency must be a 3-letter code (e.g. USD).' }
+  if (!Number.isFinite(input.payout) || input.payout < 0) return { error: 'Payout must be a number of 0 or more.' }
+  if (input.payoutModel === 'CPS' && (input.rateBps == null || input.rateBps < 0 || input.rateBps > 10000)) {
+    return { error: 'Commission rate must be between 0 and 100%.' }
+  }
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles').select('organization_id, role, status').eq('id', user.id).maybeSingle()
+  if (profileError) return { error: profileError.message }
+  const row = profile as Row | null
+  const organizationId = row?.organization_id as string | undefined
+  const role = row?.role as string | undefined
+  const status = row?.status as string | undefined
+  if (!organizationId) return { error: 'Your account has no organization yet. Ask an admin to assign your account to an organization before creating offers.' }
+  const isAdmin = role === 'super_admin' || role === 'network_manager'
+  if (role !== 'advertiser' && !isAdmin) return { error: 'Only advertiser accounts can create offers.' }
+  if (!isAdmin && status !== 'approved') return { error: 'Your advertiser account is awaiting approval. You can create offers once an admin approves it.' }
+  const { data, error } = await supabase.from('offers').insert({
+    organization_id: organizationId,
+    advertiser_id: user.id,
+    campaign_id: null,
+    name: input.name,
+    description: input.description || null,
+    vertical: input.vertical || null,
+    countries: input.countries,
+    devices: input.devices,
+    traffic_sources: input.trafficSources,
+    conversion_type: input.conversionType || 'purchase',
+    payout_model: input.payoutModel,
+    payout: input.payout,
+    rate_bps: input.payoutModel === 'CPS' ? (input.rateBps ?? null) : null,
+    currency,
+    daily_cap: input.capDaily,
+    monthly_cap: input.capTotal,
+    landing_url: input.landingUrl,
+    creatives: input.creatives,
+    approval_required: input.approvalRequired,
+    status: 'active',
+  }).select('*').single()
+  if (error || !data) return { error: error?.message ?? 'Offer insert failed.' }
+  const offer = mapOffer(data as Row)
+  // NOTE: no client-side log_audit here — migration 021 restricts
+  // log_audit to admins or worker-proof, and offer creation is done by
+  // advertisers, so the call would always 401. Server-side offer audit
+  // logging (e.g. an INSERT trigger) is the follow-up if that row is wanted.
+  return { offer }
+}
+
 export async function getCampaigns(): Promise<Campaign[]> {
   if (!isSupabaseConfigured || !supabase) return getDemoState().campaigns
   const { data, error } = await supabase.from('campaigns').select('*').order('created_at', { ascending: false })

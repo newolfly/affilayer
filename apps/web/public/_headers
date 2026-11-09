@@ -1,0 +1,45 @@
+# AffiLayer security headers — Cloudflare Pages applies this file
+# (apps/web/public/_headers) to every response it serves for affilayer.com.
+# It does NOT cover go.affilayer.com: the Worker sets its own headers.
+#
+# CSP design notes (verified against the app, 9 Nov 2026):
+# - script-src 'self' only, NO 'unsafe-inline': index.html has no inline
+#   executable script (the boot loader is inline *styles*, not script), Vite
+#   emits external module scripts from the same origin, and React attaches
+#   handlers via addEventListener, not inline on* attributes. The JSON-LD
+#   <script type="application/ld+json"> blocks are non-executable and are
+#   not blocked by script-src.
+# - style-src 'self' 'unsafe-inline': REQUIRED. index.html carries an inline
+#   <style> block (boot-loader keyframes), a <noscript><style> block, and
+#   inline style="" attributes in the boot loader; React also renders inline
+#   styles at runtime. Without 'unsafe-inline' the first paint breaks.
+#   Trade-off: an injected <style> could exfiltrate data via CSS selectors,
+#   but there is no sensitive data rendered in class/id attributes, and the
+#   alternative (hashing every inline style) is not maintainable for an SPA.
+# - connect-src: the only fetch/XHR/WebSocket origins the app uses are
+#   Supabase (REST https + Realtime wss) and the tracking Worker
+#   (payments.ts fetches go.affilayer.com). No fonts, analytics, or other
+#   third-party origins exist in the app. Tracking links (/c/, /s/) are
+#   top-level navigations, not fetches, so they need no connect-src entry.
+# - img-src 'self' data:: only same-origin images are rendered (logo-mark.svg,
+#   og-image.png); advertiser "creatives" URLs are stored but never rendered
+#   as <img>. data: covers inline SVG data URIs if any are added later.
+# - font-src 'self' data:: no webfonts are loaded today; data: allows a
+#   bundled font if one is added without weakening script/style policy.
+# - frame-ancestors 'self' + X-Frame-Options SAMEORIGIN kept in sync:
+#   framing is same-origin only (XFO is the legacy fallback for old browsers).
+# - HSTS: max-age 1 year + includeSubDomains (covers go.affilayer.com in
+#   browsers once seen). No `preload`: the domain is not submitted to
+#   hstspreload.org, and the directive alone would imply otherwise.
+# - Permissions-Policy: the app uses no camera, microphone, geolocation,
+#   payment-request, or USB features; all are disabled outright.
+# - nosniff + strict-origin-when-cross-origin referrer-policy are kept as
+#   before (they were already live on affilayer.com).
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://cpaxrqwqyjutrscqvqjp.supabase.co wss://cpaxrqwqyjutrscqvqjp.supabase.co https://go.affilayer.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests

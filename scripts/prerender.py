@@ -33,7 +33,7 @@ CHROME = next(
 # Routes that intentionally carry no JSON-LD: noindex auth pages get no
 # structured data by design (seo.ts returns no jsonLd for them), so the
 # JSON-LD presence check below does not apply to them.
-NO_JSONLD = {"/login"}
+NO_JSONLD = {"/login", "/register", "/forgot-password", "/reset-password", "/onboarding"}
 
 # route -> texts that must appear in the prerendered HTML (proves real content, not the shell)
 ROUTES = {
@@ -44,6 +44,10 @@ ROUTES = {
     "/affiliates": ["Generate tracking links", "Your path to your first payout"],
     "/how-it-works": ["Create an account"],
     "/login": ["Log in", "Email or demo username", "Sign in to browse offers"],
+    "/register": ["Create an account", "Affiliate registration"],
+    "/forgot-password": ["Forgot password", "Enter the email you registered with"],
+    "/reset-password": ["Set a new password", "This reset link is invalid or has expired."],
+    "/onboarding": ["Onboarding", "Tell us about your profile"],
     "/faq": ["What is AffiLayer?"],
     "/blog": ["AffiLayer is live"],
     "/blog/affilayer-is-live": ["AffiLayer is live: what the network offers on day one"],

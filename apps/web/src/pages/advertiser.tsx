@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { getCampaigns, getClicks, getConversions, getMyAdvertiserBalances, getMyDeposits, getOffers, getProfiles, getStats, isDemoMode } from '../lib/data'
+import { getCampaigns, getClicks, getConversions, getMyAdvertiserBalances, getMyDeposits, getOffers, getProfiles, getStats, isDemoMode, createOffer } from '../lib/data'
 import { createDeposit } from '../lib/payments'
 import type { AdvertiserBalance, AdvertiserDeposit } from '../lib/types'
 import { demoDailySeries } from '../lib/demo-data'
@@ -57,6 +57,7 @@ export function AdvertiserCreateOffer() {
   const { settings } = useDemoState()
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({
     name: '', description: '', vertical: 'Finance', countries: 'US, GB', devices: 'desktop, mobile',
     trafficSources: 'SEO, Content', conversionType: 'Signup', payoutModel: 'CPA' as PayoutModel,
@@ -65,7 +66,7 @@ export function AdvertiserCreateOffer() {
   })
   const set = (k: keyof typeof form) => (e: { target: { value: string; checked?: boolean } }) =>
     setForm((f) => ({ ...f, [k]: k === 'approvalRequired' ? Boolean(e.target.checked) : e.target.value }))
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
     const payout = Number(form.payout)
     if (!Number.isFinite(payout) || payout < 0) { setError('Payout must be a number of 0 or more.'); return }
@@ -78,21 +79,46 @@ export function AdvertiserCreateOffer() {
     let landing: URL
     try { landing = new URL(form.landingUrl) } catch { setError('Landing URL must be a valid URL.'); return }
     if (landing.protocol !== 'https:' && landing.protocol !== 'http:') { setError('Landing URL must start with http:// or https://.'); return }
+    const capDaily = form.capDaily === '' ? null : Number(form.capDaily)
+    const capTotal = form.capTotal === '' ? null : Number(form.capTotal)
+    if ((capDaily !== null && (!Number.isInteger(capDaily) || capDaily < 0)) || (capTotal !== null && (!Number.isInteger(capTotal) || capTotal < 0))) {
+      setError('Caps must be whole numbers of 0 or more.'); return
+    }
     const split = (v: string) => v.split(',').map((x) => x.trim()).filter(Boolean)
-    const offer: Offer = {
-      id: newId('offer'), name: form.name.trim(), description: form.description.trim(),
+    setError('')
+    setSaved(false)
+    // Demo mode keeps the exact old behaviour: local store only.
+    if (isDemoMode) {
+      const offer: Offer = {
+        id: newId('offer'), name: form.name.trim(), description: form.description.trim(),
+        vertical: form.vertical.trim(), countries: split(form.countries), devices: split(form.devices),
+        trafficSources: split(form.trafficSources), conversionType: form.conversionType.trim(),
+        payoutModel: form.payoutModel, payout, rateBps, currency: form.currency.trim() || settings.defaultCurrency,
+        capDaily, capTotal,
+        landingUrl: form.landingUrl.trim(), creatives: split(form.creatives),
+        approvalRequired: form.approvalRequired, status: 'active', advertiserId: user?.id,
+        createdAt: new Date().toISOString(),
+      }
+      updateDemo((s) => { s.offers.unshift(offer) })
+      logAudit(user?.email ?? 'advertiser', 'offer.create', 'offer', offer.id, `Offer "${offer.name}" created (${offer.payoutModel} $${offer.payout} ${offer.currency}).`)
+      setSaved(true)
+      return
+    }
+    // Live mode: real insert — the offer only counts as created once
+    // the row exists. Any failure is shown; success is never claimed
+    // on a failed insert.
+    setBusy(true)
+    const r = await createOffer({
+      name: form.name.trim(), description: form.description.trim(),
       vertical: form.vertical.trim(), countries: split(form.countries), devices: split(form.devices),
       trafficSources: split(form.trafficSources), conversionType: form.conversionType.trim(),
       payoutModel: form.payoutModel, payout, rateBps, currency: form.currency.trim() || settings.defaultCurrency,
-      capDaily: form.capDaily === '' ? null : Number(form.capDaily),
-      capTotal: form.capTotal === '' ? null : Number(form.capTotal),
+      capDaily, capTotal,
       landingUrl: form.landingUrl.trim(), creatives: split(form.creatives),
-      approvalRequired: form.approvalRequired, status: 'active', advertiserId: user?.id,
-      createdAt: new Date().toISOString(),
-    }
-    updateDemo((s) => { s.offers.unshift(offer) })
-    logAudit(user?.email ?? 'advertiser', 'offer.create', 'offer', offer.id, `Offer "${offer.name}" created (${offer.payoutModel} $${offer.payout} ${offer.currency}).`)
-    setError('')
+      approvalRequired: form.approvalRequired,
+    })
+    setBusy(false)
+    if (r.error) { setError(r.error); return }
     setSaved(true)
   }
   return (
@@ -120,9 +146,9 @@ export function AdvertiserCreateOffer() {
           <div><label className={labelCls} htmlFor="adv-cap-total">Total cap</label><input id="adv-cap-total" className={inputCls} type="number" min="0" value={form.capTotal} onChange={set('capTotal')} /></div>
         </div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.approvalRequired} onChange={set('approvalRequired')} /> Approval required for affiliates</label>
-        <button className={btnCls}>Create offer</button>
+        <button className={btnCls} disabled={busy}>{busy ? 'Creating…' : 'Create offer'}</button>
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-        {saved && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Offer created — it now appears in the offer marketplace (demo mode: stored in this browser only).</p>}
+        {saved && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{isDemoMode ? 'Offer created — demo mode: stored in this browser only.' : 'Offer created — it now appears in the offer marketplace.'}</p>}
       </form>
     </Card>
   )
