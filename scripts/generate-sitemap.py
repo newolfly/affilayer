@@ -26,6 +26,11 @@ EN = [
     ("/blog", "weekly", "0.7"),
     ("/blog/affilayer-is-live", "monthly", "0.7"),
     ("/contact", "monthly", "0.6"),
+    # Auth routes (functional pages, same weight as /contact).
+    ("/register", "monthly", "0.6"),
+    ("/forgot-password", "monthly", "0.6"),
+    ("/reset-password", "monthly", "0.6"),
+    ("/onboarding", "monthly", "0.6"),
     ("/partner", "monthly", "0.7"),
     ("/white-label", "monthly", "0.7"),
     ("/advertise", "monthly", "0.7"),
