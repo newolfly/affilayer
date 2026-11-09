@@ -184,6 +184,13 @@ export async function buildApp(opts: TrackingAppOptions = {}): Promise<FastifyIn
 
     const click = await store.getClick(clickId);
     const offer = await store.getOffer(offerId);
+    // M-05: a CPS offer without a commission rate fails visibly here,
+    // before the conversion (and its ledger row) is recorded — never a
+    // silent $0 commission. Same guard as the Worker; computeCommission
+    // throws as the last line of defence.
+    if (offer?.payoutModel === 'CPS' && (offer.rateBps == null || offer.rateBps <= 0 || offer.rateBps > 10000)) {
+      return reply.code(422).send({ error: 'CPS offer has no commission rate' });
+    }
     // Bare SmartLink clicks carry no affiliate — attribute their
     // conversions to the house affiliate (never paid out). Unknown clicks
     // still fail: the RPC rejects an unknown click_id before resolving

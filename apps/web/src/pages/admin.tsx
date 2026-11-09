@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Card, Empty, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { decideConversion, decidePayout, decideProfile, getClicks, getConversions, getNpPayouts, getPayouts, getProfiles, getStats, isDemoMode, releasePayoutReservation } from '../lib/data'
+import { conversionCommission, decideConversion, decidePayout, decideProfile, getClicks, getConversions, getLedgerEntries, getNpPayouts, getOffers, getPayouts, getProfiles, getStats, isDemoMode, offerPayoutLabel, releasePayoutReservation } from '../lib/data'
 import { executePayout, getCustodyBalance, refreshPayoutStatus, verifyPayout } from '../lib/payments'
 import { demoDailySeries } from '../lib/demo-data'
 import { logAudit, newId, resetDemo, updateDemo, useDemoState } from '../lib/demo-store'
 import type { NetworkSettings } from '../lib/demo-store'
 import { detectFraudSignals, ledgerTransition } from '@affilayer/shared'
 import { useAuth } from '../lib/auth'
-import type { Campaign, Conversion, NpPayout, Offer, PayoutRequest, Profile } from '../lib/types'
+import type { Campaign, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, Profile } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
 const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-3 py-2.5 text-sm font-semibold text-[#0B1220] disabled:opacity-50'
@@ -68,7 +68,7 @@ export function AdminOffers() {
         <div key={o.id} className="flex items-center justify-between gap-3 border-b border-slate-100 py-2 text-sm last:border-0">
           <span>{o.name} — {o.vertical}</span>
           <span className="flex items-center gap-2">
-            <span>{o.status} · {o.payoutModel} ${o.payout} {o.currency}</span>
+            <span>{o.status} · {offerPayoutLabel(o)}</span>
             {o.status !== 'expired' && (
               <button className={ghostCls} onClick={() => toggle(o)}>{o.status === 'active' ? 'Pause' : 'Resume'}</button>
             )}
@@ -177,10 +177,18 @@ export function AdminConversions() {
   const { user } = useAuth()
   const { conversions: demoConversions } = useDemoState()
   const [liveConversions, setLiveConversions] = useState<Conversion[] | null>(null)
+  const [ledger, setLedger] = useState<CommissionLedgerEntry[]>([])
+  const [offers, setOffers] = useState<Offer[]>([])
   const [error, setError] = useState('')
   const actor = user?.email ?? 'admin'
   // Supabase mode reads live rows; demo mode reads the demo store.
-  useEffect(() => { if (!isDemoMode) getConversions().then(setLiveConversions) }, [])
+  // Ledger + offers load in both modes: demo mode has no ledger, so
+  // the per-offer rate is the fallback for commission display.
+  useEffect(() => {
+    getLedgerEntries().then(setLedger)
+    getOffers().then(setOffers)
+    if (!isDemoMode) getConversions().then(setLiveConversions)
+  }, [])
   const conversions = isDemoMode ? demoConversions : (liveConversions ?? [])
   const decide = async (id: string, to: 'approved' | 'rejected') => {
     const conv = conversions.find((c) => c.id === id)
@@ -195,17 +203,20 @@ export function AdminConversions() {
     if (r.error) { setError(r.error); return }
     setError('')
     getConversions().then(setLiveConversions)
+    getLedgerEntries().then(setLedger)
   }
   return (
     <Card title="Conversions">
       {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {conversions.length === 0 ? <Empty text="No conversions yet." /> : (
         <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
-          <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Click ID</th><th>Offer</th><th>Affiliate</th><th>Payout</th><th>Status</th><th /></tr></thead>
+          <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Click ID</th><th>Offer</th><th>Affiliate</th><th>Commission</th><th>Status</th><th /></tr></thead>
           <tbody>{conversions.map((c) => (
             <tr key={c.id} className="border-t border-slate-100">
               <td className="py-2">{c.createdAt.slice(0, 10)}</td><td className="font-mono">{c.clickId ?? '—'}</td>
-              <td>{c.offerId}</td><td>{c.affiliateCode ?? '—'}</td><td>${c.payout.toFixed(2)}</td><td>{c.status}</td>
+              {/* M-05: commission owed (ledger / rate), not the conversion
+                  payout — for CPS the payout is the sale value. */}
+              <td>{c.offerId}</td><td>{c.affiliateCode ?? '—'}</td><td>${conversionCommission(c, ledger, offers).toFixed(2)} {c.currency}</td><td>{c.status}</td>
               <td className="text-right">
                 {c.status === 'pending' && (
                   <span className="flex justify-end gap-2">
@@ -237,15 +248,32 @@ export function AdminFraud() {
 }
 
 export function AdminLedger() {
-  const [convs, setConvs] = useState<Awaited<ReturnType<typeof getConversions>>>([])
-  useEffect(() => { getConversions().then(setConvs) }, [])
+  const { conversions: demoConversions } = useDemoState()
+  const [liveConversions, setLiveConversions] = useState<Conversion[]>([])
+  const [ledger, setLedger] = useState<CommissionLedgerEntry[]>([])
+  const [offers, setOffers] = useState<Offer[]>([])
+  // Live mode reads the ledger itself (previously this card rendered
+  // conversion payout as if it were the ledger amount — for CPS that
+  // showed the $12 sale value instead of the $1.20 commission). Demo
+  // mode has no ledger rows, so the card derives commissions from the
+  // demo conversions + offer rates, exactly like the stats do.
+  useEffect(() => {
+    getLedgerEntries().then(setLedger)
+    getOffers().then(setOffers)
+    if (!isDemoMode) getConversions().then(setLiveConversions)
+  }, [])
+  const conversions = isDemoMode ? demoConversions : liveConversions
+  const codeByConversion = new Map(conversions.map((c) => [c.id, c.affiliateCode ?? c.affiliateId ?? '—']))
+  const rows = isDemoMode
+    ? conversions.map((c) => ({ id: c.id, conversionId: c.id, code: c.affiliateCode ?? '—', amount: conversionCommission(c, [], offers), currency: c.currency, status: c.status }))
+    : ledger.map((l) => ({ id: l.id, conversionId: l.conversionId, code: codeByConversion.get(l.conversionId) ?? '—', amount: l.amount, currency: l.currency, status: l.status }))
   return (
     <Card title="Commission ledger">
       <p className="mb-3 text-sm text-slate-500">Append-only ledger (immutable trigger in the database). Entries mirror conversion status: pending → approved → reversed.</p>
-      {convs.length === 0 ? <Empty text="No ledger entries yet." /> : (
+      {rows.length === 0 ? <Empty text="No ledger entries yet." /> : (
         <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
           <thead><tr className="text-left text-slate-500"><th className="py-2">Conversion</th><th>Affiliate</th><th>Amount</th><th>Status</th></tr></thead>
-          <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2 font-mono">{c.id}</td><td>{c.affiliateCode ?? '—'}</td><td>${c.payout.toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
+          <tbody>{rows.map((r) => <tr key={r.id} className="border-t border-slate-100"><td className="py-2 font-mono">{r.conversionId}</td><td>{r.code}</td><td>${r.amount.toFixed(2)} {r.currency}</td><td>{r.status}</td></tr>)}</tbody>
         </table></div>
       )}
     </Card>

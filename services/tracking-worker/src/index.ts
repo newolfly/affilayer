@@ -398,6 +398,14 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
   if (click.offerId !== offerId) return json({ error: 'click_id does not belong to offer_id' }, 422);
   const offer = await store.getOffer(offerId);
   if (!offer) return json({ error: 'unknown offer_id' }, 422);
+  // M-05: a CPS offer without a commission rate must fail visibly here,
+  // before the conversion (and its ledger row) is recorded — never a
+  // silent $0 commission. Migration 025 blocks such offers at the DB
+  // layer too; this is the Worker-side guard for any row that predates
+  // it, and computeCommission throws as the last line of defence.
+  if (offer.payoutModel === 'CPS' && (offer.rateBps == null || offer.rateBps <= 0 || offer.rateBps > 10000)) {
+    return json({ error: 'CPS offer has no commission rate' }, 422);
+  }
   // Bare SmartLink clicks carry no affiliate — attribute their
   // conversions to the house affiliate (never paid out).
   const affiliateCode =

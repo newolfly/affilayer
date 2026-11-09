@@ -255,12 +255,22 @@ function round2(n: number): number {
 /**
  * Commission owed for one conversion.
  * CPA / CPL / CPC: the flat payout. CPS: payout * rateBps / 10000
- * (rateBps 1000 = 10%). CPS without a rate pays 0 — a rate is required.
+ * (rateBps 1000 = 10%).
+ *
+ * M-05: CPS without a valid rate THROWS — it never silently pays $0.
+ * A CPS offer with no rate is a data error (migration 025 also blocks
+ * such offers at the DB layer, and the Worker rejects the conversion
+ * before recording it), so every caller that reaches this point with
+ * a rateless CPS offer has a bug to fix, not a $0 commission to pay.
  */
 export function computeCommission(payout: number, model: PayoutModel, rateBps?: number): number {
   switch (model) {
-    case 'CPS':
-      return round2(payout * (rateBps ?? 0) / 10000);
+    case 'CPS': {
+      if (rateBps == null || !Number.isFinite(rateBps) || rateBps <= 0 || rateBps > 10000) {
+        throw new Error('CPS commission requires a rateBps between 1 and 10000 (basis points)');
+      }
+      return round2(payout * rateBps / 10000);
+    }
     case 'CPA':
     case 'CPL':
     case 'CPC':

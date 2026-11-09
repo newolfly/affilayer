@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { getCampaigns, getClicks, getConversions, getMyAdvertiserBalances, getMyDeposits, getOffers, getProfiles, getStats, isDemoMode, createOffer } from '../lib/data'
+import { conversionCommission, getCampaigns, getClicks, getConversions, getLedgerEntries, getMyAdvertiserBalances, getMyDeposits, getOffers, getProfiles, getStats, isDemoMode, offerPayoutLabel, createOffer, sumCommissions } from '../lib/data'
 import { createDeposit } from '../lib/payments'
-import type { AdvertiserBalance, AdvertiserDeposit } from '../lib/types'
+import type { AdvertiserBalance, AdvertiserDeposit, CommissionLedgerEntry } from '../lib/types'
 import { demoDailySeries } from '../lib/demo-data'
 import { logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
 import { useAuth } from '../lib/auth'
@@ -31,7 +31,7 @@ export function AdvertiserDashboard() {
       </div>
       <Card title="Clicks — last 7 days (demo sample)"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
       <Card title="Your offers">
-        {offers.map((o) => <div key={o.id} className="flex justify-between border-b border-slate-100 py-2 text-sm last:border-0"><span>{o.name}</span><span>{o.status} · {o.payoutModel} ${o.payout}</span></div>)}
+        {offers.map((o) => <div key={o.id} className="flex justify-between border-b border-slate-100 py-2 text-sm last:border-0"><span>{o.name}</span><span>{o.status} · {offerPayoutLabel(o)}</span></div>)}
       </Card>
     </div>
   )
@@ -73,7 +73,9 @@ export function AdvertiserCreateOffer() {
     let rateBps: number | undefined
     if (form.payoutModel === 'CPS') {
       const rate = Number(form.rate)
-      if (!Number.isFinite(rate) || rate < 0 || rate > 100) { setError('Commission rate must be between 0 and 100%.'); return }
+      // M-05: a 0% rate is not a commission — the DB CHECK (migration
+      // 025) requires rate_bps > 0 for CPS, so the form must too.
+      if (!Number.isFinite(rate) || rate <= 0 || rate > 100) { setError('Commission rate must be greater than 0 and at most 100%.'); return }
       rateBps = Math.round(rate * 100)
     }
     let landing: URL
@@ -139,7 +141,7 @@ export function AdvertiserCreateOffer() {
             </select>
           </div>
           <div><label className={labelCls} htmlFor="adv-payout">Payout (amount{form.payoutModel === 'CPS' ? ' — for CPS this is the order value; set the commission rate below' : ''})</label><input id="adv-payout" className={inputCls} type="number" min="0" step="0.01" required value={form.payout} onChange={set('payout')} /></div>
-          {form.payoutModel === 'CPS' && (<div><label className={labelCls} htmlFor="adv-rate">Commission rate (%)</label><input id="adv-rate" className={inputCls} type="number" min="0" max="100" step="0.01" required value={form.rate} onChange={set('rate')} /></div>)}
+          {form.payoutModel === 'CPS' && (<div><label className={labelCls} htmlFor="adv-rate">Commission rate (%)</label><input id="adv-rate" className={inputCls} type="number" min="0.01" max="100" step="0.01" required value={form.rate} onChange={set('rate')} /></div>)}
           <div><label className={labelCls} htmlFor="adv-currency">Currency</label><input id="adv-currency" className={inputCls} value={form.currency} onChange={set('currency')} /></div>
           <div><label className={labelCls} htmlFor="adv-creatives">Creatives (URLs, comma-separated)</label><input id="adv-creatives" className={inputCls} value={form.creatives} onChange={set('creatives')} /></div>
           <div><label className={labelCls} htmlFor="adv-cap-daily">Daily cap</label><input id="adv-cap-daily" className={inputCls} type="number" min="0" value={form.capDaily} onChange={set('capDaily')} /></div>
@@ -171,13 +173,17 @@ export function AdvertiserAffiliates() {
 
 export function AdvertiserConversions() {
   const [convs, setConvs] = useState<Awaited<ReturnType<typeof getConversions>>>([])
-  useEffect(() => { getConversions().then(setConvs) }, [])
+  const [ledger, setLedger] = useState<CommissionLedgerEntry[]>([])
+  const [offers, setOffers] = useState<Offer[]>([])
+  useEffect(() => { getConversions().then(setConvs); getLedgerEntries().then(setLedger); getOffers().then(setOffers) }, [])
   return (
     <Card title="Conversions">
       {convs.length === 0 ? <Empty text="No conversions yet." /> : (
         <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
-          <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Click ID</th><th>Offer</th><th>Payout</th><th>Status</th></tr></thead>
-          <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.createdAt.slice(0, 10)}</td><td className="font-mono">{c.clickId ?? '—'}</td><td>{c.offerId}</td><td>${c.payout.toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
+          <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Click ID</th><th>Offer</th><th>Commission</th><th>Status</th></tr></thead>
+          {/* M-05: the column is the commission owed (ledger / rate), not
+              the conversion payout — for CPS the payout is the sale value. */}
+          <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.createdAt.slice(0, 10)}</td><td className="font-mono">{c.clickId ?? '—'}</td><td>{c.offerId}</td><td>${conversionCommission(c, ledger, offers).toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
         </table></div>
       )}
       <p className="mt-3 text-xs text-slate-400">Status changes go through approve/reject functions with ledger state-transition checks; this UI is read-only in the MVP.</p>
@@ -189,14 +195,17 @@ export function AdvertiserReports() {
   const [filters, setFilters] = useState<ReportFilters>({})
   const [clicks, setClicks] = useState<Awaited<ReturnType<typeof getClicks>>>([])
   const [convs, setConvs] = useState<Awaited<ReturnType<typeof getConversions>>>([])
-  useEffect(() => { getClicks(filters).then(setClicks); getConversions(filters).then(setConvs) }, [filters])
+  const [ledger, setLedger] = useState<CommissionLedgerEntry[]>([])
+  const [offers, setOffers] = useState<Offer[]>([])
+  useEffect(() => { getClicks(filters).then(setClicks); getConversions(filters).then(setConvs); getLedgerEntries(filters).then(setLedger); getOffers().then(setOffers) }, [filters])
   return (
     <Card title="Reports">
       <ReportFiltersForm filters={filters} setFilters={setFilters} />
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat label="Clicks" value={String(clicks.length)} icon="chart" />
         <Stat label="Conversions" value={String(convs.length)} icon="check" />
-        <Stat label="Approved spend" value={`$${convs.filter((c) => c.status === 'approved').reduce((s, c) => s + c.payout, 0).toFixed(2)}`} icon="wallet" />
+        {/* M-05: approved spend is ledger commission, not sale values. */}
+        <Stat label="Approved spend" value={`$${sumCommissions(convs.filter((c) => c.status === 'approved'), ledger, offers).toFixed(2)}`} icon="wallet" />
       </div>
       <div className="mt-4"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></div>
     </Card>

@@ -31,7 +31,12 @@ describe('computeCommission', () => {
   it('CPS pays payout * rateBps / 10000', () => {
     expect(computeCommission(100, 'CPS', 1000)).toBe(10); // 10%
     expect(computeCommission(49.99, 'CPS', 2500)).toBe(12.5); // 25%, rounded
-    expect(computeCommission(100, 'CPS')).toBe(0); // no rate -> 0
+    expect(computeCommission(12, 'CPS', 1000)).toBe(1.2); // demo-offer-2: $12 sale at 10%
+  });
+  it('M-05: CPS without a valid rate throws instead of silently paying $0', () => {
+    expect(() => computeCommission(100, 'CPS')).toThrow(/rateBps/);
+    expect(() => computeCommission(100, 'CPS', 0)).toThrow(/rateBps/);
+    expect(() => computeCommission(100, 'CPS', 10001)).toThrow(/rateBps/);
   });
 });
 

@@ -4,13 +4,13 @@ import { Link, useParams } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
-import { getClicks, getConversions, getMyAffiliateProfile, getNpPayouts, getOffers, getPayouts, getStats, isDemoMode, requestPayout, savePayoutWallet } from '../lib/data'
+import { conversionCommission, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getNpPayouts, getOffers, getPayouts, getStats, isDemoMode, offerCommissionLabel, offerPayoutLabel, requestPayout, savePayoutWallet, sumCommissions } from '../lib/data'
 import { looksLikeTrc20, validatePayoutAddress } from '../lib/payments'
 import type { ReportFilters } from '../lib/data'
 import { demoDailySeries } from '../lib/demo-data'
 import { DEFAULT_SETTINGS, logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
 import { trackingLink } from '../lib/tracking'
-import type { Click, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet } from '../lib/types'
+import type { Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
 const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-[#0B1220]'
@@ -50,7 +50,7 @@ export function AffiliateDashboard() {
       <Card title="Active offers">
         {offers.filter((o) => o.status === 'active').map((o) => (
           <div key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
-            <span>{o.name} — {o.payoutModel} ${o.payout} {o.currency}</span>
+            <span>{o.name} — {offerPayoutLabel(o)}</span>
             <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View →</Link>
           </div>
         ))}
@@ -80,7 +80,7 @@ export function AffiliateOffers() {
             {filtered.map((o) => (
               <tr key={o.id} className="border-t border-slate-100">
                 <td className="py-2 font-medium">{o.name}</td><td>{o.vertical}</td>
-                <td>{o.payoutModel} ${o.payout} {o.currency}</td><td>{(o.countries ?? []).join(', ')}</td><td>{o.status}</td>
+                <td>{offerPayoutLabel(o)}</td><td>{(o.countries ?? []).join(', ')}</td><td>{o.status}</td>
                 <td><Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View</Link></td>
               </tr>
             ))}
@@ -112,7 +112,8 @@ export function AffiliateOfferDetail() {
       <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
         <div><dt className="text-slate-500">Vertical</dt><dd>{offer.vertical}</dd></div>
         <div><dt className="text-slate-500">Conversion</dt><dd>{offer.conversionType}</dd></div>
-        <div><dt className="text-slate-500">Payout</dt><dd>{offer.payoutModel} ${offer.payout} {offer.currency}</dd></div>
+        <div><dt className="text-slate-500">Payout</dt><dd>{offerPayoutLabel(offer)}</dd></div>
+        <div><dt className="text-slate-500">Commission</dt><dd>{offerCommissionLabel(offer)}</dd></div>
         <div><dt className="text-slate-500">Countries</dt><dd>{(offer.countries ?? []).join(', ')}</dd></div>
         <div><dt className="text-slate-500">Devices</dt><dd>{(offer.devices ?? []).join(', ')}</dd></div>
         <div><dt className="text-slate-500">Traffic sources</dt><dd>{(offer.trafficSources ?? []).join(', ')}</dd></div>
@@ -137,7 +138,7 @@ export function AffiliateMyCampaigns() {
       <p className="mb-3 text-sm text-slate-500">Offers you have joined or been approved for. In demo mode this lists active offers as a sample.</p>
       {approved.length === 0 ? <Empty text="No campaigns yet. Browse offers and apply." /> : approved.map((o) => (
         <div key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
-          <span>{o.name} — {o.payoutModel} ${o.payout} {o.currency}</span>
+          <span>{o.name} — {offerPayoutLabel(o)}</span>
           <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View</Link>
         </div>
       ))}
@@ -210,9 +211,13 @@ export function AffiliateReports() {
   const [filters, setFilters] = useState<ReportFilters>({ affiliateCode: user?.affiliateCode })
   const [clicks, setClicks] = useState<Click[]>([])
   const [convs, setConvs] = useState<Conversion[]>([])
+  const [ledger, setLedger] = useState<CommissionLedgerEntry[]>([])
+  const [offers, setOffers] = useState<Offer[]>([])
   useEffect(() => {
     getClicks(filters).then(setClicks)
     getConversions(filters).then(setConvs)
+    getLedgerEntries(filters).then(setLedger)
+    getOffers().then(setOffers)
   }, [filters])
   const byOffer = useMemo(() => {
     const m = new Map<string, { clicks: number; convs: number }>()
@@ -227,7 +232,9 @@ export function AffiliateReports() {
         <div className="grid gap-4 sm:grid-cols-3">
           <Stat label="Clicks" value={String(clicks.length)} icon="chart" />
           <Stat label="Conversions" value={String(convs.length)} icon="check" />
-          <Stat label="Approved revenue" value={`$${convs.filter((c) => c.status === 'approved').reduce((s, c) => s + c.payout, 0).toFixed(2)}`} icon="wallet" />
+          {/* M-05: approved revenue is ledger commission, not the sum of
+              conversion payouts — for CPS the payout is the sale value. */}
+          <Stat label="Approved revenue" value={`$${sumCommissions(convs.filter((c) => c.status === 'approved'), ledger, offers).toFixed(2)}`} icon="wallet" />
         </div>
       </Card>
       <Card title="By offer">
@@ -280,20 +287,23 @@ export function AffiliatePostbacks() {
 
 export function AffiliateEarnings() {
   const { data: convs } = useLoad(() => getConversions(), [] as Conversion[])
+  const { data: ledger } = useLoad(() => getLedgerEntries(), [] as CommissionLedgerEntry[])
+  const { data: offers } = useLoad(() => getOffers(), [] as Offer[])
   const approved = convs.filter((c) => c.status === 'approved')
   const pending = convs.filter((c) => c.status === 'pending')
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Approved earnings" icon="wallet" value={`$${approved.reduce((s, c) => s + c.payout, 0).toFixed(2)}`} />
-        <Stat label="Pending" value={`$${pending.reduce((s, c) => s + c.payout, 0).toFixed(2)}`} icon="clock" />
+        {/* M-05: earnings are ledger commission, not conversion payout sums. */}
+        <Stat label="Approved earnings" icon="wallet" value={`$${sumCommissions(approved, ledger, offers).toFixed(2)}`} />
+        <Stat label="Pending" value={`$${sumCommissions(pending, ledger, offers).toFixed(2)}`} icon="clock" />
         <Stat label="Rejected / reversed" value={String(convs.filter((c) => c.status === 'rejected' || c.status === 'reversed').length)} icon="alert" />
       </div>
       <Card title="Conversions">
         {convs.length === 0 ? <Empty text="No conversions yet." /> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
-            <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Offer</th><th>Payout</th><th>Status</th></tr></thead>
-            <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.createdAt.slice(0, 10)}</td><td>{c.offerId}</td><td>${c.payout.toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Offer</th><th>Commission</th><th>Status</th></tr></thead>
+            <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.createdAt.slice(0, 10)}</td><td>{c.offerId}</td><td>${conversionCommission(c, ledger, offers).toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
           </table></div>
         )}
       </Card>
@@ -313,6 +323,8 @@ export function AffiliatePayouts() {
   const [walletError, setWalletError] = useState('')
   const [walletBusy, setWalletBusy] = useState(false)
   const code = user?.affiliateCode ?? 'AFF-DEMO-001'
+  const { data: ledger } = useLoad(() => getLedgerEntries(), [] as CommissionLedgerEntry[])
+  const { data: offers } = useLoad(() => getOffers(), [] as Offer[])
   // Supabase mode reads live rows; demo mode reads the demo store. There
   // is no network-settings table yet, so Supabase mode uses the defaults.
   const settings = isDemoMode ? demo.settings : DEFAULT_SETTINGS
@@ -330,9 +342,12 @@ export function AffiliatePayouts() {
   const mine = isDemoMode
     ? payouts.filter((p) => p.affiliateCode === code)
     : payouts.filter((p) => p.affiliateId === user?.id)
-  const approvedBalance = conversions
-    .filter((c) => (isDemoMode ? c.affiliateCode === code : c.affiliateId === user?.id) && c.status === 'approved')
-    .reduce((s, c) => s + c.payout, 0)
+  // M-05: the payoutable balance is ledger commission — summing
+  // conversion payout would let a CPS affiliate request up to 10x
+  // their real balance (sale value instead of commission).
+  const approvedBalance = sumCommissions(
+    conversions.filter((c) => (isDemoMode ? c.affiliateCode === code : c.affiliateId === user?.id) && c.status === 'approved'),
+    ledger, offers)
   const method = isDemoMode
     ? (demo.profiles.find((p) => p.affiliateCode === code)?.paymentMethod ?? 'Bank transfer')
     : (live?.method ?? 'Bank transfer')

@@ -8,7 +8,8 @@
 // convert them to the shared camelCase domain types.
 import { supabase, isSupabaseConfigured } from './supabase'
 import { getDemoState } from './demo-store'
-import type { AdvertiserBalance, AdvertiserDeposit, Campaign, Click, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, Profile, Stats, SupportTicket } from './types'
+import { computeCommission } from '@affilayer/shared'
+import type { AdvertiserBalance, AdvertiserDeposit, Campaign, Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, Profile, Stats, SupportTicket } from './types'
 
 export { isSupabaseConfigured }
 export const isDemoMode = !isSupabaseConfigured
@@ -39,6 +40,10 @@ export function mapOffer(r: Row): Offer {
     id: String(r.id), name: String(r.name ?? ''), advertiserId: str(r, 'advertiser_id'),
     campaignId: str(r, 'campaign_id'), payout: num(r, 'payout') ?? 0, currency: String(r.currency ?? 'USD'),
     payoutModel: (r.payout_model as Offer['payoutModel']) ?? 'CPA', status: (r.status as Offer['status']) ?? 'active',
+    // M-05: rate_bps was dropped here, so the UI showed a CPS offer's
+    // SALE value ($12) as if it were the payout — the real commission
+    // is payout * rateBps / 10000 ($1.20 at 10%). Mapped through now.
+    rateBps: num(r, 'rate_bps') ?? undefined,
     landingUrl: String(r.landing_url ?? ''), countries: arr(r, 'countries'), devices: arr(r, 'devices'),
     trafficSources: arr(r, 'traffic_sources'), capDaily: num(r, 'cap_daily') ?? null,
     capTotal: num(r, 'cap_total') ?? null, vertical: str(r, 'vertical'),
@@ -161,8 +166,8 @@ export async function createOffer(input: CreateOfferInput): Promise<{ offer?: Of
   const currency = input.currency.trim().toUpperCase()
   if (currency.length !== 3) return { error: 'Currency must be a 3-letter code (e.g. USD).' }
   if (!Number.isFinite(input.payout) || input.payout < 0) return { error: 'Payout must be a number of 0 or more.' }
-  if (input.payoutModel === 'CPS' && (input.rateBps == null || input.rateBps < 0 || input.rateBps > 10000)) {
-    return { error: 'Commission rate must be between 0 and 100%.' }
+  if (input.payoutModel === 'CPS' && (input.rateBps == null || input.rateBps <= 0 || input.rateBps > 10000)) {
+    return { error: 'Commission rate must be greater than 0 and at most 100%.' }
   }
   const { data: profile, error: profileError } = await supabase
     .from('profiles').select('organization_id, role, status').eq('id', user.id).maybeSingle()
@@ -248,6 +253,32 @@ export async function getConversions(filters: ReportFilters = {}): Promise<Conve
   const { data, error } = await q
   if (error || !data) return []
   return (data as Row[]).map(mapConversion).filter((c) => inRange(c.createdAt, filters))
+}
+
+export function mapLedgerEntry(r: Row): CommissionLedgerEntry {
+  return {
+    id: String(r.id), conversionId: String(r.conversion_id ?? ''),
+    // The ledger row carries affiliate_id, not a code; callers that need
+    // a display code resolve it through the conversion (see AdminLedger).
+    affiliateCode: '',
+    offerId: String(r.offer_id ?? ''), amount: num(r, 'amount') ?? 0,
+    currency: String(r.currency ?? 'USD'),
+    status: (r.status as CommissionLedgerEntry['status']) ?? 'pending',
+    createdAt: String(r.created_at ?? ''),
+  }
+}
+
+/** Commission ledger rows (Supabase mode only — demo mode has no ledger;
+ *  callers fall back to per-offer rates there). RLS scopes the rows to
+ *  the caller's own / org / admin rows; a select error yields [] and the
+ *  caller falls back, so stats never break on a ledger read failure. */
+export async function getLedgerEntries(filters: ReportFilters = {}): Promise<CommissionLedgerEntry[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  let q = supabase.from('commission_ledger').select('*').order('created_at', { ascending: false }).limit(500)
+  if (filters.offerId) q = q.eq('offer_id', filters.offerId)
+  const { data, error } = await q
+  if (error || !data) return []
+  return (data as Row[]).map(mapLedgerEntry)
 }
 
 export async function getProfiles(): Promise<Profile[]> {
@@ -473,9 +504,83 @@ export async function createTicket(subject: string, description: string): Promis
   return error ? { error: error.message } : {}
 }
 
-export function computeStats(clicks: Click[], conversions: Conversion[]): Stats {
+/** Rate in basis points as a display percentage: 1000 -> "10", 1250 -> "12.5". */
+function ratePct(rateBps: number): string {
+  const p = rateBps / 100
+  return Number.isInteger(p) ? String(p) : p.toFixed(2).replace(/0$/, '')
+}
+
+/** Commission for one offer (what the affiliate earns per conversion),
+ *  or null when it cannot be calculated — a CPS offer with no rate.
+ *  Never the sale value: computeCommission throws for rateless CPS. */
+export function offerCommission(offer: Offer): number | null {
+  try {
+    return computeCommission(offer.payout, offer.payoutModel, offer.rateBps)
+  } catch {
+    return null
+  }
+}
+
+/** How an offer pays, as shown in lists and tables. M-05: for CPS this
+ *  is the percentage of the sale plus the dollar commission — never the
+ *  bare sale amount. E.g. demo-offer-2: "CPS — 10% of sale ($1.20)". */
+export function offerPayoutLabel(offer: Offer): string {
+  if (offer.payoutModel === 'CPS') {
+    if (offer.rateBps == null) return 'CPS — rate missing'
+    const commission = offerCommission(offer)
+    return `CPS — ${ratePct(offer.rateBps)}% of sale (${commission == null ? '—' : `$${commission.toFixed(2)}`})`
+  }
+  return `${offer.payoutModel} $${offer.payout.toFixed(2)} ${offer.currency}`
+}
+
+/** Commission line for an offer detail view. */
+export function offerCommissionLabel(offer: Offer): string {
+  const commission = offerCommission(offer)
+  if (commission == null) return 'Rate missing — commission cannot be calculated'
+  return offer.payoutModel === 'CPS'
+    ? `$${commission.toFixed(2)} per sale (${ratePct(offer.rateBps ?? 0)}% of $${offer.payout.toFixed(2)} order)`
+    : `$${commission.toFixed(2)} per conversion`
+}
+
+/** Commission owed for one conversion. M-05: the ledger is the money
+ *  truth — when a ledger row exists for the conversion, its live rows
+ *  win (reversed / rejected rows pay $0, and a fully-reversed
+ *  conversion is $0 rather than the offer rate resurrected by the
+ *  fallback). Only with NO ledger row at all (demo mode, legacy rows)
+ *  do we compute from the offer's rate — so a CPS conversion counts
+ *  its commission ($1.20), never its sale value ($12). A rateless CPS
+ *  offer yields 0 here (unknowable, never the sale value); the offer
+ *  itself renders "rate missing" so the gap stays visible. */
+export function conversionCommission(conv: Conversion, ledger: CommissionLedgerEntry[] = [], offers: Offer[] = []): number {
+  const rows = ledger.filter((l) => l.conversionId === conv.id)
+  if (rows.length > 0) {
+    return Math.round(rows.filter((l) => l.status !== 'reversed' && l.status !== 'rejected').reduce((s, l) => s + l.amount, 0) * 100) / 100
+  }
+  const offer = offers.find((o) => o.id === conv.offerId)
+  if (!offer) return conv.payout // legacy fallback: unknown offer, keep old behaviour
+  const commission = (() => {
+    try {
+      return computeCommission(conv.payout, offer.payoutModel, offer.rateBps)
+    } catch {
+      return 0
+    }
+  })()
+  return commission
+}
+
+export function sumCommissions(convs: Conversion[], ledger: CommissionLedgerEntry[] = [], offers: Offer[] = []): number {
+  return Math.round(convs.reduce((s, c) => s + conversionCommission(c, ledger, offers), 0) * 100) / 100
+}
+
+export function computeStats(clicks: Click[], conversions: Conversion[], ledger: CommissionLedgerEntry[] = [], offers: Offer[] = []): Stats {
   const approved = conversions.filter((c) => c.status === 'approved')
-  const revenue = approved.reduce((s, c) => s + c.payout, 0)
+  // M-05: revenue AND commission come from the ledger (via
+  // conversionCommission), never from summing conversion payout as
+  // both. For CPS the conversion payout is the SALE value ($12) while
+  // the commission is the ledger amount ($1.20 at 10%) — the old sum
+  // overstated affiliate revenue up to 10x. Only approved conversions
+  // count; pending/rejected/reversed never contribute.
+  const commission = sumCommissions(approved, ledger, offers)
   return {
     clicks: clicks.length,
     uniqueClicks: new Set(clicks.map((c) => c.clickId)).size,
@@ -483,16 +588,20 @@ export function computeStats(clicks: Click[], conversions: Conversion[]): Stats 
     approved: approved.length,
     rejected: conversions.filter((c) => c.status === 'rejected').length,
     pending: conversions.filter((c) => c.status === 'pending').length,
-    revenue,
-    commission: revenue,
-    epc: clicks.length ? revenue / clicks.length : 0,
+    revenue: commission,
+    commission,
+    epc: clicks.length ? commission / clicks.length : 0,
     cr: clicks.length ? conversions.length / clicks.length : 0,
   }
 }
 
 /** Stats: prefer the tracking service /api/stats when reachable, else compute locally. */
 export async function getStats(filters: ReportFilters = {}): Promise<Stats> {
-  const clicks = await getClicks(filters)
-  const conversions = await getConversions(filters)
-  return computeStats(clicks, conversions)
+  const [clicks, conversions, ledger, offers] = await Promise.all([
+    getClicks(filters), getConversions(filters), getLedgerEntries(filters), getOffers(),
+  ])
+  // The ledger is RLS-scoped to the caller's own/org rows; keep only rows
+  // for conversions in this result set so the affiliateCode filter holds.
+  const convIds = new Set(conversions.map((c) => c.id))
+  return computeStats(clicks, conversions, ledger.filter((l) => convIds.has(l.conversionId)), offers)
 }
