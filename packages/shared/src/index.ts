@@ -424,14 +424,24 @@ export function isOfferEligible(offer: Offer, ctx: EligibilityContext): boolean 
 }
 
 /**
+ * Deterministic SmartLink ranking: eligible offers sorted by payout
+ * desc, then id asc. The Worker walks this list so a cap-rejected
+ * pick falls through to the next offer (H-06) instead of 409ing
+ * the visitor.
+ */
+export function smartlinkRank(offers: Offer[], ctx: EligibilityContext): Offer[] {
+  const eligible = offers.filter((o) => isOfferEligible(o, ctx));
+  eligible.sort((a, b) => (b.payout - a.payout) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return eligible;
+}
+
+/**
  * Deterministic SmartLink pick: eligible offers sorted by payout desc,
  * then id asc; pick the first. Returns null when nothing is eligible.
  */
 export function smartlinkPick(offers: Offer[], ctx: EligibilityContext): Offer | null {
-  const eligible = offers.filter((o) => isOfferEligible(o, ctx));
-  if (eligible.length === 0) return null;
-  eligible.sort((a, b) => (b.payout - a.payout) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-  return eligible[0];
+  const ranked = smartlinkRank(offers, ctx);
+  return ranked[0] ?? null;
 }
 
 export interface FraudClickInput {

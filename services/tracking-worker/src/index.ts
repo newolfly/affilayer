@@ -61,7 +61,7 @@ import {
   isDemoSmartlinkCode,
   isOfferEligible,
   isUnknownAffiliateCodeError,
-  smartlinkPick,
+  smartlinkRank,
   type Click,
   type Conversion,
   type Offer,
@@ -1105,36 +1105,82 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       }
       const store = getStore(env);
       const offers = await store.listOffers();
-      // Enforce per-offer click caps at the edge: offers that hit their
-      // `cap` are not eligible for a SmartLink pick. (capDaily / capTotal
-      // are not enforced here — the store has no daily window.)
+      // H-06: enforce per-offer click caps at the edge, in the same
+      // windows migration 022 enforces in the record RPC (UTC calendar
+      // day for daily_cap, UTC calendar month for monthly_cap, which
+      // mapOffer exposes as capDaily / capTotal). The store has no
+      // windowed list, so the counts are derived here from the clicks'
+      // createdAt. listClicks returns the 1000 most recent clicks, so
+      // the counts are exact while volume stays below that. The RPC
+      // remains the authority: a stale edge count can only
+      // under-filter, and the fallback loop below covers that.
+      // (The old code filtered on `o.cap`, which mapOffer never sets,
+      // so capped offers passed the filter, won the pick, and the RPC
+      // 409'd with no fallback — one capped offer bricked all
+      // SmartLink traffic.)
       const clicks = await store.listClicks();
-      const clicksByOffer = new Map<string, number>();
-      for (const c of clicks) clicksByOffer.set(c.offerId, (clicksByOffer.get(c.offerId) ?? 0) + 1);
-      const uncapped = offers.filter((o) => o.cap === undefined || (clicksByOffer.get(o.id) ?? 0) < o.cap);
+      const now = new Date();
+      const dayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+      const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+      const clicksTodayByOffer = new Map<string, number>();
+      const clicksMonthByOffer = new Map<string, number>();
+      const clicksTotalByOffer = new Map<string, number>();
+      for (const c of clicks) {
+        clicksTotalByOffer.set(c.offerId, (clicksTotalByOffer.get(c.offerId) ?? 0) + 1);
+        const t = Date.parse(c.createdAt);
+        if (Number.isNaN(t)) continue;
+        if (t >= dayStart) clicksTodayByOffer.set(c.offerId, (clicksTodayByOffer.get(c.offerId) ?? 0) + 1);
+        if (t >= monthStart) clicksMonthByOffer.set(c.offerId, (clicksMonthByOffer.get(c.offerId) ?? 0) + 1);
+      }
+      const uncapped = offers.filter((o) => {
+        if (o.capDaily != null && (clicksTodayByOffer.get(o.id) ?? 0) >= o.capDaily) return false;
+        if (o.capTotal != null && (clicksMonthByOffer.get(o.id) ?? 0) >= o.capTotal) return false;
+        if (o.cap !== undefined && (clicksTotalByOffer.get(o.id) ?? 0) >= o.cap) return false;
+        return true;
+      });
       // H-08: the pick uses cf-ipcountry and the User-Agent only.
       // ?country= / ?device= must never steer it (live proof: ?country=FR
       // excluded demo-offer-1). ?source= is not passed either — there is
       // no trustworthy header for traffic source, so it cannot decide
       // eligibility; it is still recorded on the click as metadata.
-      const picked = smartlinkPick(uncapped, {
+      const ranked = smartlinkRank(uncapped, {
         country: geoFrom(request),
         device: deviceFrom(request),
       });
-      if (!picked) return json({ error: 'no eligible offer' }, 404);
-      const click = recordClickFields(request, url, url.searchParams.get('affiliate_code') ?? 'smartlink', picked.id, {
-        smartlink: true,
-        smartlinkCode: code,
-      });
-      // A 022 rejection (unknown code -> 404, not approved -> 403,
-      // cap reached -> 409) answers instead of redirecting; a transient
-      // write failure still redirects.
-      const rejected = await recordClickOrReject(store, click);
-      if (rejected) return rejected;
-      return new Response(null, {
-        status: 302,
-        headers: { Location: appendQuery(picked.landingUrl, 'click_id', click.clickId) },
-      });
+      if (ranked.length === 0) return json({ error: 'no eligible offer' }, 404);
+      const affiliateCode = url.searchParams.get('affiliate_code') ?? 'smartlink';
+      // H-06 fallback: the edge counts can be stale (or a cap can be
+      // hit between the check and the record), and the record RPC is
+      // the authority — when it rejects a pick with 409 'offer cap
+      // reached', fall through to the next eligible offer instead of
+      // 409ing the visitor. A capped top-pick must never brick
+      // SmartLink traffic. Affiliate-level rejections (404 unknown
+      // code, 403 not approved) do not depend on the offer, so they
+      // return immediately.
+      let lastCapRejection: Response | null = null;
+      for (const picked of ranked) {
+        const click = recordClickFields(request, url, affiliateCode, picked.id, {
+          smartlink: true,
+          smartlinkCode: code,
+        });
+        // A 022 rejection (unknown code -> 404, not approved -> 403,
+        // cap reached -> 409) answers instead of redirecting; a transient
+        // write failure still redirects.
+        const rejected = await recordClickOrReject(store, click);
+        if (!rejected) {
+          return new Response(null, {
+            status: 302,
+            headers: { Location: appendQuery(picked.landingUrl, 'click_id', click.clickId) },
+          });
+        }
+        if (rejected.status === 409) {
+          lastCapRejection = rejected;
+          continue;
+        }
+        return rejected;
+      }
+      // Every eligible offer was cap-rejected: the caps really are hit.
+      return lastCapRejection ?? json({ error: 'no eligible offer' }, 404);
     }
 
     // POST /conversion (HMAC-signed JSON)

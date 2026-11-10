@@ -8,6 +8,7 @@ import {
   isOfferEligible,
   ledgerTransition,
   smartlinkPick,
+  smartlinkRank,
   type Offer,
 } from '../src/index.js';
 
@@ -130,6 +131,23 @@ describe('smartlinkPick', () => {
     ];
     expect(smartlinkPick(offers, { country: 'BD' })?.id).toBe('any');
     expect(smartlinkPick(offers, { country: 'US' })?.id).toBe('us-only');
+  });
+});
+
+describe('smartlinkRank', () => {
+  it('returns the ranked eligible list, same order as smartlinkPick', () => {
+    const offers = [
+      baseOffer({ id: 'offer-b', payout: 25 }),
+      baseOffer({ id: 'offer-a', payout: 10 }),
+      baseOffer({ id: 'offer-c', payout: 25 }),
+      baseOffer({ id: 'offer-d', payout: 50, status: 'paused' }),
+    ];
+    expect(smartlinkRank(offers, {}).map((o) => o.id)).toEqual(['offer-b', 'offer-c', 'offer-a']);
+    expect(smartlinkPick(offers, {})?.id).toBe(smartlinkRank(offers, {})[0]?.id);
+  });
+  it('returns [] when nothing is eligible', () => {
+    expect(smartlinkRank([baseOffer({ status: 'paused' })], {})).toEqual([]);
+    expect(smartlinkRank([], {})).toEqual([]);
   });
 });
 
