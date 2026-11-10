@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { FAQ_GROUPS, PAGE_FAQS } from './faq-data'
+import { FAQ_GROUPS, PAGE_FAQS, PAGE_FAQS_LOCALIZED } from './faq-data'
 import { POSTS } from './blog-data'
 import { COUNTRIES } from './geo-data'
 import { DICT } from './i18n-dict'
@@ -385,13 +385,13 @@ const LOCALIZED_SEO: Record<string, Partial<Record<'es' | 'pt', SeoMeta>>> = {
       title: 'Para afiliados | Gana con ofertas CPA y SmartLink',
       description:
         'Promociona ofertas CPA directas o envía tráfico por un solo SmartLink. Cada clic registrado, cada conversión atribuida y pagos desde un libro contable auditable.',
-      jsonLd: webPage('/es/affiliates', 'Para afiliados', 'Gana en AffiLayer con ofertas CPA directas o un SmartLink.', 'es'),
+      jsonLd: [webPage('/es/affiliates', 'Para afiliados', 'Gana en AffiLayer con ofertas CPA directas o un SmartLink.', 'es'), faqLd(PAGE_FAQS_LOCALIZED.es.affiliates)],
     },
     pt: {
       title: 'Para afiliados | Ganhe com ofertas de CPA e SmartLink',
       description:
         'Promova ofertas de CPA diretas ou envie tráfego por um único SmartLink. Cada clique registrado, cada conversão atribuída e pagamentos a partir de um livro-razão auditável.',
-      jsonLd: webPage('/pt/affiliates', 'Para afiliados', 'Ganhe na AffiLayer com ofertas de CPA diretas ou um SmartLink.', 'pt'),
+      jsonLd: [webPage('/pt/affiliates', 'Para afiliados', 'Ganhe na AffiLayer com ofertas de CPA diretas ou um SmartLink.', 'pt'), faqLd(PAGE_FAQS_LOCALIZED.pt.affiliates)],
     },
   },
   '/advertisers': {
@@ -399,13 +399,13 @@ const LOCALIZED_SEO: Record<string, Partial<Record<'es' | 'pt', SeoMeta>>> = {
       title: 'Para anunciantes | Publica ofertas CPA en AffiLayer',
       description:
         'Publica ofertas CPA, CPL, CPS o CPC con tus propios límites y reglas de tráfico, aprueba afiliados y paga solo por conversiones revisadas.',
-      jsonLd: webPage('/es/advertisers', 'Para anunciantes', 'Publica ofertas en AffiLayer y paga solo por conversiones revisadas.', 'es'),
+      jsonLd: [webPage('/es/advertisers', 'Para anunciantes', 'Publica ofertas en AffiLayer y paga solo por conversiones revisadas.', 'es'), faqLd(PAGE_FAQS_LOCALIZED.es.advertisers)],
     },
     pt: {
       title: 'Para anunciantes | Publique ofertas de CPA na AffiLayer',
       description:
         'Publique ofertas de CPA, CPL, CPS ou CPC com seus próprios limites e regras de tráfego, aprove afiliados e pague apenas por conversões revisadas.',
-      jsonLd: webPage('/pt/advertisers', 'Para anunciantes', 'Publique ofertas na AffiLayer e pague apenas por conversões revisadas.', 'pt'),
+      jsonLd: [webPage('/pt/advertisers', 'Para anunciantes', 'Publique ofertas na AffiLayer e pague apenas por conversões revisadas.', 'pt'), faqLd(PAGE_FAQS_LOCALIZED.pt.advertisers)],
     },
   },
   '/how-it-works': {
@@ -413,13 +413,13 @@ const LOCALIZED_SEO: Record<string, Partial<Record<'es' | 'pt', SeoMeta>>> = {
       title: 'Cómo funciona AffiLayer | Del registro al pago',
       description:
         'Crea una cuenta, obtén la aprobación, publica o promociona ofertas, sigue los clics, revisa las conversiones y cobra: manual, aprobado por un administrador, Net30 por defecto.',
-      jsonLd: webPage('/es/how-it-works', 'Cómo funciona AffiLayer', 'Cómo funciona AffiLayer, del registro al pago.', 'es'),
+      jsonLd: [webPage('/es/how-it-works', 'Cómo funciona AffiLayer', 'Cómo funciona AffiLayer, del registro al pago.', 'es'), faqLd(PAGE_FAQS_LOCALIZED.es.how)],
     },
     pt: {
       title: 'Como funciona a AffiLayer | Do cadastro ao pagamento',
       description:
         'Crie uma conta, obtenha aprovação, publique ou promova ofertas, acompanhe os cliques, revise as conversões e receba: manual, aprovado por um administrador, Net30 por padrão.',
-      jsonLd: webPage('/pt/how-it-works', 'Como funciona a AffiLayer', 'Como funciona a AffiLayer, do cadastro ao pagamento.', 'pt'),
+      jsonLd: [webPage('/pt/how-it-works', 'Como funciona a AffiLayer', 'Como funciona a AffiLayer, do cadastro ao pagamento.', 'pt'), faqLd(PAGE_FAQS_LOCALIZED.pt.how)],
     },
   },
   '/geo': {

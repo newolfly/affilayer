@@ -6,6 +6,70 @@
     <description>Launch notes and plain notes on affiliate marketing — what we built, what changed, and what we learned running the network.</description>
     <language>en</language>
     <item>
+      <title>How We Review Conversions Before They Become Payable</title>
+      <link>https://affilayer.com/blog/how-we-review-conversions</link>
+      <guid isPermaLink="true">https://affilayer.com/blog/how-we-review-conversions</guid>
+      <pubDate>Wed, 30 Dec 2026 00:00:00 GMT</pubDate>
+      <description>Every conversion on AffiLayer is recorded as pending and reviewed by hand before it becomes payable. Here is what the review checks, and what happens next.</description>
+      <category>Guides</category><category>review</category><category>conversions</category><category>payouts</category>
+    </item>
+    <item>
+      <title>Pending, Approved, Rejected, Reversed: Reading Your Ledger</title>
+      <link>https://affilayer.com/blog/reading-your-commission-ledger</link>
+      <guid isPermaLink="true">https://affilayer.com/blog/reading-your-commission-ledger</guid>
+      <pubDate>Mon, 28 Dec 2026 00:00:00 GMT</pubDate>
+      <description>Every commission on AffiLayer sits in one of four ledger states — pending, approved, rejected or reversed. Here is what each one means, and when it pays.</description>
+      <category>Guides</category><category>ledger</category><category>payouts</category><category>commissions</category>
+    </item>
+    <item>
+      <title>Dating and Sweepstakes CPA: Traffic That Converts</title>
+      <link>https://affilayer.com/blog/dating-sweepstakes-cpa-offers</link>
+      <guid isPermaLink="true">https://affilayer.com/blog/dating-sweepstakes-cpa-offers</guid>
+      <pubDate>Wed, 23 Dec 2026 00:00:00 GMT</pubDate>
+      <description>Dating and sweepstakes traffic is fast, mobile and impulse-led — and the verticals where a misleading creative costs you the account fastest. What to watch.</description>
+      <category>AdTech Insights</category><category>dating</category><category>sweepstakes</category><category>cpa</category><category>compliance</category>
+    </item>
+    <item>
+      <title>Gaming CPA Offers: Traffic, Payouts and Player Quality</title>
+      <link>https://affilayer.com/blog/gaming-cpa-offers-explained</link>
+      <guid isPermaLink="true">https://affilayer.com/blog/gaming-cpa-offers-explained</guid>
+      <pubDate>Mon, 21 Dec 2026 00:00:00 GMT</pubDate>
+      <description>Gaming traffic is fast, huge and mixed in quality. Installs pay for volume, deposits pay for players — and that difference decides if the traffic is worth it.</description>
+      <category>AdTech Insights</category><category>gaming</category><category>cpa</category><category>payouts</category><category>traffic</category>
+    </item>
+    <item>
+      <title>Finance CPA Offers: What Converts and What to Watch</title>
+      <link>https://affilayer.com/blog/finance-cpa-offers-explained</link>
+      <guid isPermaLink="true">https://affilayer.com/blog/finance-cpa-offers-explained</guid>
+      <pubDate>Fri, 18 Dec 2026 00:00:00 GMT</pubDate>
+      <description>Finance CPA pays for intent — but compliance and lead quality decide whether a lead is worth anything. What converts, what gets rejected, and what to watch.</description>
+      <category>AdTech Insights</category><category>finance</category><category>cpa</category><category>compliance</category><category>leads</category>
+    </item>
+    <item>
+      <title>Setting Caps and Payouts Without Losing Money</title>
+      <link>https://affilayer.com/blog/setting-caps-and-payouts</link>
+      <guid isPermaLink="true">https://affilayer.com/blog/setting-caps-and-payouts</guid>
+      <pubDate>Wed, 16 Dec 2026 00:00:00 GMT</pubDate>
+      <description>Daily caps, total caps and the payout model are your budget controls. How to set them, what happens when a cap is hit, and when the money actually moves.</description>
+      <category>Guides</category><category>advertisers</category><category>caps</category><category>payouts</category><category>net30</category>
+    </item>
+    <item>
+      <title>Approving Affiliates: What to Check Before You Say Yes</title>
+      <link>https://affilayer.com/blog/approving-affiliates-what-to-check</link>
+      <guid isPermaLink="true">https://affilayer.com/blog/approving-affiliates-what-to-check</guid>
+      <pubDate>Mon, 14 Dec 2026 00:00:00 GMT</pubDate>
+      <description>Approval is a gate, not a guarantee. Check traffic source, vertical fit, GEO and quality signals — and know what saying yes does and does not promise.</description>
+      <category>Guides</category><category>advertisers</category><category>affiliates</category><category>approval</category><category>fraud</category>
+    </item>
+    <item>
+      <title>What Advertisers Should Put in an Offer Brief</title>
+      <link>https://affilayer.com/blog/what-to-put-in-an-offer-brief</link>
+      <guid isPermaLink="true">https://affilayer.com/blog/what-to-put-in-an-offer-brief</guid>
+      <pubDate>Fri, 11 Dec 2026 00:00:00 GMT</pubDate>
+      <description>An offer brief is the agreement before the agreement: payout, caps, countries, traffic rules, conversion definition. What to write, and why each line matters.</description>
+      <category>Guides</category><category>advertisers</category><category>offers</category><category>brief</category><category>caps</category>
+    </item>
+    <item>
       <title>How to publish your first offer on AffiLayer: payouts, caps, geos and traffic rules</title>
       <link>https://affilayer.com/blog/publish-your-first-offer</link>
       <guid isPermaLink="true">https://affilayer.com/blog/publish-your-first-offer</guid>
@@ -100,14 +164,6 @@
       <pubDate>Wed, 11 Nov 2026 00:00:00 GMT</pubDate>
       <description>A CPA network connects advertisers who pay for a defined action with affiliates who drive it — and handles tracking, attribution and payouts.</description>
       <category>Guides</category><category>cpa</category><category>basics</category><category>affiliates</category><category>advertisers</category>
-    </item>
-    <item>
-      <title>AffiLayer is live: what the network offers on day one</title>
-      <link>https://affilayer.com/blog/affilayer-is-live</link>
-      <guid isPermaLink="true">https://affilayer.com/blog/affilayer-is-live</guid>
-      <pubDate>Sat, 07 Nov 2026 00:00:00 GMT</pubDate>
-      <description>AffiLayer opens 7 November 2026 with direct CPA offers, SmartLink routing, full-funnel tracking and an append-only commission ledger.</description>
-      <category>Launch Notes</category><category>launch</category><category>smartlink</category><category>tracking</category><category>ledger</category>
     </item>
   </channel>
 </rss>

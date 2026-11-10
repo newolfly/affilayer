@@ -5,8 +5,9 @@ import { PublicLayout, Reveal, Slogan } from '../components/layout'
 import { PageArt, PageHighlights } from '../components/illustrations'
 import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
-import { FAQ_GROUPS, PAGE_FAQS } from '../lib/faq-data'
+import { FAQ_GROUPS, PAGE_FAQS, PAGE_FAQS_LOCALIZED } from '../lib/faq-data'
 import { useLocale, useT, localizePath } from '../lib/i18n'
+import type { Locale } from '../lib/i18n'
 import { isDemoMode, createTicket } from '../lib/data'
 import { useAuth } from '../lib/auth'
 import { COUNTRIES } from '../lib/geo-data'
@@ -160,15 +161,20 @@ function RotatingVertical() {
   )
 }
 
-/** Visible per-page FAQ section (English-only). The same Q&A list feeds
- *  the page's FAQPage JSON-LD in seo.ts, so markup and text cannot drift. */
+/** Visible per-page FAQ section, localised. The same Q&A list feeds the
+ *  page's FAQPage JSON-LD in seo.ts, so markup and text cannot drift. */
+const FAQ_HEADING: Record<Locale, string> = {
+  en: 'Frequently asked questions',
+  es: 'Preguntas frecuentes',
+  pt: 'Perguntas frequentes',
+}
+
 function PageFaqs({ which }: { which: 'advertisers' | 'affiliates' | 'how' }) {
   const locale = useLocale()
-  if (locale !== 'en') return null
-  const items = PAGE_FAQS[which]
+  const items = locale === 'en' ? PAGE_FAQS[which] : PAGE_FAQS_LOCALIZED[locale][which]
   return (
     <section className="mt-10">
-      <h2 className="text-xl font-bold text-white">Frequently asked questions</h2>
+      <h2 className="text-xl font-bold text-white">{FAQ_HEADING[locale]}</h2>
       <div className="mt-4 space-y-3">
         {items.map((item) => (
           <details key={item.q} className="lift rounded-xl bg-white p-5 text-slate-900">
@@ -511,8 +517,13 @@ export function About() {
       />
       <div className="mt-6 space-y-4 rounded-xl bg-white p-6 text-slate-700">
         <p>
-          AffiLayer is operated by <strong>MarketSync Global LLC</strong>, a registered
-          company in New Mexico, USA. Advertisers publish offers with a clear payout
+          AffiLayer launched on <strong>7 November 2026</strong>. It is operated by{' '}
+          <strong>MarketSync Global LLC</strong>, a registered company in New Mexico,
+          USA, part of the{' '}
+          <a href="https://marketsyncglobal.com" className="font-semibold text-amber-700 underline">
+            MarketSync Global
+          </a>{' '}
+          holding group, founded in 2025. Advertisers publish offers with a clear payout
           model and conversion definition; affiliates promote those offers and earn
           commission on attributed conversions.
         </p>
