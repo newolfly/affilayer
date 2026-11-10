@@ -119,7 +119,7 @@ export const POSTS: Post[] = [
     title: 'What is a CPA network? How affiliates, advertisers and the network fit together',
     description:
       'A CPA network connects advertisers who pay for a defined action with affiliates who drive it — and handles tracking, attribution and payouts.',
-    date: '2026-11-11',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['cpa', 'basics', 'affiliates', 'advertisers'],
@@ -149,7 +149,7 @@ export const POSTS: Post[] = [
     title: 'CPA vs CPL vs CPS vs CPC: which payout model pays you, and when',
     description:
       'CPA, CPL, CPS and CPC differ in one thing: what triggers payment. The trigger decides who bears the risk — and when a commission becomes payable.',
-    date: '2026-11-13',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['cpa', 'cpl', 'cps', 'cpc', 'payouts'],
@@ -178,7 +178,7 @@ export const POSTS: Post[] = [
     title: 'What is a SmartLink? One link, many offers — and what ours does differently',
     description:
       'A SmartLink is one tracking link that routes each visitor to an eligible offer for their country and device. Ours uses fixed, published rules.',
-    date: '2026-11-16',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'AdTech Insights',
     tags: ['smartlink', 'tracking', 'geo'],
@@ -206,7 +206,7 @@ export const POSTS: Post[] = [
     title: 'How affiliate tracking actually works: click IDs, postbacks and S2S',
     description:
       'A click gets a unique ID, the conversion is linked back to it, and the record is signed and deduplicated. That chain is the whole of tracking.',
-    date: '2026-11-18',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'AdTech Insights',
     tags: ['tracking', 'postback', 'attribution'],
@@ -231,7 +231,7 @@ export const POSTS: Post[] = [
     title: 'Why your conversions go missing: pixels, ad blockers and the case for server-to-server',
     description:
       'A conversion that never reaches the network never pays. Pixels lose conversions to browsers; server-to-server reporting does not depend on them.',
-    date: '2026-11-20',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'AdTech Insights',
     tags: ['tracking', 'postback', 'pixels'],
@@ -259,7 +259,7 @@ export const POSTS: Post[] = [
     title: 'How to choose a CPA network: 7 checks before you send your first click',
     description:
       'Seven checks before you send traffic: tracking you can audit, a ledger you can read, honest payout terms, and no promises the network cannot keep.',
-    date: '2026-11-23',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['cpa', 'networks', 'guide'],
@@ -289,7 +289,7 @@ export const POSTS: Post[] = [
     title: 'Sub IDs explained: the 5 parameters that tell you which click earned',
     description:
       'Sub IDs are labels you attach to your own clicks — campaign, placement, creative. Five of them, and they are how you learn what actually converts.',
-    date: '2026-11-25',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'AdTech Insights',
     tags: ['tracking', 'subid', 'attribution'],
@@ -311,7 +311,7 @@ export const POSTS: Post[] = [
     title: 'What does Net30 mean? Payout timing, holds and the real wait for your first payment',
     description:
       'Net30 means approved commissions become payable 30 days after the end of the month in which they were approved. A worked example, with dates.',
-    date: '2026-11-27',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['net30', 'payouts', 'ledger'],
@@ -339,7 +339,7 @@ export const POSTS: Post[] = [
     title: 'Offer caps explained: daily caps, total caps, and what happens when a cap is hit',
     description:
       'A cap is the advertiser saying "this much, and no more". Daily caps reset; total caps end the offer. A capped click is refused, not wasted.',
-    date: '2026-11-30',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['caps', 'offers', 'advertisers'],
@@ -365,7 +365,7 @@ export const POSTS: Post[] = [
     title: 'Geo targeting in CPA: why the same offer pays differently in every country',
     description:
       'The same offer in the United States and in Brazil is two different offers: different audiences, different payouts, different rules. Geo decides.',
-    date: '2026-12-02',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['geo', 'offers', 'targeting'],
@@ -392,7 +392,7 @@ export const POSTS: Post[] = [
     title: 'Affiliate fraud: the patterns that get accounts rejected — and how to stay clean',
     description:
       'Bots, misleading creatives, forced clicks and incentivised traffic. The patterns are old, the detection is straightforward, and clean traffic has nothing to fear.',
-    date: '2026-12-04',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'AdTech Insights',
     tags: ['fraud', 'traffic', 'compliance'],
@@ -426,7 +426,7 @@ export const POSTS: Post[] = [
     title: 'How to publish your first offer on AffiLayer: payouts, caps, geos and traffic rules',
     description:
       'Publish an offer in four parts: the payout and conversion action, the caps, the countries and devices, and the traffic rules. Then approve affiliates.',
-    date: '2026-12-07',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['advertisers', 'offers', 'caps', 'geo'],
@@ -453,7 +453,7 @@ export const POSTS: Post[] = [
     title: 'What Advertisers Should Put in an Offer Brief',
     description:
       'An offer brief is the agreement before the agreement: payout, caps, countries, traffic rules, conversion definition. What to write, and why each line matters.',
-    date: '2026-12-11',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['advertisers', 'offers', 'brief', 'caps'],
@@ -484,7 +484,7 @@ export const POSTS: Post[] = [
     title: 'Approving Affiliates: What to Check Before You Say Yes',
     description:
       'Approval is a gate, not a guarantee. Check traffic source, vertical fit, GEO and quality signals — and know what saying yes does and does not promise.',
-    date: '2026-12-14',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['advertisers', 'affiliates', 'approval', 'fraud'],
@@ -525,7 +525,7 @@ export const POSTS: Post[] = [
     title: 'Setting Caps and Payouts Without Losing Money',
     description:
       'Daily caps, total caps and the payout model are your budget controls. How to set them, what happens when a cap is hit, and when the money actually moves.',
-    date: '2026-12-16',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['advertisers', 'caps', 'payouts', 'net30'],
@@ -561,7 +561,7 @@ export const POSTS: Post[] = [
     title: 'Finance CPA Offers: What Converts and What to Watch',
     description:
       'Finance CPA pays for intent — but compliance and lead quality decide whether a lead is worth anything. What converts, what gets rejected, and what to watch.',
-    date: '2026-12-18',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'AdTech Insights',
     tags: ['finance', 'cpa', 'compliance', 'leads'],
@@ -598,7 +598,7 @@ export const POSTS: Post[] = [
     title: 'Gaming CPA Offers: Traffic, Payouts and Player Quality',
     description:
       'Gaming traffic is fast, huge and mixed in quality. Installs pay for volume, deposits pay for players — and that difference decides if the traffic is worth it.',
-    date: '2026-12-21',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'AdTech Insights',
     tags: ['gaming', 'cpa', 'payouts', 'traffic'],
@@ -633,7 +633,7 @@ export const POSTS: Post[] = [
     title: 'Dating and Sweepstakes CPA: Traffic That Converts',
     description:
       'Dating and sweepstakes traffic is fast, mobile and impulse-led — and the verticals where a misleading creative costs you the account fastest. What to watch.',
-    date: '2026-12-23',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'AdTech Insights',
     tags: ['dating', 'sweepstakes', 'cpa', 'compliance'],
@@ -673,7 +673,7 @@ export const POSTS: Post[] = [
     title: 'Pending, Approved, Rejected, Reversed: Reading Your Ledger',
     description:
       'Every commission on AffiLayer sits in one of four ledger states — pending, approved, rejected or reversed. Here is what each one means, and when it pays.',
-    date: '2026-12-28',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['ledger', 'payouts', 'commissions'],
@@ -716,7 +716,7 @@ export const POSTS: Post[] = [
     title: 'How We Review Conversions Before They Become Payable',
     description:
       'Every conversion on AffiLayer is recorded as pending and reviewed by hand before it becomes payable. Here is what the review checks, and what happens next.',
-    date: '2026-12-30',
+    date: '2026-11-10',
     author: DEFAULT_AUTHOR,
     category: 'Guides',
     tags: ['review', 'conversions', 'payouts'],
