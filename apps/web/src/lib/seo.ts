@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { FAQ_GROUPS } from './faq-data'
+import { FAQ_GROUPS, PAGE_FAQS } from './faq-data'
 import { POSTS } from './blog-data'
+import { COUNTRIES } from './geo-data'
 import { DICT } from './i18n-dict'
 import { localeFromPath, basePath, alternatesFor } from './i18n'
 import type { Locale } from './i18n'
@@ -33,6 +34,18 @@ const ORGANIZATION = {
     addressCountry: 'US',
     addressRegion: 'New Mexico',
   },
+  logo: `${SITE_URL}/logo.svg`,
+  image: OG_IMAGE,
+  foundingDate: '2026-11-07',
+  parentOrganization: { '@type': 'Organization', name: 'MarketSync Global LLC' },
+  areaServed: 'Worldwide',
+  knowsAbout: ['CPA marketing', 'CPL', 'CPS', 'CPC', 'affiliate marketing', 'SmartLink'],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'support@affilayer.com',
+    contactType: 'customer support',
+    availableLanguage: ['en', 'es', 'pt'],
+  },
 }
 
 const WEBSITE = {
@@ -40,6 +53,7 @@ const WEBSITE = {
   '@type': 'WebSite',
   name: 'AffiLayer',
   url: `${SITE_URL}/`,
+  inLanguage: ['en', 'es', 'pt'],
 }
 
 function webPage(path: string, name: string, description: string, lang: Locale = 'en') {
@@ -88,12 +102,87 @@ function blogPostingJsonLd(slug: string) {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: post.title,
-    description: post.excerpt,
-    datePublished: '2026-11-07',
+    description: post.description,
+    datePublished: post.date,
+    dateModified: post.updated ?? post.date,
+    image: post.heroImage ?? OG_IMAGE,
+    articleSection: post.category,
+    inLanguage: 'en',
     author: { '@type': 'Organization', name: 'AffiLayer', url: `${SITE_URL}/` },
     publisher: { '@type': 'Organization', name: 'AffiLayer', url: `${SITE_URL}/` },
     mainEntityOfPage: `${SITE_URL}/blog/${slug}`,
   }
+}
+
+/** FAQPage JSON-LD from a visible Q&A list (single source with the page). */
+function faqLd(items: { q: string; a: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  }
+}
+
+/** HowTo for /how-it-works. Steps match the visible steps exactly (same
+ *  titles and text as the page). No totalTime — no honest duration exists. */
+const HOWTO = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How AffiLayer works',
+  description:
+    'Create an account, get approved, publish or promote offers, track clicks, review conversions, and get paid — manual, admin-approved, Net30 by default.',
+  inLanguage: 'en',
+  step: [
+    { '@type': 'HowToStep', name: '1. Create an account', text: 'Register as an advertiser or an affiliate and complete onboarding: profile, traffic source, vertical, GEO, volume and payment profile.' },
+    { '@type': 'HowToStep', name: '2. Get approved', text: 'Our team reviews every application. You can check your status on the approval page.' },
+    { '@type': 'HowToStep', name: '3. Offers and links', text: 'Advertisers publish offers. Affiliates apply where required, then generate a tracking link — or use a SmartLink for mixed traffic.' },
+    { '@type': 'HowToStep', name: '4. Clicks are tracked', text: 'A visitor clicking a tracking link is redirected to the offer landing page. The click is recorded with a unique click ID.' },
+    { '@type': 'HowToStep', name: '5. Conversions are attributed', text: 'When a conversion happens, it is linked to the original click ID and recorded as pending.' },
+    { '@type': 'HowToStep', name: '6. Review and payout', text: 'Conversions are approved, rejected or reversed by review. Approved commissions enter the ledger and become payable; payouts are manual and admin-approved, Net30 by default.' },
+  ],
+}
+
+/** ItemList of the 11 country pages, for /geo. */
+function geoItemListLd(locale: Locale) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: COUNTRIES.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.name[locale],
+      item: `${SITE_URL}${locale === 'en' ? '' : `/${locale}`}/geo/${c.code}`,
+    })),
+  }
+}
+
+/** Blog + ItemList of all posts, for /blog. */
+function blogItemListLd() {
+  const sorted = [...POSTS].sort((a, b) => +new Date(b.date) - +new Date(a.date))
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: 'AffiLayer blog',
+    url: `${SITE_URL}/blog`,
+    blogPost: sorted.map((p, i) => ({
+      '@type': 'BlogPosting',
+      position: i + 1,
+      headline: p.title,
+      url: `${SITE_URL}/blog/${p.slug}`,
+      datePublished: p.date,
+    })),
+  }
+}
+
+const BLOG_CATEGORY_NAMES: Record<string, string> = {
+  'launch-notes': 'Launch Notes',
+  'adtech-insights': 'AdTech Insights',
+  guides: 'Guides',
+  news: 'News',
 }
 
 const PAGES: Record<string, SeoMeta> = {
@@ -119,19 +208,19 @@ const PAGES: Record<string, SeoMeta> = {
     title: 'For Advertisers | Publish CPA Offers on AffiLayer',
     description:
       'Publish CPA, CPL, CPS or CPC offers with your own caps and traffic rules, approve affiliates, and pay only for conversions you have reviewed.',
-    jsonLd: webPage('/advertisers', 'For advertisers', 'Publish offers on AffiLayer and pay only for conversions you have reviewed.'),
+    jsonLd: [webPage('/advertisers', 'For advertisers', 'Publish offers on AffiLayer and pay only for conversions you have reviewed.'), faqLd(PAGE_FAQS.advertisers)],
   },
   '/affiliates': {
     title: 'For Affiliates | Earn with CPA Offers & SmartLink',
     description:
       'Run direct CPA offers or send traffic through one SmartLink. Every click tracked, every conversion attributed, payouts from an auditable ledger.',
-    jsonLd: webPage('/affiliates', 'For affiliates', 'Earn on AffiLayer with direct CPA offers or one SmartLink.'),
+    jsonLd: [webPage('/affiliates', 'For affiliates', 'Earn on AffiLayer with direct CPA offers or one SmartLink.'), faqLd(PAGE_FAQS.affiliates)],
   },
   '/how-it-works': {
     title: 'How AffiLayer Works | From Signup to Payout',
     description:
       'Create an account, get approved, publish or promote offers, track clicks, review conversions, and get paid — manual, admin-approved, Net30 by default.',
-    jsonLd: webPage('/how-it-works', 'How AffiLayer works', 'How AffiLayer works, from signup to payout.'),
+    jsonLd: [webPage('/how-it-works', 'How AffiLayer works', 'How AffiLayer works, from signup to payout.'), HOWTO, faqLd(PAGE_FAQS.how)],
   },
   '/faq': {
     title: 'FAQ | AffiLayer CPA Affiliate Network',
@@ -143,13 +232,25 @@ const PAGES: Record<string, SeoMeta> = {
     title: 'AffiLayer by Country | Global CPA Affiliate Network',
     description:
       'AffiLayer is open worldwide. Choose a country to see how affiliates and advertisers work with the network there.',
-    jsonLd: [webPage('/geo', 'AffiLayer by country', 'AffiLayer by country: global CPA affiliate network.'), geoIndexFaqLd('en')],
+    jsonLd: [webPage('/geo', 'AffiLayer by country', 'AffiLayer by country: global CPA affiliate network.'), geoIndexFaqLd('en'), geoItemListLd('en')],
   },
   '/blog': {
     title: 'Blog | AffiLayer',
     description:
       'Launch notes and plain notes on affiliate marketing — what we built, what changed, and what we learned running the network.',
-    jsonLd: webPage('/blog', 'AffiLayer blog', 'Launch notes and plain notes on affiliate marketing.'),
+    jsonLd: [webPage('/blog', 'AffiLayer blog', 'Launch notes and plain notes on affiliate marketing.'), blogItemListLd()],
+  },
+  '/news': {
+    title: 'News | AffiLayer',
+    description:
+      'AffiLayer news: product updates, offer launches, network milestones and policy changes — dated announcements, nothing else.',
+    jsonLd: webPage('/news', 'AffiLayer news', 'AffiLayer news: product updates, offer launches and policy changes.'),
+  },
+  '/brand': {
+    title: 'Brand | AffiLayer — Logos, Boilerplate & Press Kit',
+    description:
+      'The AffiLayer brand: open books, not big promises. Logos, boilerplate, brand rules and the press kit — plus the three principles.',
+    jsonLd: webPage('/brand', 'AffiLayer brand', 'The AffiLayer brand: logos, boilerplate and press kit.'),
   },
   '/contact': {
     title: 'Contact AffiLayer | Support & Enquiries',
@@ -201,15 +302,33 @@ function metaFor(pathname: string): SeoMeta {
   if (PAGES[path]) return PAGES[path]
   const geo = geoCountryMeta(path, locale)
   if (geo) return geo
+  const cat = path.match(/^\/blog\/category\/([\w-]+)$/)
+  if (cat && BLOG_CATEGORY_NAMES[cat[1]]) {
+    const name = BLOG_CATEGORY_NAMES[cat[1]]
+    return {
+      title: `${name} | AffiLayer Blog`,
+      description: `AffiLayer blog posts in ${name} — launch notes and plain notes on affiliate marketing.`,
+      jsonLd: [webPage(path, `${name} — AffiLayer blog`, `AffiLayer blog posts in ${name}.`), breadcrumb([{ name: 'Home', path: '/' }, { name: 'Blog', path: '/blog' }, { name, path }])],
+    }
+  }
   const blog = path.match(/^\/blog\/([\w-]+)$/)
   if (blog) {
     const post = POSTS.find((p) => p.slug === blog[1])
     if (post) {
+      const posting = blogPostingJsonLd(post.slug)
+      if (!posting) return PAGES['/blog']
       return {
         title: `${post.title} | AffiLayer Blog`,
-        description: post.excerpt,
+        description: post.description,
         ogType: 'article',
-        jsonLd: blogPostingJsonLd(post.slug),
+        jsonLd: [
+          posting,
+          breadcrumb([
+            { name: 'Home', path: '/' },
+            { name: 'Blog', path: '/blog' },
+            { name: post.title, path: `/blog/${post.slug}` },
+          ]),
+        ],
       }
     }
   }
@@ -308,13 +427,41 @@ const LOCALIZED_SEO: Record<string, Partial<Record<'es' | 'pt', SeoMeta>>> = {
       title: 'AffiLayer por país | Red global de afiliados CPA',
       description:
         'AffiLayer está abierta en todo el mundo. Elige un país y descubre cómo trabajan afiliados y anunciantes con la red allí.',
-      jsonLd: [webPage('/es/geo', 'AffiLayer por país', 'AffiLayer por país: red global de afiliados CPA.', 'es'), geoIndexFaqLd('es')],
+      jsonLd: [webPage('/es/geo', 'AffiLayer por país', 'AffiLayer por país: red global de afiliados CPA.', 'es'), geoIndexFaqLd('es'), geoItemListLd('es')],
     },
     pt: {
       title: 'AffiLayer por país | Rede global de afiliados CPA',
       description:
         'A AffiLayer está aberta no mundo todo. Escolha um país e descubra como afiliados e anunciantes trabalham com a rede lá.',
-      jsonLd: [webPage('/pt/geo', 'AffiLayer por país', 'AffiLayer por país: rede global de afiliados CPA.', 'pt'), geoIndexFaqLd('pt')],
+      jsonLd: [webPage('/pt/geo', 'AffiLayer por país', 'AffiLayer por país: rede global de afiliados CPA.', 'pt'), geoIndexFaqLd('pt'), geoItemListLd('pt')],
+    },
+  },
+  '/brand': {
+    es: {
+      title: 'Marca | AffiLayer — Logotipos, texto estándar y kit de prensa',
+      description:
+        'La marca AffiLayer: libros abiertos, no grandes promesas. Logotipos, texto estándar, reglas de marca y el kit de prensa.',
+      jsonLd: webPage('/es/brand', 'Marca AffiLayer', 'La marca AffiLayer: logotipos, texto estándar y kit de prensa.', 'es'),
+    },
+    pt: {
+      title: 'Marca | AffiLayer — Logotipos, texto padrão e kit de imprensa',
+      description:
+        'A marca AffiLayer: livros abertos, não grandes promessas. Logotipos, texto padrão, regras de marca e o kit de imprensa.',
+      jsonLd: webPage('/pt/brand', 'Marca AffiLayer', 'A marca AffiLayer: logotipos, texto padrão e kit de imprensa.', 'pt'),
+    },
+  },
+  '/blog': {
+    es: {
+      title: 'Blog | AffiLayer',
+      description:
+        'Notas de lanzamiento y notas sencillas sobre marketing de afiliados — lo que construimos, lo que cambió y lo que aprendimos.',
+      jsonLd: [webPage('/es/blog', 'Blog AffiLayer', 'Notas de lanzamiento y notas sobre marketing de afiliados.', 'es'), blogItemListLd()],
+    },
+    pt: {
+      title: 'Blog | AffiLayer',
+      description:
+        'Notas de lançamento e notas simples sobre marketing de afiliados — o que construímos, o que mudou e o que aprendemos.',
+      jsonLd: [webPage('/pt/blog', 'Blog AffiLayer', 'Notas de lançamento e notas sobre marketing de afiliados.', 'pt'), blogItemListLd()],
     },
   },
 }

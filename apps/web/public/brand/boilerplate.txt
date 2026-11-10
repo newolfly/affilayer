@@ -1,0 +1,10 @@
+AffiLayer — boilerplate
+
+SHORT (1 sentence)
+AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC (New Mexico, USA), connecting advertisers with affiliates through direct offers and one SmartLink, with full-funnel tracking and every commission written to an auditable ledger.
+
+MEDIUM
+AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC, a registered company in New Mexico, USA. Advertisers publish offers with a stated payout and conversion action; affiliates promote them and earn commission on attributed conversions. The network opened on 7 November 2026. It is deliberately small: a focused offer catalogue, a tracking engine the team can explain, and applications and conversions reviewed by hand.
+
+LONG
+AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC, a registered company in New Mexico, USA. Advertisers publish offers with a stated payout and conversion action; affiliates promote them and earn commission on attributed conversions. The network opened on 7 November 2026. It is deliberately small: a focused offer catalogue, a tracking engine the team can explain, and applications and conversions reviewed by hand. Its three principles are tracking you can audit, an append-only commission ledger — a ledger that cannot be silently rewritten — and approval on both sides. We do not run traffic ourselves, we do not buy traffic on your behalf, and we do not promise results to either side.

@@ -5,7 +5,7 @@ import { PublicLayout, Reveal, Slogan } from '../components/layout'
 import { PageArt, PageHighlights } from '../components/illustrations'
 import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
-import { FAQ_GROUPS } from '../lib/faq-data'
+import { FAQ_GROUPS, PAGE_FAQS } from '../lib/faq-data'
 import { useLocale, useT, localizePath } from '../lib/i18n'
 import { isDemoMode, createTicket } from '../lib/data'
 import { useAuth } from '../lib/auth'
@@ -141,30 +141,43 @@ function HeroIllustration() {
 
 export const SUPPORT_EMAIL = 'support@affilayer.com'
 
-/** Rotating vertical word in the hero headline. Crossfades: the outgoing
- *  word fades out while the incoming word fades in over the same 0.45s,
- *  so a word is always painted — there is never a fully-empty instant.
- *  The {' '} between the two spans is deliberate: both words sit in the
- *  H1 during the crossfade (and in the prerendered HTML), so without a
- *  space crawlers read them as one joined word (e.g. "SweepstakesNutra"). */
+/** Rotating vertical word in the hero headline. A single span whose text
+ *  changes every 3.5s (key change restarts the fade-in animation) — so the
+ *  prerendered HTML and any crawler ever see exactly one vertical, never
+ *  two words stacked in the H1 ("Sweepstakes Nutra"). */
 function RotatingVertical() {
-  const [[i, prev], setPair] = useState<[number, number | null]>([0, null])
+  const [i, setI] = useState(0)
   useEffect(() => {
-    const t = setInterval(() => setPair(([cur]) => [(cur + 1) % VERTICALS.length, cur]), 3500)
+    const t = setInterval(() => setI((cur) => (cur + 1) % VERTICALS.length), 3500)
     return () => clearInterval(t)
   }, [])
   return (
     <span className="rotator-stack">
-      {prev !== null && (
-        <span key={`out-${VERTICALS[prev]}`} className="rotator-word rotator-out grad-text" aria-hidden="true">
-          {VERTICALS[prev]}
-        </span>
-      )}
-      {' '}
       <span key={`in-${VERTICALS[i]}`} className="rotator-word rotator-in grad-text">
         {VERTICALS[i]}
       </span>
     </span>
+  )
+}
+
+/** Visible per-page FAQ section (English-only). The same Q&A list feeds
+ *  the page's FAQPage JSON-LD in seo.ts, so markup and text cannot drift. */
+function PageFaqs({ which }: { which: 'advertisers' | 'affiliates' | 'how' }) {
+  const locale = useLocale()
+  if (locale !== 'en') return null
+  const items = PAGE_FAQS[which]
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-bold text-white">Frequently asked questions</h2>
+      <div className="mt-4 space-y-3">
+        {items.map((item) => (
+          <details key={item.q} className="lift rounded-xl bg-white p-5 text-slate-900">
+            <summary className="cursor-pointer font-semibold">{item.q}</summary>
+            <p className="mt-2 text-sm text-slate-600">{item.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -485,8 +498,8 @@ export function About() {
       </p>
       <PageArt
         variant="about"
-        label="Illustration: the AffiLayer hub connecting open books, manual review and the auditable ledger"
-        nodes={['Open books', 'Manual review', 'Auditable ledger', 'Small by choice']}
+        label="Illustration: the AffiLayer hub connecting the three principles — tracking you can audit, the append-only ledger, approval on both sides"
+        nodes={['Tracking you can audit', 'Append-only ledger', 'Approval on both sides']}
         caption="three principles"
       />
       <PageHighlights
@@ -523,6 +536,9 @@ export function About() {
           right time to join.
         </p>
       </div>
+      <p className="mt-6">
+        <Link to="/brand" className="font-semibold text-amber-400 hover:text-amber-300">Our brand, logos and press kit →</Link>
+      </p>
     </PublicLayout>
   )
 }
@@ -566,6 +582,7 @@ export function AdvertisersPage() {
         ]}
       />
       <Link to="/register" className="pill-btn mt-6">{t('adv.register')}</Link>
+      <PageFaqs which="advertisers" />
     </PublicLayout>
   )
 }
@@ -610,6 +627,7 @@ export function AffiliatesPage() {
         ]}
       />
       <Link to="/register" className="pill-btn mt-6">{t('aff.register')}</Link>
+      <PageFaqs which="affiliates" />
     </PublicLayout>
   )
 }
@@ -680,6 +698,7 @@ export function HowItWorks() {
         ))}
       </div>
       <Link to="/register" className="pill-btn mt-6">{t('how.register')}</Link>
+      <PageFaqs which="how" />
     </PublicLayout>
   )
 }

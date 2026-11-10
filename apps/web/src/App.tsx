@@ -26,6 +26,9 @@ const Advertise = lazy(() => import('./pages/public').then((m) => ({ default: m.
 const NotFound = lazy(() => import('./pages/public').then((m) => ({ default: m.NotFound })))
 const Blog = lazy(() => import('./pages/blog').then((m) => ({ default: m.Blog })))
 const BlogPost = lazy(() => import('./pages/blog').then((m) => ({ default: m.BlogPost })))
+const BlogCategory = lazy(() => import('./pages/blog').then((m) => ({ default: m.BlogCategory })))
+const News = lazy(() => import('./pages/blog').then((m) => ({ default: m.News })))
+const Brand = lazy(() => import('./pages/brand').then((m) => ({ default: m.Brand })))
 const GeoIndex = lazy(() => import('./pages/geo').then((m) => ({ default: m.GeoIndex })))
 const GeoPage = lazy(() => import('./pages/geo').then((m) => ({ default: m.GeoPage })))
 const Login = lazy(() => import('./pages/auth').then((m) => ({ default: m.Login })))
@@ -147,7 +150,14 @@ export default function App() {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/faq" element={<Faq />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/category/:category" element={<BlogCategory />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/news" element={<News />} />
+          <Route path="/brand" element={<Brand />} />
+          <Route path="/es/blog" element={<Blog />} />
+          <Route path="/es/brand" element={<Brand />} />
+          <Route path="/pt/blog" element={<Blog />} />
+          <Route path="/pt/brand" element={<Brand />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />

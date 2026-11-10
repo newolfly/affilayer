@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 272 64" role="img" aria-label="AffiLayer">
+  <title>AffiLayer logo — light wordmark, for dark backgrounds</title>
+  <desc>Layered A mark with the AffiLayer wordmark in white.</desc>
+  <defs>
+    <g id="a-strokes" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="7">
+      <path d="M32 8 11 56" />
+      <path d="M32 8 53 56" />
+      <path d="M21 41h22" />
+    </g>
+    <clipPath id="band-1"><rect x="0" y="0" width="64" height="22" /></clipPath>
+    <clipPath id="band-2"><rect x="0" y="24" width="64" height="14" /></clipPath>
+    <clipPath id="band-3"><rect x="0" y="40" width="64" height="24" /></clipPath>
+  </defs>
+  <use href="#a-strokes" clip-path="url(#band-1)" stroke="#D97706" />
+  <use href="#a-strokes" clip-path="url(#band-2)" stroke="#f59e0b" />
+  <use href="#a-strokes" clip-path="url(#band-3)" stroke="#FBBF24" />
+  <text x="76" y="42" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="33" font-weight="800" letter-spacing="-1" fill="#ffffff">AffiLayer</text>
+</svg>

@@ -37,7 +37,7 @@ NO_JSONLD = {"/login", "/register", "/forgot-password", "/reset-password", "/onb
 
 # route -> texts that must appear in the prerendered HTML (proves real content, not the shell)
 ROUTES = {
-    "/": ["Why run traffic on", "Every commission written to an auditable ledger", "one tracked path"],
+    "/": ["Why run traffic on", "Every commission written to an append-only ledger", "one tracked path"],
     "/about": ["About AffiLayer"],
     "/advantages": ["What AffiLayer does"],
     "/advertisers": ["Publish offers", "Your path to your first customer"],
@@ -50,7 +50,16 @@ ROUTES = {
     "/onboarding": ["Onboarding", "Tell us about your profile"],
     "/faq": ["What is AffiLayer?"],
     "/blog": ["AffiLayer is live"],
-    "/blog/affilayer-is-live": ["AffiLayer is live: what the network offers on day one"],
+    "/blog/category/launch-notes": ["Launch Notes", "AffiLayer blog"],
+    "/blog/category/adtech-insights": ["AdTech Insights", "AffiLayer blog"],
+    "/blog/category/guides": ["Guides", "AffiLayer blog"],
+    "/blog/category/news": ["News", "AffiLayer blog"],
+    "/news": ["Dated announcements only"],
+    "/brand": ["a global CPA network you can check", "Open books, not big promises"],
+    "/es/blog": ["Notas de construir una red en abierto"],
+    "/pt/blog": ["Notas da construção de uma rede às claras"],
+    "/es/brand": ["Libros abiertos, no grandes promesas"],
+    "/pt/brand": ["Livros abertos, não grandes promessas"],
     "/contact": ["support@affilayer.com"],
     "/partner": ["Become an AffiLayer partner", "partner@affilayer.com"],
     "/white-label": ["White label AffiLayer", "Your brand on the front"],
@@ -106,6 +115,26 @@ ROUTES = {
 PORT = 4173
 
 
+def parse_blog_posts():
+    """Blog routes derived from blog-data.ts (single source of truth):
+    slug -> [post title] as the marker. A new post needs no edit here."""
+    import re
+
+    text = (ROOT / "apps" / "web" / "src" / "lib" / "blog-data.ts").read_text()
+    routes = {}
+    for m in re.finditer(r"\n    slug: '([^']+)',", text):
+        start = m.start()
+        nxt = text.find("\n    slug: '", m.end())
+        chunk = text[start:nxt if nxt != -1 else len(text)]
+        title = re.search(r"\n    title: '([^']+)',", chunk)
+        if title:
+            routes[f"/blog/{m.group(1)}"] = [title.group(1)]
+    return routes
+
+
+BLOG_ROUTES = parse_blog_posts()
+
+
 def wait_ready(url: str, timeout: int = 60) -> bool:
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -149,6 +178,7 @@ def main() -> int:
         if not wait_ready(f"http://127.0.0.1:{PORT}/"):
             print("vite preview did not become ready", file=sys.stderr)
             return 1
+        ROUTES.update(BLOG_ROUTES)
         failures = []
         for route, markers in ROUTES.items():
             url = f"http://127.0.0.1:{PORT}{route}"

@@ -16,7 +16,7 @@ export const LOCALES: { code: Locale; label: string; short: string }[] = [
  *  Everything else on the public site is English-only for now. */
 export const LOCALIZED_BASE_PATHS: string[] = [
   '/',
- '/affiliates', '/advertisers', '/how-it-works', '/geo',
+ '/affiliates', '/advertisers', '/how-it-works', '/geo', '/brand', '/blog',
   '/geo/us', '/geo/uk', '/geo/ca', '/geo/au', '/geo/de', '/geo/fr', '/geo/br', '/geo/in',
   '/geo/es', '/geo/mx', '/geo/ar',
 ]

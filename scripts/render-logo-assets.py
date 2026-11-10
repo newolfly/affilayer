@@ -82,7 +82,7 @@ OG_HTML = f"""<!doctype html>
   <div class="grid"></div><div class="glow"></div>
   <div class="inner">
     <div class="lockup">{MARK}<span class="word">AffiLayer</span></div>
-    <p class="tag">Global CPA Affiliate Network.<br><span class="grad">Every click tracked. Every commission auditable.</span></p>
+    <p class="tag">Global CPA Affiliate Network.<br><span class="grad">Every click tracked. Every commission in an append-only ledger.</span></p>
   </div>
   <p class="foot">affilayer.com</p>
 </body></html>"""

@@ -23,7 +23,10 @@
     "postbuild": "node ../../scripts/assert-tracking-url.mjs",
     "prerender": "python3 ../../scripts/prerender.py",
     "sitemap": "python3 ../../scripts/generate-sitemap.py",
-    "build:live": "npm run sitemap && npm run build && npm run prerender",
+    "rss": "python3 ../../scripts/generate-rss.py",
+    "assert-content": "python3 ../../scripts/assert-content-drift.py",
+    "content": "python3 ../../scripts/generate-sitemap.py && python3 ../../scripts/generate-rss.py && python3 ../../scripts/assert-content-drift.py",
+    "build:live": "npm run content && npm run build && npm run prerender",
     "dev": "vite",
     "preview": "vite preview"
   },

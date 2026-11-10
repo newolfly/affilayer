@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AffiLayer">
+  <title>AffiLayer app icon</title>
+  <defs>
+    <g id="a-strokes" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="7">
+      <path d="M32 8 11 56" />
+      <path d="M32 8 53 56" />
+      <path d="M21 41h22" />
+    </g>
+    <clipPath id="band-1"><rect x="0" y="0" width="64" height="22" /></clipPath>
+    <clipPath id="band-2"><rect x="0" y="24" width="64" height="14" /></clipPath>
+    <clipPath id="band-3"><rect x="0" y="40" width="64" height="24" /></clipPath>
+  </defs>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14" fill="#070D1A" stroke="rgba(255,255,255,0.10)" />
+  <g transform="translate(11 11) scale(0.65625)">
+    <use href="#a-strokes" clip-path="url(#band-1)" stroke="#D97706" />
+    <use href="#a-strokes" clip-path="url(#band-2)" stroke="#f59e0b" />
+    <use href="#a-strokes" clip-path="url(#band-3)" stroke="#FBBF24" />
+  </g>
+</svg>
