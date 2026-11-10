@@ -800,7 +800,7 @@ export function Terms() {
       <h1 className="text-3xl font-bold text-white">Terms of Service</h1>
       <Slogan className="mt-4">{t('terms.slogan')}</Slogan>
       <p className="mt-2 text-sm text-slate-400">
-        Operated by MarketSync Global LLC, New Mexico, USA. Last updated: November 2026.
+        Operated by MarketSync Global LLC, New Mexico, USA. Last updated: 10 November 2026.
       </p>
       <PageArt
         variant="terms"
@@ -821,7 +821,13 @@ export function Terms() {
         <p><strong>3. Offers and approval.</strong> Advertisers define offer terms. Affiliates must follow the stated traffic rules, countries and devices. Offers requiring approval may not be promoted until approved.</p>
         <p><strong>4. Commissions.</strong> Commission is earned only on conversions that are approved and not reversed, as recorded in the commission ledger. Payouts are manual and admin-approved, on a Net30 schedule by default: approved commissions become payable 30 days after the end of the month in which they were approved. Payout methods and minimum thresholds are shown in your dashboard.</p>
         <p><strong>5. Prohibited traffic.</strong> Incentivised, misleading, bot, chat or otherwise fraudulent traffic is prohibited. Fraud signals may lead to review, rejection of conversions, or account suspension.</p>
-        <p><strong>6. Changes.</strong> These terms may be updated; the current version on this page applies.</p>
+        <p><strong>6. Advertiser funding and refunds.</strong> Advertisers fund their account before their offers can pay out. Funds are used only to pay approved commissions. If an advertiser stops using the network, unused funds can be requested back — write to support@affilayer.com and we will review the request, including any commissions still pending review. Funds held with us do not earn interest.</p>
+        <p><strong>7. Chargebacks and disputes.</strong> If an advertiser disputes a conversion, we review the click ID, the attribution and the traffic source, and the disputed conversion stays pending until the review is decided. If a payment made to us is charged back, or a payout fails, the commissions it covered may be reversed and the account reviewed. Either side may raise a dispute by emailing support@affilayer.com with the click ID or conversion reference.</p>
+        <p><strong>8. Reversals and review deadlines.</strong> A conversion that was approved can still be reversed if fraud, a tracking error or a breach of the offer rules is found afterwards; every reversal is recorded in the ledger with a reason, and the affiliate is notified. We review conversions promptly. If a conversion has been pending for more than 30 days, either side may ask support for a decision on it.</p>
+        <p><strong>9. Taxes.</strong> You are responsible for your own taxes on commissions you earn or payments you make through AffiLayer. We do not give tax advice. Where the law requires it, we may ask for tax information before paying out, and may report payments to the tax authorities as required.</p>
+        <p><strong>10. Restricted verticals and geographies.</strong> Offers must comply with the law in every country they target. We do not accept offers for illegal goods or services, deceptive financial products, or anything that misleads the visitor about what they are signing up for. Affiliates must follow advertising law in the countries they target, including any disclosure rules for advertising. We may refuse or remove any offer or account, and may restrict countries or verticals where we cannot operate lawfully.</p>
+        <p><strong>11. Liability.</strong> AffiLayer provides tracking, reporting and payout administration as described here. We are not liable for the performance of any offer, the behaviour of any advertiser or affiliate, or earnings that were never guaranteed.</p>
+        <p><strong>12. Changes and contact.</strong> These terms may be updated; the current version on this page applies. Questions about these terms: support@affilayer.com. These terms are governed by the laws of New Mexico, USA.</p>
       </div>
     </PublicLayout>
   )
@@ -834,7 +840,7 @@ export function Privacy() {
       <h1 className="text-3xl font-bold text-white">Privacy Policy</h1>
       <Slogan className="mt-4">{t('privacy.slogan')}</Slogan>
       <p className="mt-2 text-sm text-slate-400">
-        Operated by MarketSync Global LLC, New Mexico, USA. Last updated: November 2026.
+        Operated by MarketSync Global LLC, New Mexico, USA. Last updated: 10 November 2026.
       </p>
       <PageArt
         variant="privacy"
@@ -853,8 +859,11 @@ export function Privacy() {
         <p><strong>1. Data we collect.</strong> Account details you provide (email, name, payment profile), and tracking data needed to operate the network: click IDs, offer IDs, country, device, source and sub-parameters.</p>
         <p><strong>2. How we use it.</strong> To operate tracking and attribution, calculate commissions, process payouts, prevent fraud, and provide support.</p>
         <p><strong>3. Sharing.</strong> Aggregated or attributed performance data is shared with the advertiser or affiliate involved in a given click or conversion. We do not sell personal data.</p>
-        <p><strong>4. Retention.</strong> Tracking and ledger records are kept for accounting and audit purposes. You may request deletion of your account data, subject to legal retention requirements.</p>
-        <p><strong>5. Contact.</strong> For privacy questions, email {SUPPORT_EMAIL}.</p>
+        <p><strong>4. Retention.</strong> Tracking and ledger records are kept for as long as needed for accounting, audit and dispute resolution, and for as long as the law requires. Account data is deleted when you ask us to delete your account, once those obligations end. Backups may keep copies for a short time after deletion.</p>
+        <p><strong>5. Processors.</strong> We use Supabase for our database and sign-in, and Cloudflare for hosting and content delivery. They process data only to provide those services. Payouts are processed through the payment provider shown in your dashboard.</p>
+        <p><strong>6. Your rights.</strong> You may ask for a copy of the personal data we hold about you, ask us to correct it, or ask us to delete your account data. Write to {SUPPORT_EMAIL}. We will answer within a reasonable time. Where deletion conflicts with a legal retention duty — for example, ledger records we must keep for accounting — we will tell you what has to be kept and why.</p>
+        <p><strong>7. Where your data is processed.</strong> AffiLayer is operated by MarketSync Global LLC, a company registered in New Mexico, USA. Your data may be processed in the United States and in other countries where our infrastructure providers operate.</p>
+        <p><strong>8. Contact.</strong> For privacy questions, email {SUPPORT_EMAIL}.</p>
       </div>
     </PublicLayout>
   )

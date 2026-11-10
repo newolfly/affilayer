@@ -47,15 +47,21 @@ export function basePath(pathname: string): string {
 /** Prefix a base path for a locale: /affiliates + 'es' -> /es/affiliates, 'en' -> /affiliates. */
 export function localizePath(base: string, locale: Locale): string {
   if (locale === 'en') return base
-  return base === '/' ? `/${locale}` : `/${locale}${base}`
+  // The language roots are canonical with a trailing slash (/es/, /pt/),
+  // matching the sitemap and the canonical tags.
+  return base === '/' ? `/${locale}/` : `/${locale}${base}`
 }
 
-/** hreflang alternates for a base path, or null when the page is English-only.
+/** hreflang alternates for a base path. Localised pages get the full
+ *  en/es/pt set; English-only pages get a self-referencing English
+ *  alternate, so every public page carries hreflang instead of none.
  *  Geo pages whose Spanish copy is written for one country (es/mx/ar) get
  *  the language-region code (es-ES / es-MX / es-AR) on the Spanish
  *  alternate; every other page keeps the language-only code. */
-export function alternatesFor(base: string): { locale: string; href: string }[] | null {
-  if (!LOCALIZED_BASE_PATHS.includes(base)) return null
+export function alternatesFor(base: string): { locale: string; href: string }[] {
+  if (!LOCALIZED_BASE_PATHS.includes(base)) {
+    return [{ locale: 'en', href: `https://affilayer.com${base}` }]
+  }
   const geo = base.match(/^\/geo\/([a-z]{2})$/)
   const esCode = geo && GEO_REGION_HREFLANG[geo[1]] ? GEO_REGION_HREFLANG[geo[1]] : 'es'
   return (['en', 'es', 'pt'] as Locale[]).map((l) => ({

@@ -61,8 +61,20 @@ export function readingTime(post: Post): number {
   return Math.max(1, Math.round(words / 200))
 }
 
+/** A post is published once its date (UTC) has arrived. Posts are written
+ *  ahead as a calendar, but only published ones are listed, routed,
+ *  prerendered or put in the sitemap/RSS — future-dated posts stay
+ *  invisible until their date. */
+export function isPublished(post: Post): boolean {
+  return post.date <= new Date().toISOString().slice(0, 10)
+}
+
+export function publishedPosts(): Post[] {
+  return POSTS.filter(isPublished)
+}
+
 export function relatedPosts(post: Post, count = 3): Post[] {
-  const others = POSTS.filter((p) => p.slug !== post.slug)
+  const others = publishedPosts().filter((p) => p.slug !== post.slug)
   const byScore = others
     .map((p) => ({
       p,
@@ -339,7 +351,7 @@ export const POSTS: Post[] = [
       { kind: 'h2', text: 'Daily caps and total caps' },
       { kind: 'list', items: [
         'Daily cap: the maximum number of conversions (or clicks, depending on the offer) the advertiser will accept in one day. It resets the next day.',
-        'Total cap: the maximum for the whole life of the offer. When it is reached, the offer stops — no more clicks are accepted, even if the offer page is still up.',
+        'Total cap: the maximum for a calendar month. When it is reached, the offer stops accepting clicks until the month turns over.',
       ] },
       { kind: 'h2', text: 'What happens when a cap is hit' },
       { kind: 'p', text: 'On AffiLayer a click that would exceed a cap is refused rather than silently redirected to an offer it cannot convert on. The refusal is visible in the tracking response, so the affiliate knows the cap — not the traffic — is the reason. Sending the click anyway would waste the visitor and the affiliate\'s traffic.' },

@@ -117,15 +117,22 @@ PORT = 4173
 
 def parse_blog_posts():
     """Blog routes derived from blog-data.ts (single source of truth):
-    slug -> [post title] as the marker. A new post needs no edit here."""
+    slug -> [post title] as the marker. A new post needs no edit here.
+    Only posts whose publish date has arrived are prerendered —
+    future-dated posts stay unpublished until their date."""
+    import datetime
     import re
 
+    today = datetime.date.today().isoformat()
     text = (ROOT / "apps" / "web" / "src" / "lib" / "blog-data.ts").read_text()
     routes = {}
     for m in re.finditer(r"\n    slug: '([^']+)',", text):
         start = m.start()
         nxt = text.find("\n    slug: '", m.end())
         chunk = text[start:nxt if nxt != -1 else len(text)]
+        date_m = re.search(r"\n    date: '([^']+)',", chunk)
+        if date_m and date_m.group(1) > today:
+            continue
         title = re.search(r"\n    title: '([^']+)',", chunk)
         if title:
             routes[f"/blog/{m.group(1)}"] = [title.group(1)]

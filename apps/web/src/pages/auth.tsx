@@ -163,13 +163,14 @@ export function Register() {
         ) : (
           <form onSubmit={submit} className="mt-4 space-y-3">
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+            <p className="text-xs text-slate-500">Fields marked <span className="text-red-500">*</span> are required.</p>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className={labelCls} htmlFor="reg-first-name">First name</label><input id="reg-first-name" className={inputCls} required value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
-              <div><label className={labelCls} htmlFor="reg-last-name">Last name</label><input id="reg-last-name" className={inputCls} required value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
+              <div><label className={labelCls} htmlFor="reg-first-name">First name<span className="text-red-500"> *</span></label><input id="reg-first-name" className={inputCls} required value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
+              <div><label className={labelCls} htmlFor="reg-last-name">Last name<span className="text-red-500"> *</span></label><input id="reg-last-name" className={inputCls} required value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
             </div>
-            <div><label className={labelCls} htmlFor="reg-email">Email</label><input id="reg-email" className={inputCls} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-            <div><label className={labelCls} htmlFor="reg-password">Password</label><input id="reg-password" className={inputCls} type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} /></div>
-            <div><label className={labelCls} htmlFor="reg-confirm-password">Confirm password</label><input id="reg-confirm-password" className={inputCls} type="password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} /></div>
+            <div><label className={labelCls} htmlFor="reg-email">Email<span className="text-red-500"> *</span></label><input id="reg-email" className={inputCls} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+            <div><label className={labelCls} htmlFor="reg-password">Password<span className="text-red-500"> *</span></label><input id="reg-password" className={inputCls} type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+            <div><label className={labelCls} htmlFor="reg-confirm-password">Confirm password<span className="text-red-500"> *</span></label><input id="reg-confirm-password" className={inputCls} type="password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} /></div>
             <div>
               <label className={labelCls} id="reg-role-label">I am registering as</label>
               <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-labelledby="reg-role-label">
@@ -207,11 +208,11 @@ export function Register() {
             </div>
             {role === 'advertiser' && (
               <>
-                <div><label className={labelCls} htmlFor="reg-company">Company</label><input id="reg-company" className={inputCls} required value={company} onChange={(e) => setCompany(e.target.value)} /></div>
-                <div><label className={labelCls} htmlFor="reg-website">Website</label><input id="reg-website" className={inputCls} type="url" placeholder="https://…" required value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
+                <div><label className={labelCls} htmlFor="reg-company">Company<span className="text-red-500"> *</span></label><input id="reg-company" className={inputCls} required value={company} onChange={(e) => setCompany(e.target.value)} /></div>
+                <div><label className={labelCls} htmlFor="reg-website">Website<span className="text-red-500"> *</span></label><input id="reg-website" className={inputCls} type="url" placeholder="https://…" required value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
               </>
             )}
-            <div><label className={labelCls} htmlFor="reg-country">Country</label><input id="reg-country" className={inputCls} required placeholder="e.g. United States" value={country} onChange={(e) => setCountry(e.target.value)} /></div>
+            <div><label className={labelCls} htmlFor="reg-country">Country<span className="text-red-500"> *</span></label><input id="reg-country" className={inputCls} required placeholder="e.g. United States" value={country} onChange={(e) => setCountry(e.target.value)} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} htmlFor="reg-messenger">Messenger (optional)</label>
@@ -222,7 +223,7 @@ export function Register() {
                   <option>Skype</option>
                 </select>
               </div>
-              <div><label className={labelCls} htmlFor="reg-messenger-id">Messenger ID</label><input id="reg-messenger-id" className={inputCls} placeholder="@username" value={messengerId} onChange={(e) => setMessengerId(e.target.value)} /></div>
+              <div><label className={labelCls} htmlFor="reg-messenger-id">Messenger ID (optional)</label><input id="reg-messenger-id" className={inputCls} placeholder="@username" value={messengerId} onChange={(e) => setMessengerId(e.target.value)} /></div>
             </div>
             <button className={btnCls}>Create account</button>
             {isDemoMode && (
@@ -274,7 +275,8 @@ export function Onboarding() {
         <h1 className="text-xl font-bold">Onboarding</h1>
         <p className="mt-1 text-sm text-slate-500">Tell us about your profile. Your application is reviewed before you can run offers.</p>
         <form onSubmit={submit} className="mt-4 space-y-3">
-          <div><label className={labelCls} htmlFor="onb-full-name">Full name</label><input id="onb-full-name" className={inputCls} required value={form.fullName} onChange={set('fullName')} /></div>
+          <p className="text-xs text-slate-500">Fields marked <span className="text-red-500">*</span> are required. Messenger details help us reach you faster during review — they are optional.</p>
+          <div><label className={labelCls} htmlFor="onb-full-name">Full name<span className="text-red-500"> *</span></label><input id="onb-full-name" className={inputCls} required value={form.fullName} onChange={set('fullName')} /></div>
           <div>
             <label className={labelCls} htmlFor="onb-role">Role</label>
             <select id="onb-role" className={inputCls} value={form.role} onChange={set('role')}>
@@ -283,11 +285,11 @@ export function Onboarding() {
             </select>
           </div>
           <div><label className={labelCls} htmlFor="onb-company">Company (optional)</label><input id="onb-company" className={inputCls} value={form.company} onChange={set('company')} /></div>
-          <div><label className={labelCls} htmlFor="onb-traffic-source">Traffic source</label><input id="onb-traffic-source" className={inputCls} required placeholder="e.g. SEO, PPC, Social, Email, Content" value={form.trafficSource} onChange={set('trafficSource')} /></div>
-          <div><label className={labelCls} htmlFor="onb-vertical">Vertical</label><input id="onb-vertical" className={inputCls} required placeholder="e.g. Finance, E-commerce, SaaS" value={form.vertical} onChange={set('vertical')} /></div>
-          <div><label className={labelCls} htmlFor="onb-geo">GEO (countries)</label><input id="onb-geo" className={inputCls} required placeholder="e.g. US, GB, CA" value={form.geo} onChange={set('geo')} /></div>
+          <div><label className={labelCls} htmlFor="onb-traffic-source">Traffic source<span className="text-red-500"> *</span></label><input id="onb-traffic-source" className={inputCls} required placeholder="e.g. SEO, PPC, Social, Email, Content" value={form.trafficSource} onChange={set('trafficSource')} /></div>
+          <div><label className={labelCls} htmlFor="onb-vertical">Vertical<span className="text-red-500"> *</span></label><input id="onb-vertical" className={inputCls} required placeholder="e.g. Finance, E-commerce, SaaS" value={form.vertical} onChange={set('vertical')} /></div>
+          <div><label className={labelCls} htmlFor="onb-geo">GEO (countries)<span className="text-red-500"> *</span></label><input id="onb-geo" className={inputCls} required placeholder="e.g. US, GB, CA" value={form.geo} onChange={set('geo')} /></div>
           <div>
-            <label className={labelCls} htmlFor="onb-volume">Monthly volume</label>
+            <label className={labelCls} htmlFor="onb-volume">Monthly volume (optional)</label>
             <select id="onb-volume" className={inputCls} value={form.volume} onChange={set('volume')}>
               <option value="">Select…</option>
               <option>Under 1,000 clicks/mo</option>
@@ -297,14 +299,15 @@ export function Onboarding() {
             </select>
           </div>
           <div>
-            <label className={labelCls} htmlFor="onb-payment-method">Payment profile — method</label>
+            <label className={labelCls} htmlFor="onb-payment-method">Preferred payout method</label>
             <select id="onb-payment-method" className={inputCls} value={form.paymentMethod} onChange={set('paymentMethod')}>
               <option>Bank transfer</option>
               <option>PayPal</option>
               <option>Wire transfer</option>
             </select>
+            <p className="mt-1 text-xs text-slate-500">This is a preference, not a promise. The methods available to your account depend on your country and setup, and are confirmed in your dashboard payment profile — the same rule the FAQ states.</p>
           </div>
-          <div><label className={labelCls} htmlFor="onb-payment-details">Payment details</label><input id="onb-payment-details" className={inputCls} placeholder="Account / wallet reference" value={form.paymentDetails} onChange={set('paymentDetails')} /></div>
+          <div><label className={labelCls} htmlFor="onb-payment-details">Payment details (optional)</label><input id="onb-payment-details" className={inputCls} placeholder="Account / wallet reference" value={form.paymentDetails} onChange={set('paymentDetails')} /></div>
           <button className={btnCls}>Submit application</button>
         </form>
       </div>

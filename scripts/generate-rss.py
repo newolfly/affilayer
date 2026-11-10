@@ -8,6 +8,7 @@ are one-line literals in blog-data.ts). Run from the repo root, or via
 SPA fallback, so /rss.xml serves real XML.
 """
 import re
+import datetime
 import html
 from email.utils import formatdate
 from pathlib import Path
@@ -56,6 +57,10 @@ def rfc822(iso_date: str) -> str:
 
 def main() -> int:
     posts = parse_posts(BLOG_DATA.read_text())
+    # Only posts whose publish date has arrived — future-dated posts are
+    # a calendar, not published content.
+    today = datetime.date.today().isoformat()
+    posts = [p for p in posts if p["date"] <= today]
     posts.sort(key=lambda p: p["date"], reverse=True)
     items = []
     for p in posts[:20]:

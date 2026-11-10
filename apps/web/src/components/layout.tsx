@@ -280,8 +280,8 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           <div>
             <p className="font-semibold text-white">{t('footer.info')}</p>
             <ul className="mt-3 space-y-2">
-              <li><Link to="/terms" className="footer-link">Terms</Link></li>
-              <li><Link to="/privacy" className="footer-link">Privacy</Link></li>
+              <li><Link to="/terms" className="footer-link">{t('footer.terms')}</Link></li>
+              <li><Link to="/privacy" className="footer-link">{t('footer.privacy')}</Link></li>
               <li><Link to="/contact" className="footer-link">{t('nav.contact')}</Link></li>
             </ul>
             <p className="mt-4 text-xs text-[#8A97A8]">{t('trust.operated')}.</p>

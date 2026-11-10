@@ -14,12 +14,18 @@ Only indexable public pages are listed: noindex auth pages (/login,
 excluded.
 """
 import re
+import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "apps" / "web" / "public" / "sitemap.xml"
 BLOG_DATA = ROOT / "apps" / "web" / "src" / "lib" / "blog-data.ts"
 SITE = "https://affilayer.com"
+
+# Only posts whose publish date has arrived are public. Future-dated
+# posts are a calendar, not published content — they stay out of the
+# sitemap (and the RSS feed, and prerendering) until their date.
+TODAY = datetime.date.today().isoformat()
 
 # (path, changefreq, priority)
 EN = [
@@ -70,7 +76,11 @@ URLS = list(EN)
 URLS += [(f"/geo/{c}", "monthly", "0.7") for c in GEO_CODES]
 URLS += [(f"/blog/category/{c}", "monthly", "0.6") for c in CATEGORY_SLUGS]
 posts = parse_posts(BLOG_DATA.read_text())
+listed = 0
 for p in posts:
+    if p["date"] > TODAY:
+        continue
+    listed += 1
     # News ages out: changefreq never after 30 days is approximated by
     # monthly here; the post itself stays listed with its own lastmod.
     URLS.append((f"/blog/{p['slug']}", "monthly", "0.7", p["updated"] or p["date"]))
@@ -91,4 +101,4 @@ for entry in URLS:
                  f'<changefreq>{freq}</changefreq><priority>{prio}</priority></url>')
 lines.append('</urlset>')
 OUT.write_text("\n".join(lines) + "\n")
-print(f"Wrote {OUT} — {len(URLS)} URLs ({len(posts)} posts).")
+print(f"Wrote {OUT} — {len(URLS)} URLs ({listed} posts published, {len(posts) - listed} scheduled).")

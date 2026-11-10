@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Drift assertion: every post slug in blog-data.ts must appear in
+"""Drift assertion: every PUBLISHED post slug in blog-data.ts must appear in
 sitemap.xml and in prerender.py's derived routes, and every category
-slug must have a sitemap + prerender entry. Run from the repo root,
+slug must have a sitemap + prerender entry. Future-dated posts are a
+calendar, not published content — they are deliberately absent from the
+sitemap until their date arrives. Run from the repo root,
 or via `npm run content` in apps/web (after generate-sitemap.py).
 Exit non-zero on any drift — a new post is one edit in blog-data.ts,
 and this is what proves the other two outputs followed it.
 """
+import datetime
 import re
 import sys
 from pathlib import Path
@@ -20,9 +23,18 @@ CATEGORY_SLUGS = ["launch-notes", "adtech-insights", "guides", "news"]
 
 def main() -> int:
     text = BLOG_DATA.read_text()
-    slugs = re.findall(r"\n    slug: '([^']+)',", text)
+    today = datetime.date.today().isoformat()
+    slugs = []
+    for m in re.finditer(r"\n    slug: '([^']+)',", text):
+        start = m.start()
+        nxt = text.find("\n    slug: '", m.end())
+        chunk = text[start:nxt if nxt != -1 else len(text)]
+        date_m = re.search(r"\n    date: '([^']+)',", chunk)
+        if date_m and date_m.group(1) > today:
+            continue
+        slugs.append(m.group(1))
     if not slugs:
-        print("ASSERT FAIL: no post slugs found in blog-data.ts", file=sys.stderr)
+        print("ASSERT FAIL: no published post slugs found in blog-data.ts", file=sys.stderr)
         return 1
     sitemap = SITEMAP.read_text() if SITEMAP.exists() else ""
     prerender = PRERENDER.read_text()
@@ -49,7 +61,7 @@ def main() -> int:
         for f in failures:
             print(f"  - {f}", file=sys.stderr)
         return 1
-    print(f"Content drift OK: {len(slugs)} posts + {len(CATEGORY_SLUGS)} categories in sitemap; prerender derives blog routes from blog-data.ts.")
+    print(f"Content drift OK: {len(slugs)} published posts + {len(CATEGORY_SLUGS)} categories in sitemap; prerender derives blog routes from blog-data.ts.")
     return 0
 
 

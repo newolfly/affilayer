@@ -31,6 +31,8 @@ const en = {
   'footer.honest.faq': 'read the FAQ',
   'footer.join': 'Join AffiLayer',
   'footer.rights': '© 2026 AffiLayer. All rights reserved.',
+  'footer.terms': 'Terms',
+  'footer.privacy': 'Privacy',
 
   'trust.operated': 'Operated by MarketSync Global LLC, New Mexico, USA',
   'trust.review': 'Applications reviewed by our team',
@@ -262,6 +264,8 @@ const es: Record<DictKey, string> = {
   'footer.honest.faq': 'leer las preguntas frecuentes',
   'footer.join': 'Unirse a AffiLayer',
   'footer.rights': '© 2026 AffiLayer. Todos los derechos reservados.',
+  'footer.terms': 'Términos',
+  'footer.privacy': 'Privacidad',
 
   'trust.operated': 'Operada por MarketSync Global LLC, Nuevo México, EE. UU.',
   'trust.review': 'Nuestro equipo revisa las solicitudes',
@@ -490,6 +494,8 @@ const pt: Record<DictKey, string> = {
   'footer.honest.faq': 'ler as perguntas frequentes',
   'footer.join': 'Junte-se à AffiLayer',
   'footer.rights': '© 2026 AffiLayer. Todos os direitos reservados.',
+  'footer.terms': 'Termos',
+  'footer.privacy': 'Privacidade',
 
   'trust.operated': 'Operada por MarketSync Global LLC, Novo México, EUA',
   'trust.review': 'Nossa equipe analisa as inscrições',

@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { PublicLayout, Reveal, Slogan } from '../components/layout'
 import { PageArt, PageHighlights } from '../components/illustrations'
-import { POSTS, formatPostDate, readingTime, relatedPosts } from '../lib/blog-data'
+import { formatPostDate, publishedPosts, readingTime, relatedPosts } from '../lib/blog-data'
 import type { Block, Post } from '../lib/blog-data'
 import { useLocale, useT } from '../lib/i18n'
 
@@ -17,7 +17,7 @@ export function categorySlug(category: string): string {
   return category.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 }
 
-const SORTED = [...POSTS].sort((a, b) => +new Date(b.date) - +new Date(a.date))
+const SORTED = [...publishedPosts()].sort((a, b) => +new Date(b.date) - +new Date(a.date))
 
 /** Inline [text](/path) links inside paragraph / list / callout text. */
 function renderInline(text: string): ReactNode {
@@ -210,7 +210,7 @@ export function News() {
 export function BlogPost() {
   const t = useT()
   const { slug } = useParams()
-  const post = POSTS.find((p) => p.slug === slug)
+  const post = publishedPosts().find((p) => p.slug === slug)
   if (!post) {
     return (
       <PublicLayout>

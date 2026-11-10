@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { FAQ_GROUPS, PAGE_FAQS, PAGE_FAQS_LOCALIZED } from './faq-data'
-import { POSTS } from './blog-data'
+import { publishedPosts } from './blog-data'
 import { COUNTRIES } from './geo-data'
 import { DICT } from './i18n-dict'
 import { localeFromPath, basePath, alternatesFor } from './i18n'
@@ -96,7 +96,7 @@ const FAQ_JSONLD = {
 }
 
 function blogPostingJsonLd(slug: string) {
-  const post = POSTS.find((p) => p.slug === slug)
+  const post = publishedPosts().find((p) => p.slug === slug)
   if (!post) return undefined
   return {
     '@context': 'https://schema.org',
@@ -162,7 +162,7 @@ function geoItemListLd(locale: Locale) {
 
 /** Blog + ItemList of all posts, for /blog. */
 function blogItemListLd() {
-  const sorted = [...POSTS].sort((a, b) => +new Date(b.date) - +new Date(a.date))
+  const sorted = [...publishedPosts()].sort((a, b) => +new Date(b.date) - +new Date(a.date))
   return {
     '@context': 'https://schema.org',
     '@type': 'Blog',
@@ -313,7 +313,7 @@ function metaFor(pathname: string): SeoMeta {
   }
   const blog = path.match(/^\/blog\/([\w-]+)$/)
   if (blog) {
-    const post = POSTS.find((p) => p.slug === blog[1])
+    const post = publishedPosts().find((p) => p.slug === blog[1])
     if (post) {
       const posting = blogPostingJsonLd(post.slug)
       if (!posting) return PAGES['/blog']
