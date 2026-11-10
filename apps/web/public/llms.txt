@@ -10,11 +10,12 @@
 > clear deterministic rules — no AI optimisation, no guaranteed earnings.
 > Operated by MarketSync Global LLC, New Mexico, USA. Contact:
 > support@affilayer.com. The network is new and the offer catalogue is small
-> while advertisers are onboarded offer by offer. The web app currently runs
-> in demo mode while the Supabase backend is being connected. The site is
+> while advertisers are onboarded offer by offer. Live since 7 November 2026
+> on the Supabase backend; demo mode is retained in code for local development
+> only. The site is
 > available in English, Spanish and Portuguese; dashboards are in English
 > for now. Country pages cover the United States, United Kingdom, Canada,
-> Australia, Germany, France, Brazil and India.
+> Australia, Germany, France, Brazil, India, Spain, Mexico and Argentina.
 
 ## Pages
 
@@ -33,7 +34,6 @@
 - [Advertise](https://affilayer.com/advertise): advertise with AffiLayer — pay for conversions you have reviewed
 - [Terms](https://affilayer.com/terms): Terms of Service
 - [Privacy](https://affilayer.com/privacy): Privacy Policy
-- [Docs](https://docs.affilayer.com/): getting started, tracking, postbacks, payouts and the API
 
 ## Key facts
 

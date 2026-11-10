@@ -105,7 +105,7 @@ export function BlogPost() {
       </nav>
       <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-amber-400">{post.category}</p>
       <h1 className="mt-2 max-w-3xl text-3xl font-bold text-white md:text-4xl">{post.title}</h1>
-      <p className="mt-3 text-sm text-slate-400">{post.date} · {post.author}</p>
+      <p className="mt-3 text-sm text-slate-400">{post.date} · {post.author}{post.updated ? ` · Updated ${post.updated}` : ''}</p>
       <Slogan className="mt-4">{t('blog.post.slogan')}</Slogan>
       <PageArt
         variant="blog"

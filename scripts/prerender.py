@@ -43,7 +43,7 @@ ROUTES = {
     "/advertisers": ["Publish offers", "Your path to your first customer"],
     "/affiliates": ["Generate tracking links", "Your path to your first payout"],
     "/how-it-works": ["Create an account"],
-    "/login": ["Log in", "Email or demo username", "Sign in to browse offers"],
+    "/login": ["Log in", "Email", "Sign in to browse offers"],
     "/register": ["Create an account", "Affiliate registration"],
     "/forgot-password": ["Forgot password", "Enter the email you registered with"],
     "/reset-password": ["Set a new password", "This reset link is invalid or has expired."],

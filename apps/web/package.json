@@ -22,7 +22,8 @@
     "build": "tsc --noEmit && vite build",
     "postbuild": "node ../../scripts/assert-tracking-url.mjs",
     "prerender": "python3 ../../scripts/prerender.py",
-    "build:live": "npm run build && npm run prerender",
+    "sitemap": "python3 ../../scripts/generate-sitemap.py",
+    "build:live": "npm run sitemap && npm run build && npm run prerender",
     "dev": "vite",
     "preview": "vite preview"
   },

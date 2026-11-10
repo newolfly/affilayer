@@ -44,15 +44,13 @@ earnings. It pays exactly like the offer the visitor was routed to.
 - Advertisers can restrict traffic sources, GEOs and devices per offer.
 - No bonus or referral program at launch.
 
-## Status (honest)
+## Status (as of 10 November 2026)
 
 - Live: direct CPA offers, SmartLink, full-funnel tracking, commission ledger,
-  manual admin-approved payouts, application review.
-- In progress: the Supabase backend that turns demo-mode writes into stored
-  records is still being connected; the offer catalogue is small while
-  advertisers are onboarded offer by offer.
-- The web app currently runs in demo mode (sample data shown where Supabase
-  is not configured).
+  manual admin-approved payouts, application review — on the Supabase backend.
+  Demo mode is retained in code for local development only.
+- In progress: the offer catalogue is small while advertisers are onboarded
+  offer by offer.
 
 ## Languages and countries
 
@@ -101,7 +99,6 @@ worldwide; there is no restricted country list.
 - Advertise — https://affilayer.com/advertise
 - Terms — https://affilayer.com/terms
 - Privacy — https://affilayer.com/privacy
-- Docs — https://docs.affilayer.com/ (getting started, tracking, postbacks, payouts, API)
 
 ## FAQ (short answers)
 

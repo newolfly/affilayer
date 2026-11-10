@@ -62,7 +62,7 @@ export function Login() {
         </p>
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         <form onSubmit={submit} className="mt-4 space-y-3">
-          <div><label className={labelCls} htmlFor="login-identifier">Email or demo username</label><input id="login-identifier" className={inputCls} type="text" autoComplete="username" placeholder="you@example.com or demo-publisher" required value={identifier} onChange={(e) => setIdentifier(e.target.value)} /></div>
+          <div><label className={labelCls} htmlFor="login-identifier">{isDemoMode ? 'Email or demo username' : 'Email'}</label><input id="login-identifier" className={inputCls} type="text" autoComplete="username" placeholder={isDemoMode ? 'you@example.com or demo-publisher' : 'you@example.com'} required value={identifier} onChange={(e) => setIdentifier(e.target.value)} /></div>
           <div><label className={labelCls} htmlFor="login-password">Password</label><input id="login-password" className={inputCls} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
           <button className={btnCls}>Log in</button>
         </form>
@@ -225,7 +225,9 @@ export function Register() {
               <div><label className={labelCls} htmlFor="reg-messenger-id">Messenger ID</label><input id="reg-messenger-id" className={inputCls} placeholder="@username" value={messengerId} onChange={(e) => setMessengerId(e.target.value)} /></div>
             </div>
             <button className={btnCls}>Create account</button>
-            <button type="button" onClick={() => { signInDemo('demo-aff-1'); navigate('/onboarding') }} className="w-full py-2 text-sm text-amber-700 underline">Demo: continue as Demo Affiliate</button>
+            {isDemoMode && (
+              <button type="button" onClick={() => { signInDemo('demo-aff-1'); navigate('/onboarding') }} className="w-full py-2 text-sm text-amber-700 underline">Demo: continue as Demo Affiliate</button>
+            )}
           </form>
         )}
       </div>

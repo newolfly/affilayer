@@ -8,7 +8,10 @@
 #   emits external module scripts from the same origin, and React attaches
 #   handlers via addEventListener, not inline on* attributes. The JSON-LD
 #   <script type="application/ld+json"> blocks are non-executable and are
-#   not blocked by script-src.
+#   not blocked by script-src. Exception: https://static.cloudflareinsights.com
+#   is allowed for the Cloudflare Web Analytics beacon (Q8, 10 Nov 2026 —
+#   free, cookieless; the beacon loads only when VITE_CF_WEB_ANALYTICS_TOKEN
+#   is set at build time, see src/main.tsx).
 # - style-src 'self' 'unsafe-inline': REQUIRED. index.html carries an inline
 #   <style> block (boot-loader keyframes), a <noscript><style> block, and
 #   inline style="" attributes in the boot loader; React also renders inline
@@ -18,9 +21,13 @@
 #   alternative (hashing every inline style) is not maintainable for an SPA.
 # - connect-src: the only fetch/XHR/WebSocket origins the app uses are
 #   Supabase (REST https + Realtime wss) and the tracking Worker
-#   (payments.ts fetches go.affilayer.com). No fonts, analytics, or other
-#   third-party origins exist in the app. Tracking links (/c/, /s/) are
-#   top-level navigations, not fetches, so they need no connect-src entry.
+#   (payments.ts fetches go.affilayer.com). Cloudflare Web Analytics
+#   (beacon.min.js, loaded only when VITE_CF_WEB_ANALYTICS_TOKEN is set —
+#   see src/main.tsx) posts to cloudflareinsights.com; its script comes
+#   from static.cloudflareinsights.com (see script-src below). No fonts,
+#   analytics, or other third-party origins exist in the app. Tracking
+#   links (/c/, /s/) are top-level navigations, not fetches, so they need
+#   no connect-src entry.
 # - img-src 'self' data:: only same-origin images are rendered (logo-mark.svg,
 #   og-image.png); advertiser "creatives" URLs are stored but never rendered
 #   as <img>. data: covers inline SVG data URIs if any are added later.
@@ -42,4 +49,4 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://cpaxrqwqyjutrscqvqjp.supabase.co wss://cpaxrqwqyjutrscqvqjp.supabase.co https://go.affilayer.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://cpaxrqwqyjutrscqvqjp.supabase.co wss://cpaxrqwqyjutrscqvqjp.supabase.co https://go.affilayer.com https://static.cloudflareinsights.com https://cloudflareinsights.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
