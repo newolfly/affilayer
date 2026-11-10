@@ -119,6 +119,13 @@ const server = http.createServer((req, res) => {
     if (req.method === 'GET' && url.pathname === '/rest/v1/affiliate_profiles') {
       return send(200, [mockWallet]);
     }
+    // P1-12 (027): smartlinks registry. Only the seeded 'demo' code
+    // is valid; anything else returns no rows -> 404.
+    if (req.method === 'GET' && url.pathname === '/rest/v1/smartlinks') {
+      const code = url.searchParams.get('code') ?? '';
+      if (code === 'eq.demo') return send(200, [{ code: 'demo', offer_id: null }]);
+      return send(200, []);
+    }
     if (fn === 'is_admin') {
       return send(200, true);
     }
@@ -234,6 +241,11 @@ const bareLoc = bareRes.headers.get('Location') ?? '';
 check('bare SmartLink click -> 302', bareRes.status === 302, `got ${bareRes.status}`);
 check('bare SmartLink picks the real offer', bareLoc.startsWith('https://example.com/real-offer?click_id=clk_'), bareLoc);
 check('bare SmartLink recorded as smartlink', recordedClicks.length === 3 && recordedClicks[2]?.affiliate_code === 'smartlink' && recordedClicks[2]?.is_smartlink === true, JSON.stringify(recordedClicks[2]));
+
+// P1-12 (027): unknown SmartLink code -> 404, not 302.
+const unknownSmartRes = await getClick('/s/nope123xyz');
+const unknownSmartBody = await unknownSmartRes.json();
+check('unknown SmartLink code -> 404', unknownSmartRes.status === 404 && unknownSmartBody.error === 'smartlink not found', `got ${unknownSmartRes.status} ${JSON.stringify(unknownSmartBody)}`);
 
 // Demo codes are not DB affiliates: against a real offer they are
 // unknown -> 404, not 302.

@@ -1096,15 +1096,40 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       // M-08: SmartLink codes were never validated — any /s/<anything>
       // 302'd, deterministically to demo-offer-1 in production. In demo
       // mode (no Supabase) the code must be a known demo code, else 404.
-      // In Supabase mode there is no per-code registry (no smartlinks
-      // table — the P1-12 follow-up), so the code is not checked; the
-      // pick is real-offers-only because demo offers are stripped from
+      // In Supabase mode the code is looked up in the smartlinks table
+      // (migration 027) below; unknown codes 404. The pick is
+      // real-offers-only because demo offers are stripped from
       // SupabaseStore (see supabase-store.ts).
+      let pinnedOfferId: string | null = null;
       if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
         if (!isDemoSmartlinkCode(code)) return json({ error: 'smartlink not found' }, 404);
+      } else {
+        // P1-12 (migration 027): Supabase mode now has a per-code
+        // registry. Unknown codes 404 with the same error shape as
+        // demo mode. The anon key can only see ACTIVE rows (RLS), so
+        // any row returned is a valid code; a lookup failure fails
+        // closed. offer_id NULL means the code is not pinned to one
+        // offer and the existing pick flow runs unchanged.
+        const sb = supabaseClient(env);
+        let rows: { code: string; offer_id: string | null }[] | null = null;
+        try {
+          rows = sb
+            ? await supabaseSelect<{ code: string; offer_id: string | null }>(
+                sb,
+                'smartlinks',
+                `select=code,offer_id&code=eq.${encodeURIComponent(code)}&limit=1`,
+                sb.anonKey,
+              )
+            : null;
+        } catch {
+          rows = null;
+        }
+        if (!rows || rows.length === 0) return json({ error: 'smartlink not found' }, 404);
+        pinnedOfferId = rows[0].offer_id;
       }
       const store = getStore(env);
-      const offers = await store.listOffers();
+      const allOffers = await store.listOffers();
+      const offers = pinnedOfferId ? allOffers.filter((o) => o.id === pinnedOfferId) : allOffers;
       // H-06: enforce per-offer click caps at the edge, in the same
       // windows migration 022 enforces in the record RPC (UTC calendar
       // day for daily_cap, UTC calendar month for monthly_cap, which
