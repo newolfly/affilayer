@@ -14,13 +14,13 @@
 > on the Supabase backend; demo mode is retained in code for local development
 > only. The site is
 > available in English, Spanish and Portuguese; dashboards are in English
-> for now. Country pages cover the United States, United Kingdom, Canada,
-> Australia, Germany, France, Brazil, India, Spain, Mexico and Argentina.
+> for now. Country pages cover 195 countries, grouped by region, with a
+> written introduction for 31 featured countries.
 
 ## Pages
 
 - [Home](https://affilayer.com/): what AffiLayer is, direct offers, SmartLink, benefits
-- [Countries](https://affilayer.com/geo): country pages for the US, UK, Canada, Australia, Germany, France, Brazil, India, Spain, Mexico and Argentina
+- [Countries](https://affilayer.com/geo): country pages for 195 countries, grouped by region
 - [About](https://affilayer.com/about): the network, its operator, and its three principles
 - [Advantages](https://affilayer.com/advantages): what AffiLayer does differently
 - [For advertisers](https://affilayer.com/advertisers): publish offers, approve affiliates, control spend
@@ -32,6 +32,7 @@
 - [Partner](https://affilayer.com/partner): become a network partner
 - [White label](https://affilayer.com/white-label): run your own network under your brand, powered by AffiLayer
 - [Advertise](https://affilayer.com/advertise): advertise with AffiLayer — pay for conversions you have reviewed
+- [Pricing](https://affilayer.com/pricing): what AffiLayer costs — free to join, advertisers pay only for reviewed conversions, white-label pricing agreed per setup
 - [Terms](https://affilayer.com/terms): Terms of Service
 - [Privacy](https://affilayer.com/privacy): Privacy Policy
 
@@ -43,6 +44,6 @@
 - Tracking link format: /c/{affiliate_code}/{offer_id}, up to five sub-parameters
 - Applications reviewed by the team
 - Languages: English, Spanish, Portuguese (public pages); dashboards English-only
-- Country pages: /geo/us, /geo/uk, /geo/ca, /geo/au, /geo/de, /geo/fr, /geo/br, /geo/in, /geo/es, /geo/mx, /geo/ar
+- Country pages: /geo with 195 countries, grouped by region
 - No bonus or referral program at launch
 - Chat traffic and incentivised traffic are not accepted

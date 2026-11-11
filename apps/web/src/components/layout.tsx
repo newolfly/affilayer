@@ -252,6 +252,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               <li><Link to="/partner" className="footer-link">{t('nav.partner')}</Link></li>
               <li><Link to="/white-label" className="footer-link">{t('nav.whitelabel')}</Link></li>
               <li><Link to="/advertise" className="footer-link">{t('nav.advertise')}</Link></li>
+              <li><Link to="/pricing" className="footer-link">{t('nav.pricing')}</Link></li>
               <li><Link to="/faq" className="footer-link">{t('nav.faq')}</Link></li>
               <li><Link to="/blog" className="footer-link">{t('nav.blog')}</Link></li>
               <li><Link to={localizePath('/brand', locale)} className="footer-link">{t('nav.brand')}</Link></li>

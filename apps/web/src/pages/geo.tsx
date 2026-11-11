@@ -4,8 +4,10 @@ import { PageArt, PageHighlights } from '../components/illustrations'
 import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
 import { useLocale, useT, localizePath } from '../lib/i18n'
-import { COUNTRIES, countryByCode } from '../lib/geo-data'
+import { COUNTRIES, countryByCode, countriesByRegion, REGION_LABELS, REGION_ORDER, relatedCountries } from '../lib/geo-data'
 import { geoSeoByCode } from '../lib/geo-seo-data'
+import { publishedPosts } from '../lib/blog-data'
+import type { Post } from '../lib/blog-data'
 import { FunnelSteps } from './public'
 
 const BULLET_ICONS: IconName[] = ['link', 'tag', 'file', 'banknote']
@@ -22,10 +24,13 @@ export function GeoIndex() {
       <p className="mx-auto mt-4 max-w-2xl text-center text-slate-300">
         {t('geo.index.sub')}
       </p>
+      <p className="mx-auto mt-2 max-w-2xl text-center text-sm font-semibold text-amber-400">
+        {t('geo.index.count', { n: String(COUNTRIES.length) })}
+      </p>
       <PageArt
         variant="geo"
-        label="Illustration: the AffiLayer hub connecting eleven country pages, one ledger and Net30 payouts"
-        nodes={['11 countries', 'One ledger', 'Net30 payouts', 'One network']}
+        label="Illustration: the AffiLayer hub connecting 195 country pages, one ledger and Net30 payouts"
+        nodes={['195 countries', 'One ledger', 'Net30 payouts', 'One network']}
         caption="one network, every country"
       />
       <PageHighlights
@@ -35,24 +40,36 @@ export function GeoIndex() {
           { icon: 'file', text: t('geo.bullet.3') },
         ]}
       />
-      <div className="mt-10 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {COUNTRIES.map((c, i) => (
-          <Reveal key={c.code} delay={(i % 4) * 80}>
-            <Link
-              to={localizePath(`/geo/${c.code}`, locale)}
-              className="lift block h-full rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6"
-            >
-              <span className="inline-flex rounded-lg bg-amber-500/10 p-2 text-amber-400">
-                <Icon name="globe" className="h-5 w-5" />
-              </span>
-              <h2 className="mt-3 text-lg font-bold text-white">{c.name[locale]}</h2>
-              <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-400">
-                {t('geo.index.explore')}
-                <Icon name="arrow-right" className="h-4 w-4" />
-              </span>
-            </Link>
-          </Reveal>
-        ))}
+      <div className="mt-10 space-y-12">
+        {REGION_ORDER.map((region) => {
+          const countries = countriesByRegion(region)
+          return (
+            <section key={region} aria-label={REGION_LABELS[region][locale]}>
+              <h2 className="text-2xl font-bold text-white">
+                {REGION_LABELS[region][locale]} <span className="text-base font-semibold text-slate-400">· {countries.length}</span>
+              </h2>
+              <div className="mt-4 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {countries.map((c, i) => (
+                  <Reveal key={c.code} delay={(i % 4) * 80}>
+                    <Link
+                      to={localizePath(`/geo/${c.code}`, locale)}
+                      className="lift block h-full rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6"
+                    >
+                      <span className="inline-flex rounded-lg bg-amber-500/10 p-2 text-amber-400">
+                        <Icon name="globe" className="h-5 w-5" />
+                      </span>
+                      <h3 className="mt-3 text-lg font-bold text-white">{c.name[locale]}</h3>
+                      <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-400">
+                        {t('geo.index.explore')}
+                        <Icon name="arrow-right" className="h-4 w-4" />
+                      </span>
+                    </Link>
+                  </Reveal>
+                ))}
+              </div>
+            </section>
+          )
+        })}
       </div>
       <section className="mt-14">
         <h2 className="text-center text-3xl font-bold text-white">{t('geo.index.faqTitle')}</h2>
@@ -83,6 +100,23 @@ export function GeoPage() {
   if (!country) return <Navigate to={localizePath('/geo', locale)} replace />
 
   const name = country.name[locale]
+  /** Featured countries carry a written intro; every other country
+   *  renders the shared template — same global product everywhere,
+   *  no local presence claimed. */
+  const intro = country.intro?.[locale] ?? country.intro?.en ?? t('geo.page.templateIntro', { country: name })
+  /** Related reading for every country page: the geo, SmartLink and
+   *  network-choice explainers — plus the Finance explainer where the
+   *  country has Finance SEO content (es/mx/ar). */
+  const relatedPostSlugs = [
+    'geo-targeting-cpa-offers',
+    'what-is-a-smartlink',
+    'how-to-choose-a-cpa-network',
+    ...(geoSeoByCode(code ?? '') ? ['finance-cpa-offers-explained'] : []),
+  ]
+  const relatedPostItems = relatedPostSlugs
+    .map((slug) => publishedPosts().find((p) => p.slug === slug))
+    .filter((p): p is Post => Boolean(p))
+  const neighbours = relatedCountries(code ?? '')
   /** SEO-targeted content (Finance vertical, Spanish register per
    *  country) renders only on the Spanish pages. English and Portuguese
    *  versions of these countries keep the standard geo page. */
@@ -110,7 +144,26 @@ export function GeoPage() {
         {t('geo.page.title', { country: name })}
       </h1>
       <Slogan className="mt-4">{t('geo.page.slogan', { country: name })}</Slogan>
-      <p className="mt-4 max-w-3xl text-slate-300">{country.intro[locale]}</p>
+      <p className="mt-4 max-w-3xl text-slate-300">{intro}</p>
+      <section className="mt-6 max-w-3xl rounded-xl bg-white p-5 text-slate-900" aria-label={t('geo.facts.title', { country: name })}>
+        <h2 className="font-bold">{t('geo.facts.title', { country: name })}</h2>
+        <dl className="mt-3 space-y-2 text-sm">
+          <div className="flex flex-wrap gap-2">
+            <dt className="font-semibold text-slate-500">{t('geo.facts.region')}:</dt>
+            <dd>{REGION_LABELS[country.region][locale]} — {country.subregion}</dd>
+          </div>
+          {country.currencyCode && country.currencyName && (
+            <div className="flex flex-wrap gap-2">
+              <dt className="font-semibold text-slate-500">{t('geo.facts.currency')}:</dt>
+              <dd>{country.currencyName} ({country.currencyCode})</dd>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <dt className="font-semibold text-slate-500">{t('geo.facts.languages')}:</dt>
+            <dd>{country.languages.join(', ')}</dd>
+          </div>
+        </dl>
+      </section>
       {seo && (
         <p className="mt-4 max-w-3xl rounded-xl border border-amber-500/40 bg-amber-500/10 p-5 leading-relaxed text-slate-200">
           {seo.answer}
@@ -229,6 +282,41 @@ export function GeoPage() {
           </div>
         </section>
       )}
+
+      <section className="mt-14">
+        <h2 className="text-xl font-bold text-white">{t('geo.page.relatedPosts')}</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {relatedPostItems.map((p) => (
+            <Reveal key={p.slug}>
+              <Link
+                to={`/blog/${p.slug}`}
+                className="lift block h-full rounded-xl bg-white p-5 text-slate-900"
+              >
+                <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">{p.category}</p>
+                <h3 className="mt-2 font-bold">{p.title}</h3>
+                <p className="mt-2 text-sm text-slate-600">{p.excerpt}</p>
+              </Link>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-14">
+        <h2 className="text-xl font-bold text-white">
+          {t('geo.page.relatedCountries', { region: REGION_LABELS[country.region][locale] })}
+        </h2>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {neighbours.map((c) => (
+            <Link
+              key={c.code}
+              to={localizePath(`/geo/${c.code}`, locale)}
+              className="rounded-full border border-slate-600 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:border-amber-400 hover:text-white"
+            >
+              {c.name[locale]}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <div className="mt-10 flex flex-wrap gap-3">
         <Link to="/register" className="pill-btn">{t('aff.register')}</Link>

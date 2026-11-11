@@ -1,16 +1,61 @@
 import type { Locale } from './i18n'
 
-export type CountryCode = 'us' | 'uk' | 'ca' | 'au' | 'de' | 'fr' | 'br' | 'in' | 'es' | 'mx' | 'ar'
-
+/** Country catalogue for the /geo pages: all 195 independent states
+ *  (+ Taiwan) from the mledoze/countries dataset (REST Countries v3.1
+ *  is dead; the dataset is the source of names, regions, currencies
+ *  and languages — see ~/workspace/work/affilayer-geo-dataset.json).
+ *
+ *  Honesty rules for this file (non-negotiable):
+ *  - The 31 featured countries carry a proper 2-sentence intro per
+ *    language. Every other country has NO intro — the page renders
+ *    the shared template intro (i18n key geo.page.templateIntro),
+ *    which states the same global product everywhere: worldwide
+ *    signup, USDT TRC20 payouts, English-first support. No local
+ *    offices, teams or presence are claimed anywhere.
+ *  - Currency / language facts come from the dataset, never invented.
+ *    Micronesia (fm) has no currency in the source — currencyCode is
+ *    null and the page omits the currency line entirely.
+ *  - Zimbabwe (zw): the source lists BWP first, but ZWG is the real
+ *    currency — this file uses ZWG / "Zimbabwe Gold".
+ *  - The United Kingdom keeps its existing site code 'uk' (not the
+ *    dataset's 'gb'), so /geo/uk, the sitemap and existing links do
+ *    not break. All other codes are the dataset's ISO codes.
+ */
 export interface Country {
-  code: CountryCode
+  code: string
   /** Localised country name, used for headings and links. */
   name: Record<Locale, string>
-  /** Two honest sentences per language. Same global product everywhere —
-   *  the local angle is in words only: no local offices, staff, payment
-   *  methods or country-specific offer counts are claimed. */
-  intro: Record<Locale, string>
+  /** Two honest sentences per language. Featured countries only —
+   *  non-featured countries leave this out and get the template. */
+  intro?: Partial<Record<Locale, string>>
+  region: string
+  subregion: string
+  currencyCode: string | null
+  currencyName: string | null
+  languages: string[]
+  /** Featured countries set this true and carry a written intro.
+   *  Absent (non-featured) means false. */
+  featured?: boolean
 }
+
+export const REGION_LABELS: Record<string, Record<Locale, string>> = {
+  Africa: { en: 'Africa', es: 'África', pt: 'África' },
+  Americas: { en: 'Americas', es: 'Américas', pt: 'Américas' },
+  Asia: { en: 'Asia', es: 'Ásia', pt: 'Ásia' },
+  Europe: { en: 'Europe', es: 'Europa', pt: 'Europa' },
+  Oceania: { en: 'Oceania', es: 'Oceanía', pt: 'Oceania' },
+}
+
+export const REGION_ORDER = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania']
+
+/** The 31 featured countries: the original 11 plus 20 more. Featured
+ *  countries get a written intro, es/pt prerendered pages, and the
+ *  home-page country grid. */
+export const FEATURED_CODES: string[] = [
+  'us', 'uk', 'ca', 'au', 'de', 'fr', 'br', 'in', 'es', 'mx', 'ar',
+  'ng', 'pk', 'bd', 'ph', 'id', 'vn', 'th', 'my', 'sg', 'jp',
+  'kr', 'tw', 'za', 'eg', 'ke', 'tr', 'sa', 'ae', 'nl', 'pl',
+]
 
 export const COUNTRIES: Country[] = [
   {
@@ -21,6 +66,12 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en Estados Unidos pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. Cada clic se registra con un ID único y cada conversión se atribuye a ese clic, con las comisiones registradas en un libro contable que puedes auditar.',
       pt: 'Os afiliados nos Estados Unidos podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. Cada clique é registrado com um ID único e cada conversão é atribuída a esse clique, com as comissões registradas em um livro-razão que você pode auditar.',
     },
+    region: 'Americas',
+    subregion: 'North America',
+    currencyCode: 'USD',
+    currencyName: 'United States dollar',
+    languages: ['English'],
+    featured: true,
   },
   {
     code: 'uk',
@@ -30,6 +81,12 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en el Reino Unido pueden promocionar ofertas en todas las verticales de la red y ganar con el mismo libro contable auditable que todos los demás. Las ofertas indican su segmentación geográfica desde el principio, así que solo promocionas el tráfico que el anunciante realmente quiere del Reino Unido.',
       pt: 'Os afiliados no Reino Unido podem promover ofertas em todas as verticais da rede e ganhar com o mesmo livro-razão auditável de todos os demais. As ofertas indicam sua segmentação geográfica desde o início, para que você só promova o tráfego que o anunciante realmente deseja do Reino Unido.',
     },
+    region: 'Europe',
+    subregion: 'Northern Europe',
+    currencyCode: 'GBP',
+    currencyName: 'British pound',
+    languages: ['English'],
+    featured: true,
   },
   {
     code: 'ca',
@@ -39,6 +96,12 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en Canadá pueden promocionar ofertas directas o usar SmartLink para el tráfico mixto, con seguimiento completo en cada clic. Los pagos son manuales y aprobados por un administrador, Net30 por defecto: el mismo calendario estés donde estés.',
       pt: 'Os afiliados no Canadá podem promover ofertas diretas ou usar o SmartLink para tráfego misto, com rastreamento completo em cada clique. Os pagamentos são manuais e aprovados por um administrador, Net30 por padrão: o mesmo cronograma onde quer que você esteja.',
     },
+    region: 'Americas',
+    subregion: 'North America',
+    currencyCode: 'CAD',
+    currencyName: 'Canadian dollar',
+    languages: ['English', 'French'],
+    featured: true,
   },
   {
     code: 'au',
@@ -48,6 +111,12 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en Australia pueden unirse a la red, solicitar ofertas y ganar con conversiones atribuidas. SmartLink dirige a cada visitante a una oferta elegible para su país y dispositivo, con reglas que puedes leer, sin caja negra.',
       pt: 'Os afiliados na Austrália podem entrar na rede, candidatar-se a ofertas e ganhar com conversões atribuídas. O SmartLink direciona cada visitante a uma oferta elegível para seu país e dispositivo, com regras que você pode ler — sem caixa-preta.',
     },
+    region: 'Oceania',
+    subregion: 'Australia and New Zealand',
+    currencyCode: 'AUD',
+    currencyName: 'Australian dollar',
+    languages: ['English'],
+    featured: true,
   },
   {
     code: 'de',
@@ -57,6 +126,12 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en Alemania pueden promocionar ofertas en todas las verticales de la red, y cada oferta indica sus límites, reglas de tráfico y definición de conversión desde el principio. El seguimiento es completo: cada clic recibe un ID único que se mantiene vinculado a su conversión.',
       pt: 'Os afiliados na Alemanha podem promover ofertas em todas as verticais da rede, e cada oferta indica seus limites, regras de tráfego e definição de conversão desde o início. O rastreamento é completo: cada clique recebe um ID único que permanece vinculado à sua conversão.',
     },
+    region: 'Europe',
+    subregion: 'Western Europe',
+    currencyCode: 'EUR',
+    currencyName: 'Euro',
+    languages: ['German'],
+    featured: true,
   },
   {
     code: 'fr',
@@ -66,6 +141,12 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en Francia pueden promocionar ofertas CPA directas o enviar tráfico a través de un solo SmartLink. Las conversiones pasan por pendiente, aprobada, rechazada o revertida, con registro de cada cambio, y nada se vuelve pagadero sin revisión.',
       pt: 'Os afiliados na França podem promover ofertas de CPA diretas ou enviar tráfego por um único SmartLink. As conversões passam por pendente, aprovada, rejeitada ou revertida, com registro de cada mudança — e nada se torna pagável sem revisão.',
     },
+    region: 'Europe',
+    subregion: 'Western Europe',
+    currencyCode: 'EUR',
+    currencyName: 'Euro',
+    languages: ['French'],
+    featured: true,
   },
   {
     code: 'br',
@@ -75,6 +156,12 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en Brasil pueden unirse a AffiLayer, solicitar ofertas y ganar comisiones por conversiones atribuidas. La red está abierta en todo el mundo, y cada oferta indica los países que acepta, así que solo promocionas donde el anunciante quiere tráfico.',
       pt: 'Os afiliados no Brasil podem entrar na AffiLayer, candidatar-se a ofertas e ganhar comissão por conversões atribuídas. A rede está aberta no mundo todo, e cada oferta indica os países que aceita, para que você só promova onde o anunciante deseja tráfego.',
     },
+    region: 'Americas',
+    subregion: 'South America',
+    currencyCode: 'BRL',
+    currencyName: 'Brazilian real',
+    languages: ['Portuguese'],
+    featured: true,
   },
   {
     code: 'in',
@@ -84,6 +171,12 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en la India pueden promocionar ofertas directas o enviar tráfico a través de SmartLink, con el mismo seguimiento, libro contable y revisión manual de pagos que en cualquier otro país. Nuestro equipo revisa las solicitudes.',
       pt: 'Os afiliados na Índia podem promover ofertas diretas ou enviar tráfego pelo SmartLink, com o mesmo rastreamento, livro-razão e revisão manual de pagamentos de qualquer outro país. Nossa equipe analisa as inscrições.',
     },
+    region: 'Asia',
+    subregion: 'Southern Asia',
+    currencyCode: 'INR',
+    currencyName: 'Indian rupee',
+    languages: ['English', 'Hindi', 'Tamil'],
+    featured: true,
   },
   {
     code: 'es',
@@ -93,6 +186,12 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en España pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. Las ofertas de Finanzas suelen buscar tráfico español, y cada oferta indica desde el principio los países que acepta, así que solo promocionas donde el anunciante quiere tráfico.',
       pt: 'Os afiliados na Espanha podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. As ofertas de Finanças costumam buscar tráfego espanhol, e cada oferta indica desde o início os países que aceita, para que você só promova onde o anunciante deseja tráfego.',
     },
+    region: 'Europe',
+    subregion: 'Southern Europe',
+    currencyCode: 'EUR',
+    currencyName: 'Euro',
+    languages: ['Spanish'],
+    featured: true,
   },
   {
     code: 'mx',
@@ -102,6 +201,12 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en México pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. México es uno de los mercados hispanohablantes más grandes, y las ofertas de Finanzas suelen buscarlo; cada oferta indica los países que acepta, así que solo promocionas donde el anunciante quiere tráfico.',
       pt: 'Os afiliados no México podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. O México é um dos maiores mercados de língua espanhola, e as ofertas de Finanças costumam buscá-lo; cada oferta indica os países que aceita, para que você só promova onde o anunciante deseja tráfego.',
     },
+    region: 'Americas',
+    subregion: 'North America',
+    currencyCode: 'MXN',
+    currencyName: 'Mexican peso',
+    languages: ['Spanish'],
+    featured: true,
   },
   {
     code: 'ar',
@@ -111,11 +216,501 @@ export const COUNTRIES: Country[] = [
       es: 'Los afiliados en Argentina pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. Las ofertas de Finanzas suelen buscar tráfico argentino, y las comisiones se registran en USD en el libro contable; cada oferta indica los países que acepta, así que solo promocionás donde el anunciante quiere tráfico.',
       pt: 'Os afiliados na Argentina podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. As ofertas de Finanças costumam buscar tráfego argentino, e as comissões são registradas em USD no livro-razão; cada oferta indica os países que aceita, para que você só promova onde o anunciante deseja tráfego.',
     },
+    region: 'Americas',
+    subregion: 'South America',
+    currencyCode: 'ARS',
+    currencyName: 'Argentine peso',
+    languages: ['Guaraní', 'Spanish'],
+    featured: true,
   },
+  {
+    code: 'ng',
+    name: { en: 'Nigeria', es: 'Nigeria', pt: 'Nigéria' },
+    intro: {
+      en: 'Affiliates in Nigeria can run direct CPA offers or route mixed traffic through one SmartLink. Every click is tracked with a unique click ID, and every conversion is attributed back to it — with commissions recorded in a ledger you can audit.',
+      es: 'Los afiliados en Nigeria pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. Cada clic se registra con un ID único y cada conversión se atribuye a ese clic, con las comisiones registradas en un libro contable que puedes auditar.',
+      pt: 'Os afiliados na Nigéria podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. Cada clique é registrado com um ID único e cada conversão é atribuída a esse clique, com as comissões registradas em um livro-razão que você pode auditar.',
+    },
+    region: 'Africa',
+    subregion: 'Western Africa',
+    currencyCode: 'NGN',
+    currencyName: 'Nigerian naira',
+    languages: ['English'],
+    featured: true,
+  },
+  {
+    code: 'pk',
+    name: { en: 'Pakistan', es: 'Pakistán', pt: 'Paquistão' },
+    intro: {
+      en: 'Affiliates in Pakistan can join the network, apply to offers and earn on attributed conversions. Each offer states its caps, traffic rules and conversion definition up front, so you only run traffic the advertiser actually wants from Pakistan.',
+      es: 'Los afiliados en Pakistán pueden unirse a la red, solicitar ofertas y ganar con conversiones atribuidas. Cada oferta indica sus límites, reglas de tráfico y definición de conversión desde el principio, así que solo promocionas el tráfico que el anunciante realmente quiere de Pakistán.',
+      pt: 'Os afiliados no Paquistão podem entrar na rede, candidatar-se a ofertas e ganhar com conversões atribuídas. Cada oferta indica seus limites, regras de tráfego e definição de conversão desde o início, para que você só promova o tráfego que o anunciante realmente deseja.',
+    },
+    region: 'Asia',
+    subregion: 'Southern Asia',
+    currencyCode: 'PKR',
+    currencyName: 'Pakistani rupee',
+    languages: ['English', 'Urdu'],
+    featured: true,
+  },
+  {
+    code: 'bd',
+    name: { en: 'Bangladesh', es: 'Bangladesh', pt: 'Bangladesh' },
+    intro: {
+      en: 'Affiliates in Bangladesh can run offers across the network’s verticals, with the same tracking, ledger and manual payout review as every other country. Payouts are manual and admin-approved, Net30 by default — the same schedule wherever you are.',
+      es: 'Los afiliados en Bangladesh pueden promocionar ofertas en todas las verticales de la red, con el mismo seguimiento, libro contable y revisión manual de pagos que en cualquier otro país. Los pagos son manuales y aprobados por un administrador, Net30 por defecto: el mismo calendario estés donde estés.',
+      pt: 'Os afiliados em Bangladesh podem promover ofertas em todas as verticais da rede, com o mesmo rastreamento, livro-razão e revisão manual de pagamentos de qualquer outro país. Os pagamentos são manuais e aprovados por um administrador, Net30 por padrão: o mesmo cronograma onde quer que você esteja.',
+    },
+    region: 'Asia',
+    subregion: 'Southern Asia',
+    currencyCode: 'BDT',
+    currencyName: 'Bangladeshi taka',
+    languages: ['Bengali'],
+    featured: true,
+  },
+  {
+    code: 'ph',
+    name: { en: 'Philippines', es: 'Filipinas', pt: 'Filipinas' },
+    intro: {
+      en: 'Affiliates in Philippines can promote direct CPA offers or send traffic through one SmartLink. Applications are reviewed by our team, and every conversion is reviewed before it becomes payable.',
+      es: 'Los afiliados en Filipinas pueden promocionar ofertas CPA directas o enviar tráfico a través de un solo SmartLink. Nuestro equipo revisa las solicitudes, y cada conversión se revisa antes de volverse pagadera.',
+      pt: 'Os afiliados nas Filipinas podem promover ofertas de CPA diretas ou enviar tráfego por um único SmartLink. Nossa equipe analisa as inscrições, e cada conversão é revisada antes de se tornar pagável.',
+    },
+    region: 'Asia',
+    subregion: 'South-Eastern Asia',
+    currencyCode: 'PHP',
+    currencyName: 'Philippine peso',
+    languages: ['English', 'Filipino'],
+    featured: true,
+  },
+  {
+    code: 'id',
+    name: { en: 'Indonesia', es: 'Indonesia', pt: 'Indonésia' },
+    intro: {
+      en: 'Affiliates in Indonesia can run direct CPA offers or route mixed traffic through one SmartLink. Every click is tracked with a unique click ID, and every conversion is attributed back to it — with commissions recorded in a ledger you can audit.',
+      es: 'Los afiliados en Indonesia pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. Cada clic se registra con un ID único y cada conversión se atribuye a ese clic, con las comisiones registradas en un libro contable que puedes auditar.',
+      pt: 'Os afiliados na Indonésia podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. Cada clique é registrado com um ID único e cada conversão é atribuída a esse clique, com as comissões registradas em um livro-razão que você pode auditar.',
+    },
+    region: 'Asia',
+    subregion: 'South-Eastern Asia',
+    currencyCode: 'IDR',
+    currencyName: 'Indonesian rupiah',
+    languages: ['Indonesian'],
+    featured: true,
+  },
+  {
+    code: 'vn',
+    name: { en: 'Vietnam', es: 'Vietnam', pt: 'Vietname' },
+    intro: {
+      en: 'Affiliates in Vietnam can join the network, apply to offers and earn on attributed conversions. Each offer states its caps, traffic rules and conversion definition up front, so you only run traffic the advertiser actually wants from Vietnam.',
+      es: 'Los afiliados en Vietnam pueden unirse a la red, solicitar ofertas y ganar con conversiones atribuidas. Cada oferta indica sus límites, reglas de tráfico y definición de conversión desde el principio, así que solo promocionas el tráfico que el anunciante realmente quiere de Vietnam.',
+      pt: 'Os afiliados no Vietname podem entrar na rede, candidatar-se a ofertas e ganhar com conversões atribuídas. Cada oferta indica seus limites, regras de tráfego e definição de conversão desde o início, para que você só promova o tráfego que o anunciante realmente deseja.',
+    },
+    region: 'Asia',
+    subregion: 'South-Eastern Asia',
+    currencyCode: 'VND',
+    currencyName: 'Vietnamese đồng',
+    languages: ['Vietnamese'],
+    featured: true,
+  },
+  {
+    code: 'th',
+    name: { en: 'Thailand', es: 'Tailandia', pt: 'Tailândia' },
+    intro: {
+      en: 'Affiliates in Thailand can run offers across the network’s verticals, with the same tracking, ledger and manual payout review as every other country. Payouts are manual and admin-approved, Net30 by default — the same schedule wherever you are.',
+      es: 'Los afiliados en Tailandia pueden promocionar ofertas en todas las verticales de la red, con el mismo seguimiento, libro contable y revisión manual de pagos que en cualquier otro país. Los pagos son manuales y aprobados por un administrador, Net30 por defecto: el mismo calendario estés donde estés.',
+      pt: 'Os afiliados na Tailândia podem promover ofertas em todas as verticais da rede, com o mesmo rastreamento, livro-razão e revisão manual de pagamentos de qualquer outro país. Os pagamentos são manuais e aprovados por um administrador, Net30 por padrão: o mesmo cronograma onde quer que você esteja.',
+    },
+    region: 'Asia',
+    subregion: 'South-Eastern Asia',
+    currencyCode: 'THB',
+    currencyName: 'Thai baht',
+    languages: ['Thai'],
+    featured: true,
+  },
+  {
+    code: 'my',
+    name: { en: 'Malaysia', es: 'Malasia', pt: 'Malásia' },
+    intro: {
+      en: 'Affiliates in Malaysia can promote direct CPA offers or send traffic through one SmartLink. Applications are reviewed by our team, and every conversion is reviewed before it becomes payable.',
+      es: 'Los afiliados en Malasia pueden promocionar ofertas CPA directas o enviar tráfico a través de un solo SmartLink. Nuestro equipo revisa las solicitudes, y cada conversión se revisa antes de volverse pagadera.',
+      pt: 'Os afiliados na Malásia podem promover ofertas de CPA diretas ou enviar tráfego por um único SmartLink. Nossa equipe analisa as inscrições, e cada conversão é revisada antes de se tornar pagável.',
+    },
+    region: 'Asia',
+    subregion: 'South-Eastern Asia',
+    currencyCode: 'MYR',
+    currencyName: 'Malaysian ringgit',
+    languages: ['English', 'Malay'],
+    featured: true,
+  },
+  {
+    code: 'sg',
+    name: { en: 'Singapore', es: 'Singapur', pt: 'Singapura' },
+    intro: {
+      en: 'Affiliates in Singapore can run direct CPA offers or route mixed traffic through one SmartLink. Every click is tracked with a unique click ID, and every conversion is attributed back to it — with commissions recorded in a ledger you can audit.',
+      es: 'Los afiliados en Singapur pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. Cada clic se registra con un ID único y cada conversión se atribuye a ese clic, con las comisiones registradas en un libro contable que puedes auditar.',
+      pt: 'Os afiliados em Singapura podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. Cada clique é registrado com um ID único e cada conversão é atribuída a esse clique, com as comissões registradas em um livro-razão que você pode auditar.',
+    },
+    region: 'Asia',
+    subregion: 'South-Eastern Asia',
+    currencyCode: 'SGD',
+    currencyName: 'Singapore dollar',
+    languages: ['Chinese', 'English', 'Malay', 'Tamil'],
+    featured: true,
+  },
+  {
+    code: 'jp',
+    name: { en: 'Japan', es: 'Japón', pt: 'Japão' },
+    intro: {
+      en: 'Affiliates in Japan can join the network, apply to offers and earn on attributed conversions. Each offer states its caps, traffic rules and conversion definition up front, so you only run traffic the advertiser actually wants from Japan.',
+      es: 'Los afiliados en Japón pueden unirse a la red, solicitar ofertas y ganar con conversiones atribuidas. Cada oferta indica sus límites, reglas de tráfico y definición de conversión desde el principio, así que solo promocionas el tráfico que el anunciante realmente quiere de Japón.',
+      pt: 'Os afiliados no Japão podem entrar na rede, candidatar-se a ofertas e ganhar com conversões atribuídas. Cada oferta indica seus limites, regras de tráfego e definição de conversão desde o início, para que você só promova o tráfego que o anunciante realmente deseja.',
+    },
+    region: 'Asia',
+    subregion: 'Eastern Asia',
+    currencyCode: 'JPY',
+    currencyName: 'Japanese yen',
+    languages: ['Japanese'],
+    featured: true,
+  },
+  {
+    code: 'kr',
+    name: { en: 'South Korea', es: 'Corea del Sur', pt: 'Coreia do Sul' },
+    intro: {
+      en: 'Affiliates in South Korea can run offers across the network’s verticals, with the same tracking, ledger and manual payout review as every other country. Payouts are manual and admin-approved, Net30 by default — the same schedule wherever you are.',
+      es: 'Los afiliados en Corea del Sur pueden promocionar ofertas en todas las verticales de la red, con el mismo seguimiento, libro contable y revisión manual de pagos que en cualquier otro país. Los pagos son manuales y aprobados por un administrador, Net30 por defecto: el mismo calendario estés donde estés.',
+      pt: 'Os afiliados na Coreia do Sul podem promover ofertas em todas as verticais da rede, com o mesmo rastreamento, livro-razão e revisão manual de pagamentos de qualquer outro país. Os pagamentos são manuais e aprovados por um administrador, Net30 por padrão: o mesmo cronograma onde quer que você esteja.',
+    },
+    region: 'Asia',
+    subregion: 'Eastern Asia',
+    currencyCode: 'KRW',
+    currencyName: 'South Korean won',
+    languages: ['Korean'],
+    featured: true,
+  },
+  {
+    code: 'tw',
+    name: { en: 'Taiwan', es: 'Taiwán', pt: 'Ilha Formosa' },
+    intro: {
+      en: 'Affiliates in Taiwan can promote direct CPA offers or send traffic through one SmartLink. Applications are reviewed by our team, and every conversion is reviewed before it becomes payable.',
+      es: 'Los afiliados en Taiwán pueden promocionar ofertas CPA directas o enviar tráfico a través de un solo SmartLink. Nuestro equipo revisa las solicitudes, y cada conversión se revisa antes de volverse pagadera.',
+      pt: 'Os afiliados na Ilha Formosa podem promover ofertas de CPA diretas ou enviar tráfego por um único SmartLink. Nossa equipe analisa as inscrições, e cada conversão é revisada antes de se tornar pagável.',
+    },
+    region: 'Asia',
+    subregion: 'Eastern Asia',
+    currencyCode: 'TWD',
+    currencyName: 'New Taiwan dollar',
+    languages: ['Chinese'],
+    featured: true,
+  },
+  {
+    code: 'za',
+    name: { en: 'South Africa', es: 'Sudáfrica', pt: 'África do Sul' },
+    intro: {
+      en: 'Affiliates in South Africa can run direct CPA offers or route mixed traffic through one SmartLink. Every click is tracked with a unique click ID, and every conversion is attributed back to it — with commissions recorded in a ledger you can audit.',
+      es: 'Los afiliados en Sudáfrica pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. Cada clic se registra con un ID único y cada conversión se atribuye a ese clic, con las comisiones registradas en un libro contable que puedes auditar.',
+      pt: 'Os afiliados na África do Sul podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. Cada clique é registrado com um ID único e cada conversão é atribuída a esse clique, com as comissões registradas em um livro-razão que você pode auditar.',
+    },
+    region: 'Africa',
+    subregion: 'Southern Africa',
+    currencyCode: 'ZAR',
+    currencyName: 'South African rand',
+    languages: ['Afrikaans', 'English', 'Northern Sotho', 'Southern Ndebele', 'Southern Sotho', 'Swazi', 'Tsonga', 'Tswana', 'Venda', 'Xhosa', 'Zulu'],
+    featured: true,
+  },
+  {
+    code: 'eg',
+    name: { en: 'Egypt', es: 'Egipto', pt: 'Egito' },
+    intro: {
+      en: 'Affiliates in Egypt can join the network, apply to offers and earn on attributed conversions. Each offer states its caps, traffic rules and conversion definition up front, so you only run traffic the advertiser actually wants from Egypt.',
+      es: 'Los afiliados en Egipto pueden unirse a la red, solicitar ofertas y ganar con conversiones atribuidas. Cada oferta indica sus límites, reglas de tráfico y definición de conversión desde el principio, así que solo promocionas el tráfico que el anunciante realmente quiere de Egipto.',
+      pt: 'Os afiliados no Egito podem entrar na rede, candidatar-se a ofertas e ganhar com conversões atribuídas. Cada oferta indica seus limites, regras de tráfego e definição de conversão desde o início, para que você só promova o tráfego que o anunciante realmente deseja.',
+    },
+    region: 'Africa',
+    subregion: 'Northern Africa',
+    currencyCode: 'EGP',
+    currencyName: 'Egyptian pound',
+    languages: ['Arabic'],
+    featured: true,
+  },
+  {
+    code: 'ke',
+    name: { en: 'Kenya', es: 'Kenia', pt: 'Quénia' },
+    intro: {
+      en: 'Affiliates in Kenya can run offers across the network’s verticals, with the same tracking, ledger and manual payout review as every other country. Payouts are manual and admin-approved, Net30 by default — the same schedule wherever you are.',
+      es: 'Los afiliados en Kenia pueden promocionar ofertas en todas las verticales de la red, con el mismo seguimiento, libro contable y revisión manual de pagos que en cualquier otro país. Los pagos son manuales y aprobados por un administrador, Net30 por defecto: el mismo calendario estés donde estés.',
+      pt: 'Os afiliados no Quénia podem promover ofertas em todas as verticais da rede, com o mesmo rastreamento, livro-razão e revisão manual de pagamentos de qualquer outro país. Os pagamentos são manuais e aprovados por um administrador, Net30 por padrão: o mesmo cronograma onde quer que você esteja.',
+    },
+    region: 'Africa',
+    subregion: 'Eastern Africa',
+    currencyCode: 'KES',
+    currencyName: 'Kenyan shilling',
+    languages: ['English', 'Swahili'],
+    featured: true,
+  },
+  {
+    code: 'tr',
+    name: { en: 'Türkiye', es: 'Turquía', pt: 'Turquia' },
+    intro: {
+      en: 'Affiliates in Türkiye can promote direct CPA offers or send traffic through one SmartLink. Applications are reviewed by our team, and every conversion is reviewed before it becomes payable.',
+      es: 'Los afiliados en Turquía pueden promocionar ofertas CPA directas o enviar tráfico a través de un solo SmartLink. Nuestro equipo revisa las solicitudes, y cada conversión se revisa antes de volverse pagadera.',
+      pt: 'Os afiliados na Turquia podem promover ofertas de CPA diretas ou enviar tráfego por um único SmartLink. Nossa equipe analisa as inscrições, e cada conversão é revisada antes de se tornar pagável.',
+    },
+    region: 'Asia',
+    subregion: 'Western Asia',
+    currencyCode: 'TRY',
+    currencyName: 'Turkish lira',
+    languages: ['Turkish'],
+    featured: true,
+  },
+  {
+    code: 'sa',
+    name: { en: 'Saudi Arabia', es: 'Arabia Saudí', pt: 'Arábia Saudita' },
+    intro: {
+      en: 'Affiliates in Saudi Arabia can run direct CPA offers or route mixed traffic through one SmartLink. Every click is tracked with a unique click ID, and every conversion is attributed back to it — with commissions recorded in a ledger you can audit.',
+      es: 'Los afiliados en Arabia Saudí pueden promocionar ofertas CPA directas o enviar el tráfico mixto a través de un solo SmartLink. Cada clic se registra con un ID único y cada conversión se atribuye a ese clic, con las comisiones registradas en un libro contable que puedes auditar.',
+      pt: 'Os afiliados na Arábia Saudita podem promover ofertas de CPA diretas ou enviar o tráfego misto por um único SmartLink. Cada clique é registrado com um ID único e cada conversão é atribuída a esse clique, com as comissões registradas em um livro-razão que você pode auditar.',
+    },
+    region: 'Asia',
+    subregion: 'Western Asia',
+    currencyCode: 'SAR',
+    currencyName: 'Saudi riyal',
+    languages: ['Arabic'],
+    featured: true,
+  },
+  {
+    code: 'ae',
+    name: { en: 'United Arab Emirates', es: 'Emiratos Árabes Unidos', pt: 'Emirados Árabes Unidos' },
+    intro: {
+      en: 'Affiliates in the United Arab Emirates can join the network, apply to offers and earn on attributed conversions. Each offer states its caps, traffic rules and conversion definition up front, so you only run traffic the advertiser actually wants from the United Arab Emirates.',
+      es: 'Los afiliados en Emiratos Árabes Unidos pueden unirse a la red, solicitar ofertas y ganar con conversiones atribuidas. Cada oferta indica sus límites, reglas de tráfico y definición de conversión desde el principio, así que solo promocionas el tráfico que el anunciante realmente quiere de Emiratos Árabes Unidos.',
+      pt: 'Os afiliados nos Emirados Árabes Unidos podem entrar na rede, candidatar-se a ofertas e ganhar com conversões atribuídas. Cada oferta indica seus limites, regras de tráfego e definição de conversão desde o início, para que você só promova o tráfego que o anunciante realmente deseja.',
+    },
+    region: 'Asia',
+    subregion: 'Western Asia',
+    currencyCode: 'AED',
+    currencyName: 'United Arab Emirates dirham',
+    languages: ['Arabic'],
+    featured: true,
+  },
+  {
+    code: 'nl',
+    name: { en: 'Netherlands', es: 'Países Bajos', pt: 'Holanda' },
+    intro: {
+      en: 'Affiliates in the Netherlands can run offers across the network’s verticals, with the same tracking, ledger and manual payout review as every other country. Payouts are manual and admin-approved, Net30 by default — the same schedule wherever you are.',
+      es: 'Los afiliados en Países Bajos pueden promocionar ofertas en todas las verticales de la red, con el mismo seguimiento, libro contable y revisión manual de pagos que en cualquier otro país. Los pagos son manuales y aprobados por un administrador, Net30 por defecto: el mismo calendario estés donde estés.',
+      pt: 'Os afiliados na Holanda podem promover ofertas em todas as verticais da rede, com o mesmo rastreamento, livro-razão e revisão manual de pagamentos de qualquer outro país. Os pagamentos são manuais e aprovados por um administrador, Net30 por padrão: o mesmo cronograma onde quer que você esteja.',
+    },
+    region: 'Europe',
+    subregion: 'Western Europe',
+    currencyCode: 'EUR',
+    currencyName: 'Euro',
+    languages: ['Dutch'],
+    featured: true,
+  },
+  {
+    code: 'pl',
+    name: { en: 'Poland', es: 'Polonia', pt: 'Polónia' },
+    intro: {
+      en: 'Affiliates in Poland can promote direct CPA offers or send traffic through one SmartLink. Applications are reviewed by our team, and every conversion is reviewed before it becomes payable.',
+      es: 'Los afiliados en Polonia pueden promocionar ofertas CPA directas o enviar tráfico a través de un solo SmartLink. Nuestro equipo revisa las solicitudes, y cada conversión se revisa antes de volverse pagadera.',
+      pt: 'Os afiliados na Polónia podem promover ofertas de CPA diretas ou enviar tráfego por um único SmartLink. Nossa equipe analisa as inscrições, e cada conversão é revisada antes de se tornar pagável.',
+    },
+    region: 'Europe',
+    subregion: 'Central Europe',
+    currencyCode: 'PLN',
+    currencyName: 'Polish złoty',
+    languages: ['Polish'],
+    featured: true,
+  },
+  // Non-featured countries: names, region, currency and languages from
+  // the dataset; no written intro — the page renders the shared template.
+  { code: 'af', name: { en: 'Afghanistan', es: 'Afganistán', pt: 'Afeganistão' }, region: 'Asia', subregion: 'Southern Asia', currencyCode: 'AFN', currencyName: 'Afghan afghani', languages: ['Dari', 'Pashto', 'Turkmen'] },
+  { code: 'al', name: { en: 'Albania', es: 'Albania', pt: 'Albânia' }, region: 'Europe', subregion: 'Southeast Europe', currencyCode: 'ALL', currencyName: 'Albanian lek', languages: ['Albanian'] },
+  { code: 'dz', name: { en: 'Algeria', es: 'Argelia', pt: 'Argélia' }, region: 'Africa', subregion: 'Northern Africa', currencyCode: 'DZD', currencyName: 'Algerian dinar', languages: ['Arabic'] },
+  { code: 'ad', name: { en: 'Andorra', es: 'Andorra', pt: 'Andorra' }, region: 'Europe', subregion: 'Southern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Catalan'] },
+  { code: 'ao', name: { en: 'Angola', es: 'Angola', pt: 'Angola' }, region: 'Africa', subregion: 'Middle Africa', currencyCode: 'AOA', currencyName: 'Angolan kwanza', languages: ['Portuguese'] },
+  { code: 'ag', name: { en: 'Antigua and Barbuda', es: 'Antigua y Barbuda', pt: 'Antígua e Barbuda' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'XCD', currencyName: 'Eastern Caribbean dollar', languages: ['English'] },
+  { code: 'am', name: { en: 'Armenia', es: 'Armenia', pt: 'Arménia' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'AMD', currencyName: 'Armenian dram', languages: ['Armenian'] },
+  { code: 'at', name: { en: 'Austria', es: 'Austria', pt: 'Áustria' }, region: 'Europe', subregion: 'Central Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Austro-Bavarian German'] },
+  { code: 'az', name: { en: 'Azerbaijan', es: 'Azerbaiyán', pt: 'Azerbeijão' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'AZN', currencyName: 'Azerbaijani manat', languages: ['Azerbaijani', 'Russian'] },
+  { code: 'bs', name: { en: 'Bahamas', es: 'Bahamas', pt: 'Bahamas' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'BSD', currencyName: 'Bahamian dollar', languages: ['English'] },
+  { code: 'bh', name: { en: 'Bahrain', es: 'Bahrein', pt: 'Bahrein' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'BHD', currencyName: 'Bahraini dinar', languages: ['Arabic'] },
+  { code: 'bb', name: { en: 'Barbados', es: 'Barbados', pt: 'Barbados' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'BBD', currencyName: 'Barbadian dollar', languages: ['English'] },
+  { code: 'by', name: { en: 'Belarus', es: 'Bielorrusia', pt: 'Bielorússia' }, region: 'Europe', subregion: 'Eastern Europe', currencyCode: 'BYN', currencyName: 'Belarusian ruble', languages: ['Belarusian', 'Russian'] },
+  { code: 'be', name: { en: 'Belgium', es: 'Bélgica', pt: 'Bélgica' }, region: 'Europe', subregion: 'Western Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Dutch', 'French', 'German'] },
+  { code: 'bz', name: { en: 'Belize', es: 'Belice', pt: 'Belize' }, region: 'Americas', subregion: 'Central America', currencyCode: 'BZD', currencyName: 'Belize dollar', languages: ['Belizean Creole', 'English', 'Spanish'] },
+  { code: 'bj', name: { en: 'Benin', es: 'Benín', pt: 'Benin' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'XOF', currencyName: 'West African CFA franc', languages: ['French'] },
+  { code: 'bt', name: { en: 'Bhutan', es: 'Bután', pt: 'Butão' }, region: 'Asia', subregion: 'Southern Asia', currencyCode: 'BTN', currencyName: 'Bhutanese ngultrum', languages: ['Dzongkha'] },
+  { code: 'bo', name: { en: 'Bolivia', es: 'Bolivia', pt: 'Bolívia' }, region: 'Americas', subregion: 'South America', currencyCode: 'BOB', currencyName: 'Bolivian boliviano', languages: ['Aymara', 'Guaraní', 'Quechua', 'Spanish'] },
+  { code: 'ba', name: { en: 'Bosnia and Herzegovina', es: 'Bosnia y Herzegovina', pt: 'Bósnia e Herzegovina' }, region: 'Europe', subregion: 'Southeast Europe', currencyCode: 'BAM', currencyName: 'Bosnia and Herzegovina convertible mark', languages: ['Bosnian', 'Croatian', 'Serbian'] },
+  { code: 'bw', name: { en: 'Botswana', es: 'Botswana', pt: 'Botswana' }, region: 'Africa', subregion: 'Southern Africa', currencyCode: 'BWP', currencyName: 'Botswana pula', languages: ['English', 'Tswana'] },
+  { code: 'bn', name: { en: 'Brunei', es: 'Brunei', pt: 'Brunei' }, region: 'Asia', subregion: 'South-Eastern Asia', currencyCode: 'BND', currencyName: 'Brunei dollar', languages: ['Malay'] },
+  { code: 'bg', name: { en: 'Bulgaria', es: 'Bulgaria', pt: 'Bulgária' }, region: 'Europe', subregion: 'Southeast Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Bulgarian'] },
+  { code: 'bf', name: { en: 'Burkina Faso', es: 'Burkina Faso', pt: 'Burkina Faso' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'XOF', currencyName: 'West African CFA franc', languages: ['French'] },
+  { code: 'bi', name: { en: 'Burundi', es: 'Burundi', pt: 'Burundi' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'BIF', currencyName: 'Burundian franc', languages: ['French', 'Kirundi'] },
+  { code: 'kh', name: { en: 'Cambodia', es: 'Camboya', pt: 'Camboja' }, region: 'Asia', subregion: 'South-Eastern Asia', currencyCode: 'KHR', currencyName: 'Cambodian riel', languages: ['Khmer'] },
+  { code: 'cm', name: { en: 'Cameroon', es: 'Camerún', pt: 'Camarões' }, region: 'Africa', subregion: 'Middle Africa', currencyCode: 'XAF', currencyName: 'Central African CFA franc', languages: ['English', 'French'] },
+  { code: 'cv', name: { en: 'Cape Verde', es: 'Cabo Verde', pt: 'Cabo Verde' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'CVE', currencyName: 'Cape Verdean escudo', languages: ['Portuguese'] },
+  { code: 'cf', name: { en: 'Central African Republic', es: 'República Centroafricana', pt: 'República Centro-Africana' }, region: 'Africa', subregion: 'Middle Africa', currencyCode: 'XAF', currencyName: 'Central African CFA franc', languages: ['French', 'Sango'] },
+  { code: 'td', name: { en: 'Chad', es: 'Chad', pt: 'Chade' }, region: 'Africa', subregion: 'Middle Africa', currencyCode: 'XAF', currencyName: 'Central African CFA franc', languages: ['Arabic', 'French'] },
+  { code: 'cl', name: { en: 'Chile', es: 'Chile', pt: 'Chile' }, region: 'Americas', subregion: 'South America', currencyCode: 'CLP', currencyName: 'Chilean peso', languages: ['Spanish'] },
+  { code: 'cn', name: { en: 'China', es: 'China', pt: 'China' }, region: 'Asia', subregion: 'Eastern Asia', currencyCode: 'CNY', currencyName: 'Chinese yuan', languages: ['Chinese'] },
+  { code: 'co', name: { en: 'Colombia', es: 'Colombia', pt: 'Colômbia' }, region: 'Americas', subregion: 'South America', currencyCode: 'COP', currencyName: 'Colombian peso', languages: ['Spanish'] },
+  { code: 'km', name: { en: 'Comoros', es: 'Comoras', pt: 'Comores' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'KMF', currencyName: 'Comorian franc', languages: ['Arabic', 'Comorian', 'French'] },
+  { code: 'cg', name: { en: 'Congo', es: 'Congo', pt: 'Congo' }, region: 'Africa', subregion: 'Middle Africa', currencyCode: 'XAF', currencyName: 'Central African CFA franc', languages: ['French', 'Kikongo', 'Lingala'] },
+  { code: 'cr', name: { en: 'Costa Rica', es: 'Costa Rica', pt: 'Costa Rica' }, region: 'Americas', subregion: 'Central America', currencyCode: 'CRC', currencyName: 'Costa Rican colón', languages: ['Spanish'] },
+  { code: 'hr', name: { en: 'Croatia', es: 'Croacia', pt: 'Croácia' }, region: 'Europe', subregion: 'Southeast Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Croatian'] },
+  { code: 'cu', name: { en: 'Cuba', es: 'Cuba', pt: 'Cuba' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'CUP', currencyName: 'Cuban peso', languages: ['Spanish'] },
+  { code: 'cy', name: { en: 'Cyprus', es: 'Chipre', pt: 'Chipre' }, region: 'Europe', subregion: 'Southern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Greek', 'Turkish'] },
+  { code: 'cz', name: { en: 'Czechia', es: 'Chequia', pt: 'Chéquia' }, region: 'Europe', subregion: 'Central Europe', currencyCode: 'CZK', currencyName: 'Czech koruna', languages: ['Czech', 'Slovak'] },
+  { code: 'cd', name: { en: 'DR Congo', es: 'Congo (Rep. Dem.)', pt: 'República Democrática do Congo' }, region: 'Africa', subregion: 'Middle Africa', currencyCode: 'CDF', currencyName: 'Congolese franc', languages: ['French', 'Kikongo', 'Lingala', 'Swahili', 'Tshiluba'] },
+  { code: 'dk', name: { en: 'Denmark', es: 'Dinamarca', pt: 'Dinamarca' }, region: 'Europe', subregion: 'Northern Europe', currencyCode: 'DKK', currencyName: 'Danish krone', languages: ['Danish'] },
+  { code: 'dj', name: { en: 'Djibouti', es: 'Djibouti', pt: 'Djibouti' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'DJF', currencyName: 'Djiboutian franc', languages: ['Arabic', 'French'] },
+  { code: 'dm', name: { en: 'Dominica', es: 'Dominica', pt: 'Dominica' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'XCD', currencyName: 'Eastern Caribbean dollar', languages: ['English'] },
+  { code: 'do', name: { en: 'Dominican Republic', es: 'República Dominicana', pt: 'República Dominicana' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'DOP', currencyName: 'Dominican peso', languages: ['Spanish'] },
+  { code: 'ec', name: { en: 'Ecuador', es: 'Ecuador', pt: 'Equador' }, region: 'Americas', subregion: 'South America', currencyCode: 'USD', currencyName: 'United States dollar', languages: ['Spanish'] },
+  { code: 'sv', name: { en: 'El Salvador', es: 'El Salvador', pt: 'El Salvador' }, region: 'Americas', subregion: 'Central America', currencyCode: 'USD', currencyName: 'United States dollar', languages: ['Spanish'] },
+  { code: 'gq', name: { en: 'Equatorial Guinea', es: 'Guinea Ecuatorial', pt: 'Guiné Equatorial' }, region: 'Africa', subregion: 'Middle Africa', currencyCode: 'XAF', currencyName: 'Central African CFA franc', languages: ['French', 'Portuguese', 'Spanish'] },
+  { code: 'er', name: { en: 'Eritrea', es: 'Eritrea', pt: 'Eritreia' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'ERN', currencyName: 'Eritrean nakfa', languages: ['Arabic', 'English', 'Tigrinya'] },
+  { code: 'ee', name: { en: 'Estonia', es: 'Estonia', pt: 'Estónia' }, region: 'Europe', subregion: 'Northern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Estonian'] },
+  { code: 'sz', name: { en: 'Eswatini', es: 'Esuatini', pt: 'Essuatíni' }, region: 'Africa', subregion: 'Southern Africa', currencyCode: 'SZL', currencyName: 'Swazi lilangeni', languages: ['English', 'Swazi'] },
+  { code: 'et', name: { en: 'Ethiopia', es: 'Etiopía', pt: 'Etiópia' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'ETB', currencyName: 'Ethiopian birr', languages: ['Amharic'] },
+  { code: 'fj', name: { en: 'Fiji', es: 'Fiyi', pt: 'Fiji' }, region: 'Oceania', subregion: 'Melanesia', currencyCode: 'FJD', currencyName: 'Fijian dollar', languages: ['English', 'Fiji Hindi', 'Fijian'] },
+  { code: 'fi', name: { en: 'Finland', es: 'Finlandia', pt: 'Finlândia' }, region: 'Europe', subregion: 'Northern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Finnish', 'Swedish'] },
+  { code: 'ga', name: { en: 'Gabon', es: 'Gabón', pt: 'Gabão' }, region: 'Africa', subregion: 'Middle Africa', currencyCode: 'XAF', currencyName: 'Central African CFA franc', languages: ['French'] },
+  { code: 'gm', name: { en: 'Gambia', es: 'Gambia', pt: 'Gâmbia' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'GMD', currencyName: 'dalasi', languages: ['English'] },
+  { code: 'ge', name: { en: 'Georgia', es: 'Georgia', pt: 'Geórgia' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'GEL', currencyName: 'lari', languages: ['Georgian'] },
+  { code: 'gh', name: { en: 'Ghana', es: 'Ghana', pt: 'Gana' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'GHS', currencyName: 'Ghanaian cedi', languages: ['English'] },
+  { code: 'gr', name: { en: 'Greece', es: 'Grecia', pt: 'Grécia' }, region: 'Europe', subregion: 'Southern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Greek'] },
+  { code: 'gd', name: { en: 'Grenada', es: 'Grenada', pt: 'Granada' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'XCD', currencyName: 'Eastern Caribbean dollar', languages: ['English'] },
+  { code: 'gt', name: { en: 'Guatemala', es: 'Guatemala', pt: 'Guatemala' }, region: 'Americas', subregion: 'Central America', currencyCode: 'GTQ', currencyName: 'Guatemalan quetzal', languages: ['Spanish'] },
+  { code: 'gn', name: { en: 'Guinea', es: 'Guinea', pt: 'Guiné' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'GNF', currencyName: 'Guinean franc', languages: ['French'] },
+  { code: 'gw', name: { en: 'Guinea-Bissau', es: 'Guinea-Bisáu', pt: 'Guiné-Bissau' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'XOF', currencyName: 'West African CFA franc', languages: ['Portuguese', 'Upper Guinea Creole'] },
+  { code: 'gy', name: { en: 'Guyana', es: 'Guyana', pt: 'Guiana' }, region: 'Americas', subregion: 'South America', currencyCode: 'GYD', currencyName: 'Guyanese dollar', languages: ['English'] },
+  { code: 'ht', name: { en: 'Haiti', es: 'Haití', pt: 'Haiti' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'HTG', currencyName: 'Haitian gourde', languages: ['French', 'Haitian Creole'] },
+  { code: 'hn', name: { en: 'Honduras', es: 'Honduras', pt: 'Honduras' }, region: 'Americas', subregion: 'Central America', currencyCode: 'HNL', currencyName: 'Honduran lempira', languages: ['Spanish'] },
+  { code: 'hu', name: { en: 'Hungary', es: 'Hungría', pt: 'Hungria' }, region: 'Europe', subregion: 'Central Europe', currencyCode: 'HUF', currencyName: 'Hungarian forint', languages: ['Hungarian'] },
+  { code: 'is', name: { en: 'Iceland', es: 'Islandia', pt: 'Islândia' }, region: 'Europe', subregion: 'Northern Europe', currencyCode: 'ISK', currencyName: 'Icelandic króna', languages: ['Icelandic'] },
+  { code: 'ir', name: { en: 'Iran', es: 'Iran', pt: 'Irão' }, region: 'Asia', subregion: 'Southern Asia', currencyCode: 'IRR', currencyName: 'Iranian rial', languages: ['Persian (Farsi)'] },
+  { code: 'iq', name: { en: 'Iraq', es: 'Irak', pt: 'Iraque' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'IQD', currencyName: 'Iraqi dinar', languages: ['Arabic', 'Aramaic', 'Sorani'] },
+  { code: 'ie', name: { en: 'Ireland', es: 'Irlanda', pt: 'Irlanda' }, region: 'Europe', subregion: 'Northern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['English', 'Irish'] },
+  { code: 'il', name: { en: 'Israel', es: 'Israel', pt: 'Israel' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'ILS', currencyName: 'Israeli new shekel', languages: ['Arabic', 'Hebrew'] },
+  { code: 'it', name: { en: 'Italy', es: 'Italia', pt: 'Itália' }, region: 'Europe', subregion: 'Southern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Italian'] },
+  { code: 'ci', name: { en: 'Ivory Coast', es: 'Costa de Marfil', pt: 'Costa do Marfim' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'XOF', currencyName: 'West African CFA franc', languages: ['French'] },
+  { code: 'jm', name: { en: 'Jamaica', es: 'Jamaica', pt: 'Jamaica' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'JMD', currencyName: 'Jamaican dollar', languages: ['English', 'Jamaican Patois'] },
+  { code: 'jo', name: { en: 'Jordan', es: 'Jordania', pt: 'Jordânia' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'JOD', currencyName: 'Jordanian dinar', languages: ['Arabic'] },
+  { code: 'kz', name: { en: 'Kazakhstan', es: 'Kazajistán', pt: 'Cazaquistão' }, region: 'Asia', subregion: 'Central Asia', currencyCode: 'KZT', currencyName: 'Kazakhstani tenge', languages: ['Kazakh', 'Russian'] },
+  { code: 'ki', name: { en: 'Kiribati', es: 'Kiribati', pt: 'Kiribati' }, region: 'Oceania', subregion: 'Micronesia', currencyCode: 'AUD', currencyName: 'Australian dollar', languages: ['English', 'Gilbertese'] },
+  { code: 'kw', name: { en: 'Kuwait', es: 'Kuwait', pt: 'Kuwait' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'KWD', currencyName: 'Kuwaiti dinar', languages: ['Arabic'] },
+  { code: 'kg', name: { en: 'Kyrgyzstan', es: 'Kirguizistán', pt: 'Quirguistão' }, region: 'Asia', subregion: 'Central Asia', currencyCode: 'KGS', currencyName: 'Kyrgyzstani som', languages: ['Kyrgyz', 'Russian'] },
+  { code: 'la', name: { en: 'Laos', es: 'Laos', pt: 'Laos' }, region: 'Asia', subregion: 'South-Eastern Asia', currencyCode: 'LAK', currencyName: 'Lao kip', languages: ['Lao'] },
+  { code: 'lv', name: { en: 'Latvia', es: 'Letonia', pt: 'Letónia' }, region: 'Europe', subregion: 'Northern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Latvian'] },
+  { code: 'lb', name: { en: 'Lebanon', es: 'Líbano', pt: 'Líbano' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'LBP', currencyName: 'Lebanese pound', languages: ['Arabic', 'French'] },
+  { code: 'ls', name: { en: 'Lesotho', es: 'Lesotho', pt: 'Lesoto' }, region: 'Africa', subregion: 'Southern Africa', currencyCode: 'LSL', currencyName: 'Lesotho loti', languages: ['English', 'Sotho'] },
+  { code: 'lr', name: { en: 'Liberia', es: 'Liberia', pt: 'Libéria' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'LRD', currencyName: 'Liberian dollar', languages: ['English'] },
+  { code: 'ly', name: { en: 'Libya', es: 'Libia', pt: 'Líbia' }, region: 'Africa', subregion: 'Northern Africa', currencyCode: 'LYD', currencyName: 'Libyan dinar', languages: ['Arabic'] },
+  { code: 'li', name: { en: 'Liechtenstein', es: 'Liechtenstein', pt: 'Liechtenstein' }, region: 'Europe', subregion: 'Western Europe', currencyCode: 'CHF', currencyName: 'Swiss franc', languages: ['German'] },
+  { code: 'lt', name: { en: 'Lithuania', es: 'Lituania', pt: 'Lituânia' }, region: 'Europe', subregion: 'Northern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Lithuanian'] },
+  { code: 'lu', name: { en: 'Luxembourg', es: 'Luxemburgo', pt: 'Luxemburgo' }, region: 'Europe', subregion: 'Western Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['French', 'German', 'Luxembourgish'] },
+  { code: 'mg', name: { en: 'Madagascar', es: 'Madagascar', pt: 'Madagáscar' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'MGA', currencyName: 'Malagasy ariary', languages: ['French', 'Malagasy'] },
+  { code: 'mw', name: { en: 'Malawi', es: 'Malawi', pt: 'Malawi' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'MWK', currencyName: 'Malawian kwacha', languages: ['Chewa', 'English'] },
+  { code: 'mv', name: { en: 'Maldives', es: 'Maldivas', pt: 'Maldivas' }, region: 'Asia', subregion: 'Southern Asia', currencyCode: 'MVR', currencyName: 'Maldivian rufiyaa', languages: ['Maldivian'] },
+  { code: 'ml', name: { en: 'Mali', es: 'Mali', pt: 'Mali' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'XOF', currencyName: 'West African CFA franc', languages: ['French'] },
+  { code: 'mt', name: { en: 'Malta', es: 'Malta', pt: 'Malta' }, region: 'Europe', subregion: 'Southern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['English', 'Maltese'] },
+  { code: 'mh', name: { en: 'Marshall Islands', es: 'Islas Marshall', pt: 'Ilhas Marshall' }, region: 'Oceania', subregion: 'Micronesia', currencyCode: 'USD', currencyName: 'United States dollar', languages: ['English', 'Marshallese'] },
+  { code: 'mr', name: { en: 'Mauritania', es: 'Mauritania', pt: 'Mauritânia' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'MRU', currencyName: 'Mauritanian ouguiya', languages: ['Arabic'] },
+  { code: 'mu', name: { en: 'Mauritius', es: 'Mauricio', pt: 'Maurício' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'MUR', currencyName: 'Mauritian rupee', languages: ['English', 'French', 'Mauritian Creole'] },
+  { code: 'fm', name: { en: 'Micronesia', es: 'Micronesia', pt: 'Micronésia' }, region: 'Oceania', subregion: 'Micronesia', currencyCode: null, currencyName: null, languages: ['English'] },
+  { code: 'md', name: { en: 'Moldova', es: 'Moldavia', pt: 'Moldávia' }, region: 'Europe', subregion: 'Eastern Europe', currencyCode: 'MDL', currencyName: 'Moldovan leu', languages: ['Moldavian'] },
+  { code: 'mc', name: { en: 'Monaco', es: 'Mónaco', pt: 'Mónaco' }, region: 'Europe', subregion: 'Western Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['French'] },
+  { code: 'mn', name: { en: 'Mongolia', es: 'Mongolia', pt: 'Mongólia' }, region: 'Asia', subregion: 'Eastern Asia', currencyCode: 'MNT', currencyName: 'Mongolian tögrög', languages: ['Mongolian'] },
+  { code: 'me', name: { en: 'Montenegro', es: 'Montenegro', pt: 'Montenegro' }, region: 'Europe', subregion: 'Southeast Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Montenegrin'] },
+  { code: 'ma', name: { en: 'Morocco', es: 'Marruecos', pt: 'Marrocos' }, region: 'Africa', subregion: 'Northern Africa', currencyCode: 'MAD', currencyName: 'Moroccan dirham', languages: ['Arabic', 'Berber'] },
+  { code: 'mz', name: { en: 'Mozambique', es: 'Mozambique', pt: 'Moçambique' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'MZN', currencyName: 'Mozambican metical', languages: ['Portuguese'] },
+  { code: 'mm', name: { en: 'Myanmar', es: 'Myanmar', pt: 'Myanmar' }, region: 'Asia', subregion: 'South-Eastern Asia', currencyCode: 'MMK', currencyName: 'Burmese kyat', languages: ['Burmese'] },
+  { code: 'na', name: { en: 'Namibia', es: 'Namibia', pt: 'Namíbia' }, region: 'Africa', subregion: 'Southern Africa', currencyCode: 'NAD', currencyName: 'Namibian dollar', languages: ['Afrikaans', 'English', 'German', 'Herero', 'Khoekhoe', 'Kwangali', 'Lozi', 'Ndonga', 'Tswana'] },
+  { code: 'nr', name: { en: 'Nauru', es: 'Nauru', pt: 'Nauru' }, region: 'Oceania', subregion: 'Micronesia', currencyCode: 'AUD', currencyName: 'Australian dollar', languages: ['English', 'Nauru'] },
+  { code: 'np', name: { en: 'Nepal', es: 'Nepal', pt: 'Nepal' }, region: 'Asia', subregion: 'Southern Asia', currencyCode: 'NPR', currencyName: 'Nepalese rupee', languages: ['Nepali'] },
+  { code: 'nz', name: { en: 'New Zealand', es: 'Nueva Zelanda', pt: 'Nova Zelândia' }, region: 'Oceania', subregion: 'Australia and New Zealand', currencyCode: 'NZD', currencyName: 'New Zealand dollar', languages: ['English', 'Māori', 'New Zealand Sign Language'] },
+  { code: 'ni', name: { en: 'Nicaragua', es: 'Nicaragua', pt: 'Nicarágua' }, region: 'Americas', subregion: 'Central America', currencyCode: 'NIO', currencyName: 'Nicaraguan córdoba', languages: ['Spanish'] },
+  { code: 'ne', name: { en: 'Niger', es: 'Níger', pt: 'Níger' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'XOF', currencyName: 'West African CFA franc', languages: ['French'] },
+  { code: 'kp', name: { en: 'North Korea', es: 'Corea del Norte', pt: 'Coreia do Norte' }, region: 'Asia', subregion: 'Eastern Asia', currencyCode: 'KPW', currencyName: 'North Korean won', languages: ['Korean'] },
+  { code: 'mk', name: { en: 'North Macedonia', es: 'Macedonia del Norte', pt: 'Macedónia do Norte' }, region: 'Europe', subregion: 'Southeast Europe', currencyCode: 'MKD', currencyName: 'denar', languages: ['Macedonian'] },
+  { code: 'no', name: { en: 'Norway', es: 'Noruega', pt: 'Noruega' }, region: 'Europe', subregion: 'Northern Europe', currencyCode: 'NOK', currencyName: 'Norwegian krone', languages: ['Norwegian Bokmål', 'Norwegian Nynorsk', 'Sami'] },
+  { code: 'om', name: { en: 'Oman', es: 'Omán', pt: 'Omã' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'OMR', currencyName: 'Omani rial', languages: ['Arabic'] },
+  { code: 'pw', name: { en: 'Palau', es: 'Palau', pt: 'Palau' }, region: 'Oceania', subregion: 'Micronesia', currencyCode: 'USD', currencyName: 'United States dollar', languages: ['English', 'Palauan'] },
+  { code: 'pa', name: { en: 'Panama', es: 'Panamá', pt: 'Panamá' }, region: 'Americas', subregion: 'Central America', currencyCode: 'PAB', currencyName: 'Panamanian balboa', languages: ['Spanish'] },
+  { code: 'pg', name: { en: 'Papua New Guinea', es: 'Papúa Nueva Guinea', pt: 'Papua Nova Guiné' }, region: 'Oceania', subregion: 'Melanesia', currencyCode: 'PGK', currencyName: 'Papua New Guinean kina', languages: ['English', 'Hiri Motu', 'Tok Pisin'] },
+  { code: 'py', name: { en: 'Paraguay', es: 'Paraguay', pt: 'Paraguai' }, region: 'Americas', subregion: 'South America', currencyCode: 'PYG', currencyName: 'Paraguayan guaraní', languages: ['Guaraní', 'Spanish'] },
+  { code: 'pe', name: { en: 'Peru', es: 'Perú', pt: 'Perú' }, region: 'Americas', subregion: 'South America', currencyCode: 'PEN', currencyName: 'Peruvian sol', languages: ['Aymara', 'Quechua', 'Spanish'] },
+  { code: 'pt', name: { en: 'Portugal', es: 'Portugal', pt: 'Portugal' }, region: 'Europe', subregion: 'Southern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Portuguese'] },
+  { code: 'qa', name: { en: 'Qatar', es: 'Catar', pt: 'Catar' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'QAR', currencyName: 'Qatari riyal', languages: ['Arabic'] },
+  { code: 'ro', name: { en: 'Romania', es: 'Rumania', pt: 'Roménia' }, region: 'Europe', subregion: 'Southeast Europe', currencyCode: 'RON', currencyName: 'Romanian leu', languages: ['Romanian'] },
+  { code: 'ru', name: { en: 'Russia', es: 'Rusia', pt: 'Rússia' }, region: 'Europe', subregion: 'Eastern Europe', currencyCode: 'RUB', currencyName: 'Russian ruble', languages: ['Russian'] },
+  { code: 'rw', name: { en: 'Rwanda', es: 'Ruanda', pt: 'Ruanda' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'RWF', currencyName: 'Rwandan franc', languages: ['English', 'French', 'Kinyarwanda'] },
+  { code: 'kn', name: { en: 'Saint Kitts and Nevis', es: 'San Cristóbal y Nieves', pt: 'São Cristóvão e Nevis' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'XCD', currencyName: 'Eastern Caribbean dollar', languages: ['English'] },
+  { code: 'lc', name: { en: 'Saint Lucia', es: 'Santa Lucía', pt: 'Santa Lúcia' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'XCD', currencyName: 'Eastern Caribbean dollar', languages: ['English'] },
+  { code: 'vc', name: { en: 'Saint Vincent and the Grenadines', es: 'San Vicente y Granadinas', pt: 'São Vincente e Granadinas' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'XCD', currencyName: 'Eastern Caribbean dollar', languages: ['English'] },
+  { code: 'ws', name: { en: 'Samoa', es: 'Samoa', pt: 'Samoa' }, region: 'Oceania', subregion: 'Polynesia', currencyCode: 'WST', currencyName: 'Samoan tālā', languages: ['English', 'Samoan'] },
+  { code: 'sm', name: { en: 'San Marino', es: 'San Marino', pt: 'San Marino' }, region: 'Europe', subregion: 'Southern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Italian'] },
+  { code: 'sn', name: { en: 'Senegal', es: 'Senegal', pt: 'Senegal' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'XOF', currencyName: 'West African CFA franc', languages: ['French'] },
+  { code: 'rs', name: { en: 'Serbia', es: 'Serbia', pt: 'Sérvia' }, region: 'Europe', subregion: 'Southeast Europe', currencyCode: 'RSD', currencyName: 'Serbian dinar', languages: ['Serbian'] },
+  { code: 'sc', name: { en: 'Seychelles', es: 'Seychelles', pt: 'Seicheles' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'SCR', currencyName: 'Seychellois rupee', languages: ['English', 'French', 'Seychellois Creole'] },
+  { code: 'sl', name: { en: 'Sierra Leone', es: 'Sierra Leone', pt: 'Serra Leoa' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'SLE', currencyName: 'Sierra Leonean leone', languages: ['English'] },
+  { code: 'sk', name: { en: 'Slovakia', es: 'Eslovaquia', pt: 'Eslováquia' }, region: 'Europe', subregion: 'Central Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Slovak'] },
+  { code: 'si', name: { en: 'Slovenia', es: 'Eslovenia', pt: 'Eslovénia' }, region: 'Europe', subregion: 'Central Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Slovene'] },
+  { code: 'sb', name: { en: 'Solomon Islands', es: 'Islas Salomón', pt: 'Ilhas Salomão' }, region: 'Oceania', subregion: 'Melanesia', currencyCode: 'SBD', currencyName: 'Solomon Islands dollar', languages: ['English'] },
+  { code: 'so', name: { en: 'Somalia', es: 'Somalia', pt: 'Somália' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'SOS', currencyName: 'Somali shilling', languages: ['Arabic', 'Somali'] },
+  { code: 'ss', name: { en: 'South Sudan', es: 'Sudán del Sur', pt: 'Sudão do Sul' }, region: 'Africa', subregion: 'Middle Africa', currencyCode: 'SSP', currencyName: 'South Sudanese pound', languages: ['English'] },
+  { code: 'lk', name: { en: 'Sri Lanka', es: 'Sri Lanka', pt: 'Sri Lanka' }, region: 'Asia', subregion: 'Southern Asia', currencyCode: 'LKR', currencyName: 'Sri Lankan rupee', languages: ['Sinhala', 'Tamil'] },
+  { code: 'sd', name: { en: 'Sudan', es: 'Sudán', pt: 'Sudão' }, region: 'Africa', subregion: 'Northern Africa', currencyCode: 'SDG', currencyName: 'Sudanese pound', languages: ['Arabic', 'English'] },
+  { code: 'sr', name: { en: 'Suriname', es: 'Surinam', pt: 'Suriname' }, region: 'Americas', subregion: 'South America', currencyCode: 'SRD', currencyName: 'Surinamese dollar', languages: ['Dutch'] },
+  { code: 'se', name: { en: 'Sweden', es: 'Suecia', pt: 'Suécia' }, region: 'Europe', subregion: 'Northern Europe', currencyCode: 'SEK', currencyName: 'Swedish krona', languages: ['Swedish'] },
+  { code: 'ch', name: { en: 'Switzerland', es: 'Suiza', pt: 'Suíça' }, region: 'Europe', subregion: 'Western Europe', currencyCode: 'CHF', currencyName: 'Swiss franc', languages: ['French', 'Italian', 'Romansh', 'Swiss German'] },
+  { code: 'sy', name: { en: 'Syria', es: 'Siria', pt: 'Síria' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'SYP', currencyName: 'Syrian pound', languages: ['Arabic'] },
+  { code: 'st', name: { en: 'São Tomé and Príncipe', es: 'Santo Tomé y Príncipe', pt: 'São Tomé e Príncipe' }, region: 'Africa', subregion: 'Middle Africa', currencyCode: 'STN', currencyName: 'São Tomé and Príncipe dobra', languages: ['Portuguese'] },
+  { code: 'tj', name: { en: 'Tajikistan', es: 'Tayikistán', pt: 'Tajiquistão' }, region: 'Asia', subregion: 'Central Asia', currencyCode: 'TJS', currencyName: 'Tajikistani somoni', languages: ['Russian', 'Tajik'] },
+  { code: 'tz', name: { en: 'Tanzania', es: 'Tanzania', pt: 'Tanzânia' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'TZS', currencyName: 'Tanzanian shilling', languages: ['English', 'Swahili'] },
+  { code: 'tl', name: { en: 'Timor-Leste', es: 'Timor Oriental', pt: 'Timor-Leste' }, region: 'Asia', subregion: 'South-Eastern Asia', currencyCode: 'USD', currencyName: 'United States dollar', languages: ['Portuguese', 'Tetum'] },
+  { code: 'tg', name: { en: 'Togo', es: 'Togo', pt: 'Togo' }, region: 'Africa', subregion: 'Western Africa', currencyCode: 'XOF', currencyName: 'West African CFA franc', languages: ['French'] },
+  { code: 'to', name: { en: 'Tonga', es: 'Tonga', pt: 'Tonga' }, region: 'Oceania', subregion: 'Polynesia', currencyCode: 'TOP', currencyName: 'Tongan paʻanga', languages: ['English', 'Tongan'] },
+  { code: 'tt', name: { en: 'Trinidad and Tobago', es: 'Trinidad y Tobago', pt: 'Trinidade e Tobago' }, region: 'Americas', subregion: 'Caribbean', currencyCode: 'TTD', currencyName: 'Trinidad and Tobago dollar', languages: ['English'] },
+  { code: 'tn', name: { en: 'Tunisia', es: 'Túnez', pt: 'Tunísia' }, region: 'Africa', subregion: 'Northern Africa', currencyCode: 'TND', currencyName: 'Tunisian dinar', languages: ['Arabic'] },
+  { code: 'tm', name: { en: 'Turkmenistan', es: 'Turkmenistán', pt: 'Turquemenistão' }, region: 'Asia', subregion: 'Central Asia', currencyCode: 'TMT', currencyName: 'Turkmenistan manat', languages: ['Russian', 'Turkmen'] },
+  { code: 'tv', name: { en: 'Tuvalu', es: 'Tuvalu', pt: 'Tuvalu' }, region: 'Oceania', subregion: 'Polynesia', currencyCode: 'AUD', currencyName: 'Australian dollar', languages: ['English', 'Tuvaluan'] },
+  { code: 'ug', name: { en: 'Uganda', es: 'Uganda', pt: 'Uganda' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'UGX', currencyName: 'Ugandan shilling', languages: ['English', 'Swahili'] },
+  { code: 'ua', name: { en: 'Ukraine', es: 'Ucrania', pt: 'Ucrânia' }, region: 'Europe', subregion: 'Eastern Europe', currencyCode: 'UAH', currencyName: 'Ukrainian hryvnia', languages: ['Ukrainian'] },
+  { code: 'uy', name: { en: 'Uruguay', es: 'Uruguay', pt: 'Uruguai' }, region: 'Americas', subregion: 'South America', currencyCode: 'UYU', currencyName: 'Uruguayan peso', languages: ['Spanish'] },
+  { code: 'uz', name: { en: 'Uzbekistan', es: 'Uzbekistán', pt: 'Uzbequistão' }, region: 'Asia', subregion: 'Central Asia', currencyCode: 'UZS', currencyName: 'Uzbekistani soʻm', languages: ['Russian', 'Uzbek'] },
+  { code: 'vu', name: { en: 'Vanuatu', es: 'Vanuatu', pt: 'Vanuatu' }, region: 'Oceania', subregion: 'Melanesia', currencyCode: 'VUV', currencyName: 'Vanuatu vatu', languages: ['Bislama', 'English', 'French'] },
+  { code: 'va', name: { en: 'Vatican City', es: 'Ciudad del Vaticano', pt: 'Cidade do Vaticano' }, region: 'Europe', subregion: 'Southern Europe', currencyCode: 'EUR', currencyName: 'Euro', languages: ['Italian', 'Latin'] },
+  { code: 've', name: { en: 'Venezuela', es: 'Venezuela', pt: 'Venezuela' }, region: 'Americas', subregion: 'South America', currencyCode: 'VES', currencyName: 'Venezuelan bolívar soberano', languages: ['Spanish'] },
+  { code: 'ye', name: { en: 'Yemen', es: 'Yemen', pt: 'Iémen' }, region: 'Asia', subregion: 'Western Asia', currencyCode: 'YER', currencyName: 'Yemeni rial', languages: ['Arabic'] },
+  { code: 'zm', name: { en: 'Zambia', es: 'Zambia', pt: 'Zâmbia' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'ZMW', currencyName: 'Zambian kwacha', languages: ['English'] },
+  { code: 'zw', name: { en: 'Zimbabwe', es: 'Zimbabue', pt: 'Zimbabwe' }, region: 'Africa', subregion: 'Eastern Africa', currencyCode: 'ZWG', currencyName: 'Zimbabwe Gold', languages: ['Chewa', 'Chibarwe', 'English', 'Kalanga', 'Khoisan', 'Ndau', 'Northern Ndebele', 'Shona', 'Sotho', 'Tonga', 'Tsonga', 'Tswana', 'Venda', 'Xhosa', 'Zimbabwean Sign Language'] },
 ]
 
-export const COUNTRY_CODES: CountryCode[] = COUNTRIES.map((c) => c.code)
+export const COUNTRY_CODES: string[] = COUNTRIES.map((c) => c.code)
 
 export function countryByCode(code: string): Country | undefined {
   return COUNTRIES.find((c) => c.code === code)
+}
+
+/** Countries in a region, featured first then alphabetical by English
+ *  name — used by the /geo hub grouping. */
+export function countriesByRegion(region: string): Country[] {
+  return COUNTRIES.filter((c) => c.region === region).sort(
+    (a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || a.name.en.localeCompare(b.name.en),
+  )
+}
+
+/** Related countries for a country page: same region, featured first,
+ *  alphabetical after that, never the country itself. */
+export function relatedCountries(code: string, count = 6): Country[] {
+  const self = countryByCode(code)
+  if (!self) return []
+  return countriesByRegion(self.region)
+    .filter((c) => c.code !== code)
+    .slice(0, count)
 }

@@ -64,52 +64,20 @@ ROUTES = {
     "/partner": ["Become an AffiLayer partner", "partner@affilayer.com"],
     "/white-label": ["White label AffiLayer", "Your brand on the front"],
     "/advertise": ["Advertise with AffiLayer", "Pay for conversions you have reviewed"],
+    "/pricing": ["AffiLayer pricing", "free to join", "White label"],
     "/terms": ["Terms of Service"],
     "/privacy": ["Privacy Policy"],
     "/geo": ["CPA affiliate network, country by country", "United States", "Which countries can join AffiLayer?"],
-    "/geo/us": ["CPA affiliate network in United States", "Can I join AffiLayer from United States?"],
-    "/geo/uk": ["CPA affiliate network in United Kingdom", "Can I join AffiLayer from United Kingdom?"],
-    "/geo/ca": ["CPA affiliate network in Canada", "Can I join AffiLayer from Canada?"],
-    "/geo/au": ["CPA affiliate network in Australia", "Can I join AffiLayer from Australia?"],
-    "/geo/de": ["CPA affiliate network in Germany", "Can I join AffiLayer from Germany?"],
-    "/geo/fr": ["CPA affiliate network in France", "Can I join AffiLayer from France?"],
-    "/geo/br": ["CPA affiliate network in Brazil", "Can I join AffiLayer from Brazil?"],
-    "/geo/in": ["CPA affiliate network in India", "Can I join AffiLayer from India?"],
-    "/geo/es": ["CPA affiliate network in Spain", "Can I join AffiLayer from Spain?"],
-    "/geo/mx": ["CPA affiliate network in Mexico", "Can I join AffiLayer from Mexico?"],
-    "/geo/ar": ["CPA affiliate network in Argentina", "Can I join AffiLayer from Argentina?"],
     "/es/": ["Una nueva red CPA", "Convierte tráfico de", "Explorar por país"],
     "/es/affiliates": ["Para afiliados", "Tu camino hacia tu primer pago"],
     "/es/advertisers": ["Para anunciantes", "Tu camino hacia tu primer cliente"],
     "/es/how-it-works": ["Cómo funciona", "Crear una cuenta"],
     "/es/geo": ["Red de afiliados CPA, país por país", "Estados Unidos", "¿Qué países pueden unirse a AffiLayer?"],
-    "/es/geo/us": ["Red de afiliados CPA en Estados Unidos", "¿Puedo unirme a AffiLayer desde Estados Unidos?"],
-    "/es/geo/uk": ["Red de afiliados CPA en Reino Unido", "¿Puedo unirme a AffiLayer desde Reino Unido?"],
-    "/es/geo/ca": ["Red de afiliados CPA en Canadá", "¿Puedo unirme a AffiLayer desde Canadá?"],
-    "/es/geo/au": ["Red de afiliados CPA en Australia", "¿Puedo unirme a AffiLayer desde Australia?"],
-    "/es/geo/de": ["Red de afiliados CPA en Alemania", "¿Puedo unirme a AffiLayer desde Alemania?"],
-    "/es/geo/fr": ["Red de afiliados CPA en Francia", "¿Puedo unirme a AffiLayer desde Francia?"],
-    "/es/geo/br": ["Red de afiliados CPA en Brasil", "¿Puedo unirme a AffiLayer desde Brasil?"],
-    "/es/geo/in": ["Red de afiliados CPA en India", "¿Puedo unirme a AffiLayer desde India?"],
-    "/es/geo/es": ["Red de afiliados CPA en España", "¿Cómo pagan las ofertas de Finanzas en España?", "podéis ganar comisiones"],
-    "/es/geo/mx": ["Red de afiliados CPA en México", "¿Cómo pagan las ofertas de Finanzas en México?", "puedes ganar comisiones"],
-    "/es/geo/ar": ["Red de afiliados CPA en Argentina", "¿Cómo pagan las ofertas de Finanzas en Argentina?", "podés ganar comisiones"],
     "/pt/": ["Uma nova rede CPA", "Transforme tráfego de", "Explorar por país"],
     "/pt/affiliates": ["Para afiliados", "Seu caminho até o primeiro pagamento"],
     "/pt/advertisers": ["Para anunciantes", "Seu caminho até o primeiro cliente"],
     "/pt/how-it-works": ["Como funciona", "Criar uma conta"],
     "/pt/geo": ["Rede de afiliados CPA, país por país", "Estados Unidos", "Quais países podem entrar na AffiLayer?"],
-    "/pt/geo/us": ["Rede de afiliados CPA em Estados Unidos", "Posso entrar na AffiLayer a partir de Estados Unidos?"],
-    "/pt/geo/uk": ["Rede de afiliados CPA em Reino Unido", "Posso entrar na AffiLayer a partir de Reino Unido?"],
-    "/pt/geo/ca": ["Rede de afiliados CPA em Canadá", "Posso entrar na AffiLayer a partir de Canadá?"],
-    "/pt/geo/au": ["Rede de afiliados CPA em Austrália", "Posso entrar na AffiLayer a partir de Austrália?"],
-    "/pt/geo/de": ["Rede de afiliados CPA em Alemanha", "Posso entrar na AffiLayer a partir de Alemanha?"],
-    "/pt/geo/fr": ["Rede de afiliados CPA em França", "Posso entrar na AffiLayer a partir de França?"],
-    "/pt/geo/br": ["Rede de afiliados CPA em Brasil", "Posso entrar na AffiLayer a partir de Brasil?"],
-    "/pt/geo/in": ["Rede de afiliados CPA em Índia", "Posso entrar na AffiLayer a partir de Índia?"],
-    "/pt/geo/es": ["Rede de afiliados CPA em Espanha", "Posso entrar na AffiLayer a partir de Espanha?"],
-    "/pt/geo/mx": ["Rede de afiliados CPA em México", "Posso entrar na AffiLayer a partir de México?"],
-    "/pt/geo/ar": ["Rede de afiliados CPA em Argentina", "Posso entrar na AffiLayer a partir de Argentina?"],
 }
 
 PORT = 4173
@@ -140,6 +108,65 @@ def parse_blog_posts():
 
 
 BLOG_ROUTES = parse_blog_posts()
+
+
+def parse_geo():
+    """Geo routes derived from geo-data.ts (single source of truth):
+    code -> (name_en, name_es, name_pt, featured). Featured comes from
+    the FEATURED_CODES list in the same file.
+    Markers are the page H1 + first FAQ question, both templated from
+    the same data the page renders — a new country needs no edit here.
+    Prerender scope: ALL English country pages + es/pt pages for the
+    31 featured countries. Non-featured es/pt country URLs exist as
+    routes and are in the sitemap, but are SPA-rendered, not prerendered.
+    """
+    import re
+
+    text = (ROOT / "apps" / "web" / "src" / "lib" / "geo-data.ts").read_text()
+    feat_m = re.search(r"FEATURED_CODES: string\[\] = \[(.*?)\]", text, re.S)
+    featured = set(re.findall(r"'([a-z]{2})'", feat_m.group(1))) if feat_m else set()
+    countries = {}
+    for m in re.finditer(r"code: '([a-z]{2})',", text):
+        start = m.start()
+        nxt = text.find("code: '", m.end())
+        chunk = text[start:nxt if nxt != -1 else len(text)]
+        names = re.search(
+            r"name: \{ en: '([^']+)', es: '([^']+)', pt: '([^']+)' \}", chunk
+        )
+        if names:
+            countries[m.group(1)] = (*names.groups(), m.group(1) in featured)
+    return countries
+
+
+def geo_routes():
+    routes = {}
+    for code, (en, es, pt, feat) in parse_geo().items():
+        routes[f"/geo/{code}"] = [
+            f"CPA affiliate network in {en}",
+            f"Can I join AffiLayer from {en}?",
+        ]
+        if not feat:
+            continue
+        # Spanish Finance pages (es/mx/ar) show the SEO FAQ, not the
+        # generic Q&A — the marker is the Finance FAQ question.
+        if code in ("es", "mx", "ar"):
+            routes[f"/es/geo/{code}"] = [
+                f"Red de afiliados CPA en {es}",
+                f"¿Cómo pagan las ofertas de Finanzas en {es}?",
+            ]
+        else:
+            routes[f"/es/geo/{code}"] = [
+                f"Red de afiliados CPA en {es}",
+                f"¿Puedo unirme a AffiLayer desde {es}?",
+            ]
+        routes[f"/pt/geo/{code}"] = [
+            f"Rede de afiliados CPA em {pt}",
+            f"Posso entrar na AffiLayer a partir de {pt}?",
+        ]
+    return routes
+
+
+GEO_ROUTES = geo_routes()
 
 
 def wait_ready(url: str, timeout: int = 60) -> bool:
@@ -186,8 +213,32 @@ def main() -> int:
             print("vite preview did not become ready", file=sys.stderr)
             return 1
         ROUTES.update(BLOG_ROUTES)
+        ROUTES.update(GEO_ROUTES)
         failures = []
         for route, markers in ROUTES.items():
+            target = DIST / route.strip("/") / "index.html" if route != "/" else DIST / "index.html"
+            flat = DIST / f"{route.strip('/')}.html" if route != "/" else None
+            # Resume: skip routes already prerendered from this build.
+            # A target counts as done only if it holds every marker (and
+            # JSON-LD where required) — a shell or stale file re-renders.
+            # Lets a run finish in the next clear window after a flare
+            # kills it mid-way, instead of redoing all 316 routes.
+            if target.exists():
+                try:
+                    done_html = target.read_text()
+                except OSError:
+                    done_html = ""
+                if done_html and all(m in done_html for m in markers) and (
+                    route in NO_JSONLD or 'id="affilayer-jsonld"' in done_html
+                ):
+                    if flat is not None and not flat.exists():
+                        try:
+                            flat.parent.mkdir(parents=True, exist_ok=True)
+                            flat.write_text(done_html)
+                        except OSError as e:
+                            print(f"warning: could not write flat copy for {route}: {e}", file=sys.stderr)
+                    print(f"skipped {route} (already prerendered)")
+                    continue
             url = f"http://127.0.0.1:{PORT}{route}"
             html = dump_dom(url)
             missing = [m for m in markers if m not in html]
@@ -200,13 +251,11 @@ def main() -> int:
             if 'id="affilayer-jsonld"' not in html and route not in NO_JSONLD:
                 failures.append(f"{route}: JSON-LD script missing from prerendered HTML")
                 continue
-            target = DIST / route.strip("/") / "index.html" if route != "/" else DIST / "index.html"
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(html)
             # Flat copy too: static hosts (Cloudflare Pages included) serve
             # /about from about.html, while /about/ resolves to about/index.html.
-            if route != "/":
-                flat = DIST / f"{route.strip('/')}.html"
+            if flat is not None:
                 flat.parent.mkdir(parents=True, exist_ok=True)
                 flat.write_text(html)
             print(f"prerendered {route} -> {target.relative_to(ROOT)} ({len(html)} bytes)")

@@ -10,7 +10,7 @@ import { useLocale, useT, localizePath } from '../lib/i18n'
 import type { Locale } from '../lib/i18n'
 import { isDemoMode, createTicket } from '../lib/data'
 import { useAuth } from '../lib/auth'
-import { COUNTRIES } from '../lib/geo-data'
+import { COUNTRIES, FEATURED_CODES } from '../lib/geo-data'
 
 const VERTICALS = ['Dating', 'Finance', 'Gaming', 'Sweepstakes', 'Nutra', 'iGaming']
 
@@ -169,6 +169,39 @@ const FAQ_HEADING: Record<Locale, string> = {
   pt: 'Perguntas frequentes',
 }
 
+/** Cross-links between the money pages — each page points at the
+ *  others, the blog and the country index. Labels come from the nav
+ *  dict, so all three locales stay correct. */
+function MoneyLinks({ current }: { current: string }) {
+  const t = useT()
+  const locale = useLocale()
+  const links = [
+    { to: '/affiliates', label: 'nav.affiliates' as const },
+    { to: '/advertisers', label: 'nav.advertisers' as const },
+    { to: '/how-it-works', label: 'nav.how' as const },
+    { to: '/advantages', label: 'nav.advantages' as const },
+    { to: '/pricing', label: 'nav.pricing' as const },
+    { to: '/blog', label: 'nav.blog' as const },
+    { to: '/geo', label: 'nav.countries' as const },
+  ].filter((l) => l.to !== current)
+  return (
+    <section className="mt-14">
+      <h2 className="text-xl font-bold text-white">{t('xlink.title')}</h2>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {links.map((l) => (
+          <Link
+            key={l.to}
+            to={localizePath(l.to, locale)}
+            className="rounded-full border border-slate-600 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:border-amber-400 hover:text-white"
+          >
+            {t(l.label)}
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function PageFaqs({ which }: { which: 'advertisers' | 'affiliates' | 'how' }) {
   const locale = useLocale()
   const items = locale === 'en' ? PAGE_FAQS[which] : PAGE_FAQS_LOCALIZED[locale][which]
@@ -217,7 +250,8 @@ function Hero() {
   )
 }
 
-/** Country grid on the home page — the GEO-search entry point. */
+/** Country grid on the home page — the GEO-search entry point.
+ *  Featured countries only (31); the full 195 live on /geo. */
 function BrowseByCountry() {
   const t = useT()
   const locale = useLocale()
@@ -226,7 +260,10 @@ function BrowseByCountry() {
       <h2 className="text-center text-3xl font-bold text-white">{t('browse.title')}</h2>
       <p className="mx-auto mt-3 max-w-2xl text-center text-slate-300">{t('browse.sub')}</p>
       <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {COUNTRIES.map((c, i) => (
+        {FEATURED_CODES.map((code, i) => {
+          const c = COUNTRIES.find((x) => x.code === code)
+          if (!c) return null
+          return (
           <Reveal key={c.code} delay={(i % 4) * 80}>
             <Link
               to={localizePath(`/geo/${c.code}`, locale)}
@@ -239,7 +276,8 @@ function BrowseByCountry() {
               <Icon name="arrow-right" className="h-4 w-4 text-amber-400" />
             </Link>
           </Reveal>
-        ))}
+          )
+        })}
       </div>
       <p className="mt-6 text-center">
         <Link to={localizePath('/geo', locale)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-400 hover:text-amber-300">
@@ -485,6 +523,7 @@ export function Advantages() {
         </div>
         </Reveal>
       </section>
+      <MoneyLinks current="/advantages" />
     </PublicLayout>
   )
 }
@@ -593,6 +632,7 @@ export function AdvertisersPage() {
         ]}
       />
       <Link to="/register" className="pill-btn mt-6">{t('adv.register')}</Link>
+      <MoneyLinks current="/advertisers" />
       <PageFaqs which="advertisers" />
     </PublicLayout>
   )
@@ -638,6 +678,7 @@ export function AffiliatesPage() {
         ]}
       />
       <Link to="/register" className="pill-btn mt-6">{t('aff.register')}</Link>
+      <MoneyLinks current="/affiliates" />
       <PageFaqs which="affiliates" />
     </PublicLayout>
   )
@@ -709,6 +750,7 @@ export function HowItWorks() {
         ))}
       </div>
       <Link to="/register" className="pill-btn mt-6">{t('how.register')}</Link>
+      <MoneyLinks current="/how-it-works" />
       <PageFaqs which="how" />
     </PublicLayout>
   )
@@ -1026,6 +1068,93 @@ export function Advertise() {
         <Link to="/register" className="pill-btn">Register as an advertiser</Link>
         <a href="mailto:support@affilayer.com" className="pill-btn-outline">Questions? support@affilayer.com</a>
       </div>
+    </PublicLayout>
+  )
+}
+
+/** Pricing: what AffiLayer costs, in plain words. There is no price
+ *  list to publish — joining is free, advertisers pay only for
+ *  conversions they have reviewed, and white-label pricing is agreed
+ *  per setup. No tiers, prices, minimums or payout figures are
+ *  invented here; if there is little to say, the model in words is
+ *  the whole page. */
+export function Pricing() {
+  const t = useT()
+  return (
+    <PublicLayout>
+      <h1 className="text-3xl font-bold text-white md:text-4xl">
+        AffiLayer <span className="grad-text">pricing</span>
+      </h1>
+      <Slogan className="mt-4">{t('pricing.slogan')}</Slogan>
+      <p className="mt-4 max-w-3xl text-slate-300">
+        AffiLayer is free to join for affiliates and advertisers. There is
+        no joining fee, no monthly plan, and no charge for a tracking link
+        or a SmartLink. This page says what each side pays for — and what
+        nobody pays for.
+      </p>
+      <PageArt
+        variant="pricing"
+        label="Illustration: the AffiLayer hub connecting free joining, pay for reviewed conversions and white-label pricing per setup"
+        nodes={['Free to join', 'Reviewed conversions', 'No monthly fee', 'Per-setup white label']}
+        caption="what it costs — nothing up front"
+      />
+      <PageHighlights
+        items={[
+          { icon: 'users', text: 'Affiliates join free — no fee to register, no fee per click, no fee for a tracking link or a SmartLink.' },
+          { icon: 'tag', text: 'Advertisers pay for reviewed conversions only — fund your account first, then pay for what you approve.' },
+          { icon: 'check', text: 'No tiers, no price list, no hidden fees — because there is nothing to buy up front.' },
+        ]}
+      />
+      <div className="mt-6 space-y-4">
+        <Reveal>
+          <div className="lift rounded-xl bg-white p-5 text-slate-900">
+            <h2 className="font-semibold">For affiliates — free</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Joining is free. Applications are reviewed by our team, and
+              approval is not instant. You earn commission on attributed
+              conversions that pass review; approved commissions enter the
+              ledger and become payable Net30 by default. No payout figure
+              is promised up front — the payout methods and minimum
+              thresholds for your account are shown in your dashboard.
+            </p>
+          </div>
+        </Reveal>
+        <Reveal>
+          <div className="lift rounded-xl bg-white p-5 text-slate-900">
+            <h2 className="font-semibold">For advertisers — pay for reviewed conversions only</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              There is no fee to publish an offer. You fund your account
+              first, then pay only for conversions you have reviewed and
+              approved. You set the payout, the caps and the traffic rules
+              on each offer. No setup fee, no monthly fee, and no charge
+              for clicks that do not convert.
+            </p>
+          </div>
+        </Reveal>
+        <Reveal>
+          <div className="lift rounded-xl bg-white p-5 text-slate-900">
+            <h2 className="font-semibold">White label — agreed per setup</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              White-label setups are arranged one by one — there is no
+              self-serve white-label plan yet. Pricing is agreed per setup;
+              write to us to discuss yours.
+            </p>
+          </div>
+        </Reveal>
+      </div>
+      <p className="mt-6 max-w-3xl text-sm text-slate-400">
+        There are no tiers, no price list and no hidden fees — because there
+        is nothing to buy up front. The only money that moves is the
+        advertiser&apos;s funding for conversions, and the affiliate&apos;s
+        payout from approved commissions.
+      </p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link to="/register" className="pill-btn">Create an account</Link>
+        <Link to="/advertisers" className="pill-btn-outline">For advertisers</Link>
+        <Link to="/affiliates" className="pill-btn-outline">For affiliates</Link>
+        <Link to="/contact" className="pill-btn-outline">Ask about pricing</Link>
+      </div>
+      <MoneyLinks current="/pricing" />
     </PublicLayout>
   )
 }

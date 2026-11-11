@@ -43,11 +43,21 @@ EN = [
     ("/partner", "monthly", "0.7"),
     ("/white-label", "monthly", "0.7"),
     ("/advertise", "monthly", "0.7"),
+    ("/pricing", "monthly", "0.7"),
     ("/terms", "yearly", "0.4"),
     ("/privacy", "yearly", "0.4"),
     ("/geo", "monthly", "0.8"),
 ]
-GEO_CODES = ["us", "uk", "ca", "au", "de", "fr", "br", "in", "es", "mx", "ar"]
+GEO_DATA = ROOT / "apps" / "web" / "src" / "lib" / "geo-data.ts"
+# GEO_CODES are derived from geo-data.ts (single source of truth) — every
+# country in the catalogue gets an EN URL plus es/pt alternates in
+# LOCALISED below. The assert fails loudly if the catalogue ever drifts
+# from 195 unique codes.
+GEO_CODES = sorted(
+    set(re.findall(r"\n    code: '([a-z]{2})',", GEO_DATA.read_text()))
+    | set(re.findall(r"\n  \{ code: '([a-z]{2})',", GEO_DATA.read_text()))
+)
+assert len(GEO_CODES) == 195, f"geo-data.ts must hold 195 country codes, found {len(GEO_CODES)}"
 LOCALISED = ["", "/affiliates", "/advertisers", "/how-it-works", "/geo", "/brand", "/blog"] + [f"/geo/{c}" for c in GEO_CODES]
 CATEGORY_SLUGS = ["launch-notes", "adtech-insights", "guides", "news"]
 

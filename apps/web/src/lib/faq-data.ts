@@ -16,6 +16,14 @@ export const FAQ_GROUPS: { group: string; items: { q: string; a: string }[] }[] 
         a: 'SmartLink is one tracking link for all of your traffic. Each visitor is routed to an eligible offer based on their country and device, using clear deterministic rules. It does not use AI optimisation and it does not guarantee earnings — it simply matches traffic to offers it is allowed to run.',
       },
       {
+        q: 'How do I join a CPA network as a beginner?',
+        a: 'Create an account, complete onboarding, and wait for approval — every application is reviewed by our team, and approval is not instant. Once approved, start with one offer in a vertical and country you understand, generate a tracking link, and send a little traffic first. There is no bonus or referral program, and no payout figure is promised up front: approved commissions enter the ledger and become payable Net30 by default.',
+      },
+      {
+        q: 'What is sub-ID tracking?',
+        a: 'Sub IDs are labels you attach to your own clicks — AffiLayer tracking links carry five of them, sub1 to sub5. They travel with the click ID to the conversion, so you can break down clicks and conversions by campaign, placement or creative and see which of your clicks earned.',
+      },
+      {
         q: 'How do I get access to offers?',
         a: 'Create an account, complete onboarding, and wait for approval. Once approved, you can browse the marketplace. Some offers are open; others require you to apply, and the advertiser approves you before you can generate a tracking link.',
       },
@@ -73,6 +81,14 @@ export const FAQ_GROUPS: { group: string; items: { q: string; a: string }[] }[] 
         q: 'What is the difference between CPA, CPL and CPS?',
         a: 'The trigger: CPA pays on a defined action, CPL pays on a lead, CPS pays only on a completed sale. The further the trigger is from the click, the more risk sits with the affiliate. On AffiLayer every model follows the same review and the same Net30 schedule after the trigger — the model changes what triggers payment, not when it becomes payable.',
       },
+      {
+        q: 'What does Net-30 mean?',
+        a: 'Net-30 is a payment term: approved commissions become payable 30 days after the end of the month in which they were approved. Net-7 and Net-15 work the same way with 7 or 15 days. On AffiLayer the default is Net30 — a commission approved in November becomes payable 30 days after 30 November. Payable means you can request the payout; payouts are manual and admin-approved.',
+      },
+      {
+        q: 'What is an offer cap?',
+        a: 'A cap is the most an advertiser will accept: a daily cap resets each day, a total cap is the monthly limit. On AffiLayer a click that would exceed a cap is refused rather than sent somewhere it cannot convert, and the refusal is visible — so the affiliate knows the cap, not the traffic, is the reason.',
+      },
     ],
   },
   {
@@ -89,6 +105,10 @@ export const FAQ_GROUPS: { group: string; items: { q: string; a: string }[] }[] 
       {
         q: 'How do I get my first tracking link?',
         a: 'Create an account, complete onboarding, and wait for approval. Once approved, browse the marketplace, apply to an offer where approval is required, and generate a tracking link — or use your SmartLink for mixed traffic. The link carries a unique click ID and up to five sub-parameters.',
+      },
+      {
+        q: 'How do I get approved on a CPA network?',
+        a: 'Complete your profile, show a traffic source we can verify, and match the verticals and GEOs the network serves. Our team reviews every application — there is no fixed approval time and no instant approval. If an application is declined, the decision message says what to fix and you can re-apply.',
       },
     ],
   },
@@ -138,17 +158,20 @@ export const PAGE_FAQS: Record<'advertisers' | 'affiliates' | 'how', { q: string
     { q: 'What caps can I set?', a: 'A daily cap and a total cap per offer. The daily cap resets each day; the total cap is the monthly cap — it stops the offer accepting clicks when reached, and resets at the start of each month. Clicks past a cap are refused rather than sent somewhere they cannot convert.' },
     { q: 'How do I pay?', a: 'You fund your account first, then pay only for conversions you have reviewed and approved. Approved commissions enter the ledger and become payable Net30 by default; payouts to affiliates are manual and admin-approved.' },
     { q: 'What traffic can I block?', a: 'Any source, GEO or device, per offer. Fraudulent traffic, bots, misleading creatives, forced clicks, incentivised traffic and chat traffic are already banned network-wide.' },
+    { q: 'What should I put in an offer brief?', a: 'The payout model and conversion action, the payout, daily and total caps, the countries and devices you accept, and the traffic rules. The brief is the record both sides point to when a conversion is questioned — write it completely and most disputes never happen.' },
   ],
   affiliates: [
     { q: 'How do I get a tracking link?', a: 'Create an account, complete onboarding, and wait for approval. Once approved, browse the marketplace, apply to an offer where required, and generate a tracking link — or use your SmartLink for mixed traffic.' },
     { q: 'What are sub-parameters (sub1–sub5)?', a: 'Five labels you attach to your own clicks — campaign, placement, creative, audience, or anything you want to test. They travel with the click ID to the conversion, so you can see which clicks earned.' },
     { q: 'Direct offer or SmartLink — which first?', a: 'A direct link when you know the offer and the audience match. A SmartLink when your traffic is mixed — several countries or devices — and no single offer fits everyone.' },
     { q: 'When do I see my stats?', a: 'Clicks appear in your reports as they are recorded. Conversions appear as pending once attributed, and move to approved, rejected or reversed after review. Earnings become payable only from approved conversions in the commission ledger.' },
+    { q: 'I am new to CPA marketing — where do I start?', a: 'Start with one offer in a vertical and country you understand, and one traffic source you can verify. Create an account, complete onboarding, wait for approval, then generate a tracking link — or use your SmartLink for mixed traffic. Send a little traffic first, label your clicks with sub-parameters, and scale what gets approved — not what gets clicked.' },
   ],
   how: [
     { q: 'How long is each step?', a: 'Steps 1, 3, 4 and 5 happen as you use the network — registration, publishing or promoting, clicks, and attribution. Step 2 (approval) and step 6 (review and payout) are done by our team by hand, so no fixed time is promised; you can check your status on the approval page.' },
     { q: 'What happens if my application is declined?', a: 'The decision message on your approval page says what to fix — usually an incomplete profile, a traffic source we cannot verify, or a mismatch with the verticals and GEOs we serve. Update your profile and re-apply.' },
     { q: 'When does a conversion become payable?', a: 'A conversion is recorded as pending, reviewed, and — if approved — entered in the commission ledger. Approved commissions become payable 30 days after the end of the month in which they were approved (Net30 by default).' },
+    { q: 'How does AffiLayer track conversions?', a: 'Server-to-server: when a conversion happens, the advertiser posts the click ID back to the network, signed and deduplicated by idempotency key, and the conversion is recorded as pending for review. It does not depend on the visitor’s browser, so it is not lost to ad blockers or closed tabs the way a pixel can be.' },
   ],
 }
 
@@ -164,17 +187,20 @@ export const PAGE_FAQS_LOCALIZED: Record<'es' | 'pt', typeof PAGE_FAQS> = {
       { q: '¿Qué límites puedo establecer?', a: 'Un límite diario y un límite total por oferta. El límite diario se reinicia cada día; el límite total es el límite mensual — detiene la aceptación de clics cuando se alcanza y se reinicia a principios de cada mes. Los clics que superan un límite se rechazan en lugar de enviarse a un lugar donde no pueden convertir.' },
       { q: '¿Cómo pago?', a: 'Primero financias tu cuenta y luego pagas solo por las conversiones que has revisado y aprobado. Las comisiones aprobadas entran en el libro contable y se vuelven pagaderas Net30 por defecto; los pagos a los afiliados son manuales y aprobados por un administrador.' },
       { q: '¿Qué tráfico puedo bloquear?', a: 'Cualquier fuente, GEO o dispositivo, por oferta. El tráfico fraudulento, los bots, las creatividades engañosas, los clics forzados, el tráfico incentivado y el tráfico de chat ya están prohibidos en toda la red.' },
+      { q: '¿Qué debo poner en el resumen de una oferta?', a: 'El modelo de pago y la acción de conversión, el pago, los límites diario y total, los países y dispositivos que aceptas, y las reglas de tráfico. El resumen es el documento al que ambas partes recurren cuando se cuestiona una conversión: escríbelo completo y la mayoría de las disputas no ocurren.' },
     ],
     affiliates: [
       { q: '¿Cómo consigo un enlace de seguimiento?', a: 'Crea una cuenta, completa la incorporación y espera la aprobación. Una vez aprobado, explora el mercado, solicita una oferta cuando se requiera y genera un enlace de seguimiento — o usa tu SmartLink para tráfico mixto.' },
       { q: '¿Qué son los subparámetros (sub1–sub5)?', a: 'Cinco etiquetas que adjuntas a tus propios clics — campaña, ubicación, creatividad, audiencia o lo que quieras probar. Viajan con el ID de clic hasta la conversión, para que puedas ver qué clics generaron ganancias.' },
       { q: '¿Oferta directa o SmartLink: qué uso primero?', a: 'Un enlace directo cuando sabes que la oferta y la audiencia coinciden. Un SmartLink cuando tu tráfico es mixto — varios países o dispositivos — y ninguna oferta se ajusta a todos.' },
       { q: '¿Cuándo veo mis estadísticas?', a: 'Los clics aparecen en tus informes a medida que se registran. Las conversiones aparecen como pendientes una vez atribuidas, y pasan a aprobadas, rechazadas o revertidas tras la revisión. Las ganancias solo se vuelven pagaderas a partir de las conversiones aprobadas en el libro contable de comisiones.' },
+      { q: 'Soy nuevo en el marketing CPA — ¿por dónde empiezo?', a: 'Empieza con una oferta de una vertical y un país que entiendas, y una fuente de tráfico que puedas verificar. Crea una cuenta, completa la incorporación, espera la aprobación y genera un enlace de seguimiento — o usa tu SmartLink para el tráfico mixto. Envía un poco de tráfico primero, etiqueta tus clics con subparámetros y escala lo que se aprueba, no lo que se hace clic.' },
     ],
     how: [
       { q: '¿Cuánto dura cada paso?', a: 'Los pasos 1, 3, 4 y 5 ocurren mientras usas la red — registro, publicación o promoción, clics y atribución. El paso 2 (aprobación) y el paso 6 (revisión y pago) los realiza nuestro equipo a mano, por lo que no se promete un tiempo fijo; puedes consultar tu estado en la página de aprobación.' },
       { q: '¿Qué pasa si rechazan mi solicitud?', a: 'El mensaje de decisión en tu página de aprobación dice qué debes corregir — normalmente un perfil incompleto, una fuente de tráfico que no podemos verificar o una discrepancia con las verticales y GEOs que servimos. Actualiza tu perfil y vuelve a solicitarlo.' },
       { q: '¿Cuándo se vuelve pagadera una conversión?', a: 'Una conversión se registra como pendiente, se revisa y — si se aprueba — se registra en el libro contable de comisiones. Las comisiones aprobadas se vuelven pagaderas 30 días después del fin del mes en que fueron aprobadas (Net30 por defecto).' },
+      { q: '¿Cómo sigue AffiLayer las conversiones?', a: 'De servidor a servidor: cuando ocurre una conversión, el anunciante devuelve el ID de clic a la red, firmado y deduplicado por clave de idempotencia, y la conversión se registra como pendiente de revisión. No depende del navegador del visitante, así que no se pierde por bloqueadores de anuncios o pestañas cerradas como puede pasar con un píxel.' },
     ],
   },
   pt: {
@@ -184,17 +210,20 @@ export const PAGE_FAQS_LOCALIZED: Record<'es' | 'pt', typeof PAGE_FAQS> = {
       { q: 'Quais limites posso definir?', a: 'Um limite diário e um limite total por oferta. O limite diário é zerado a cada dia; o limite total é o limite mensal — interrompe a aceitação de cliques quando atingido e é zerado no início de cada mês. Cliques além de um limite são recusados em vez de serem enviados para onde não podem converter.' },
       { q: 'Como pago?', a: 'Primeiro você financia sua conta e depois paga apenas pelas conversões que revisou e aprovou. As comissões aprovadas entram no livro-razão e se tornam pagáveis Net30 por padrão; os pagamentos aos afiliados são manuais e aprovados por um administrador.' },
       { q: 'Que tráfego posso bloquear?', a: 'Qualquer fonte, GEO ou dispositivo, por oferta. Tráfego fraudulento, bots, criativos enganosos, cliques forçados, tráfego incentivado e tráfego de chat já são proibidos em toda a rede.' },
+      { q: 'O que devo colocar no resumo de uma oferta?', a: 'O modelo de pagamento e a ação de conversão, o pagamento, os limites diário e total, os países e dispositivos que você aceita e as regras de tráfego. O resumo é o documento ao qual ambas as partes recorrem quando uma conversão é questionada — escreva-o por completo e a maioria das disputas nunca acontece.' },
     ],
     affiliates: [
       { q: 'Como obtenho um link de rastreamento?', a: 'Crie uma conta, conclua a integração e aguarde a aprovação. Depois de aprovado, explore o mercado, candidate-se a uma oferta quando necessário e gere um link de rastreamento — ou use seu SmartLink para tráfego misto.' },
       { q: 'O que são subparâmetros (sub1–sub5)?', a: 'Cinco rótulos que você anexa aos seus próprios cliques — campanha, posicionamento, criativo, público ou o que quiser testar. Eles acompanham o ID de clique até a conversão, para que você possa ver quais cliques geraram ganhos.' },
       { q: 'Oferta direta ou SmartLink: qual uso primeiro?', a: 'Um link direto quando você sabe que a oferta e o público combinam. Um SmartLink quando seu tráfego é misto — vários países ou dispositivos — e nenhuma oferta serve para todos.' },
       { q: 'Quando vejo minhas estatísticas?', a: 'Os cliques aparecem nos seus relatórios à medida que são registrados. As conversões aparecem como pendentes após a atribuição e passam para aprovadas, rejeitadas ou revertidas após a revisão. Os ganhos só se tornam pagáveis a partir das conversões aprovadas no livro-razão de comissões.' },
+      { q: 'Sou novo no marketing de CPA — por onde começo?', a: 'Comece com uma oferta de uma vertical e um país que você entenda, e uma fonte de tráfego que possa verificar. Crie uma conta, conclua a integração, aguarde a aprovação e gere um link de rastreamento — ou use seu SmartLink para tráfego misto. Envie um pouco de tráfego primeiro, rotule seus cliques com subparâmetros e escale o que for aprovado — não o que for clicado.' },
     ],
     how: [
       { q: 'Quanto dura cada etapa?', a: 'As etapas 1, 3, 4 e 5 acontecem enquanto você usa a rede — cadastro, publicação ou promoção, cliques e atribuição. A etapa 2 (aprovação) e a etapa 6 (revisão e pagamento) são feitas pela nossa equipe à mão, por isso nenhum prazo fixo é prometido; você pode verificar seu status na página de aprovação.' },
       { q: 'O que acontece se minha inscrição for recusada?', a: 'A mensagem de decisão na sua página de aprovação diz o que corrigir — geralmente um perfil incompleto, uma fonte de tráfego que não podemos verificar ou uma incompatibilidade com as verticais e GEOs que atendemos. Atualize seu perfil e candidate-se novamente.' },
       { q: 'Quando uma conversão se torna pagável?', a: 'Uma conversão é registrada como pendente, revisada e — se aprovada — lançada no livro-razão de comissões. As comissões aprovadas se tornam pagáveis 30 dias após o fim do mês em que foram aprovadas (Net30 por padrão).' },
+      { q: 'Como a AffiLayer rastreia conversões?', a: 'De servidor para servidor: quando uma conversão acontece, o anunciante devolve o ID de clique à rede, assinado e deduplicado por chave de idempotência, e a conversão é registrada como pendente de revisão. Não depende do navegador do visitante, por isso não se perde por bloqueadores de anúncios ou abas fechadas como pode acontecer com um pixel.' },
     ],
   },
 }

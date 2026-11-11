@@ -27,6 +27,7 @@ export type PageArtVariant =
   | 'partner'
   | 'whitelabel'
   | 'advertise'
+  | 'pricing'
 
 const NODE_BOXES = [
   { x: 16, y: 26 },

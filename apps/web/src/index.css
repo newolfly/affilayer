@@ -358,3 +358,49 @@ table tbody tr {
 table tbody tr:hover {
   background-color: rgba(245, 158, 11, 0.06);
 }
+
+/* Blog hero + card images: CSS-only effects — gradient overlay and
+ * fade-in on the post hero, hover zoom on card thumbnails. No JS. */
+.blog-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+.blog-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(7, 13, 26, 0.55));
+  pointer-events: none;
+}
+.blog-hero-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  animation: blog-hero-in 0.6s ease both;
+}
+@keyframes blog-hero-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.blog-card-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.blog-card:hover .blog-card-img {
+  transform: scale(1.04);
+}
+@media (prefers-reduced-motion: reduce) {
+  .blog-hero-img {
+    animation: none;
+  }
+  .blog-card-img {
+    transition: none;
+  }
+  .blog-card:hover .blog-card-img {
+    transform: none;
+  }
+}

@@ -2,9 +2,10 @@ import { Link, useParams } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { PublicLayout, Reveal, Slogan } from '../components/layout'
 import { PageArt, PageHighlights } from '../components/illustrations'
-import { formatPostDate, publishedPosts, readingTime, relatedPosts } from '../lib/blog-data'
+import { formatPostDate, publishedPosts, readingTime, relatedCountryCodes, relatedPosts } from '../lib/blog-data'
 import type { Block, Post } from '../lib/blog-data'
-import { useLocale, useT } from '../lib/i18n'
+import { countryByCode } from '../lib/geo-data'
+import { localizePath, useLocale, useT } from '../lib/i18n'
 
 export const CATEGORIES = ['Launch Notes', 'AdTech Insights', 'Guides', 'News'] as const
 export const CATEGORY_SLUGS: Record<string, string> = {
@@ -71,7 +72,13 @@ function renderBlock(block: Block, i: number): ReactNode {
 function PostCard({ p }: { p: Post }) {
   return (
     <Reveal>
-      <article className="lift h-full rounded-xl bg-white p-6 text-slate-900">
+      <article className="blog-card lift h-full overflow-hidden rounded-xl bg-white text-slate-900">
+        {p.heroImage && (
+          <Link to={`/blog/${p.slug}`} aria-label={p.title}>
+            <img src={p.heroImage} alt="" loading="lazy" className="blog-card-img" />
+          </Link>
+        )}
+        <div className="p-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">{p.category}</p>
         <h2 className="mt-2 text-lg font-bold">
           <Link to={`/blog/${p.slug}`} className="transition-colors hover:text-amber-700">{p.title}</Link>
@@ -82,6 +89,7 @@ function PostCard({ p }: { p: Post }) {
           {p.updated ? ` · Updated ${formatPostDate(p.updated)}` : ''}
         </p>
         <Link to={`/blog/${p.slug}`} className="mt-3 inline-block font-semibold text-amber-700 transition-colors hover:text-amber-800">Read more →</Link>
+        </div>
       </article>
     </Reveal>
   )
@@ -209,6 +217,7 @@ export function News() {
 
 export function BlogPost() {
   const t = useT()
+  const locale = useLocale()
   const { slug } = useParams()
   const post = publishedPosts().find((p) => p.slug === slug)
   if (!post) {
@@ -240,6 +249,11 @@ export function BlogPost() {
         {post.updated ? ` · Updated ${formatPostDate(post.updated)}` : ''}
       </p>
       <Slogan className="mt-4">{t('blog.post.slogan')}</Slogan>
+      {post.heroImage && (
+        <figure className="blog-hero mt-6">
+          <img src={post.heroImage} alt={post.title} className="blog-hero-img" fetchPriority="high" />
+        </figure>
+      )}
       <PageArt
         variant="blog"
         label={`Illustration: the AffiLayer hub for the post “${post.title}”`}
@@ -277,17 +291,49 @@ export function BlogPost() {
           <h2 className="text-xl font-bold text-white">Related posts</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             {related.map((p) => (
-              <article key={p.slug} className="rounded-xl bg-white p-5 text-slate-900">
+              <article key={p.slug} className="blog-card overflow-hidden rounded-xl bg-white text-slate-900">
+                {p.heroImage && (
+                  <Link to={`/blog/${p.slug}`} aria-label={p.title}>
+                    <img src={p.heroImage} alt="" loading="lazy" className="blog-card-img" />
+                  </Link>
+                )}
+                <div className="p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">{p.category}</p>
                 <h3 className="mt-2 font-bold">
                   <Link to={`/blog/${p.slug}`} className="hover:text-amber-700">{p.title}</Link>
                 </h3>
                 <p className="mt-2 text-xs text-slate-500">{formatPostDate(p.date)} · {p.author.name}</p>
+                </div>
               </article>
             ))}
           </div>
         </section>
       )}
+      <section className="mt-10">
+        <h2 className="text-xl font-bold text-white">{t('blog.post.countries')}</h2>
+        <p className="mt-2 text-sm text-slate-400">{t('blog.post.countriesSub')}</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {relatedCountryCodes(post).map((code) => {
+            const c = countryByCode(code)
+            if (!c) return null
+            return (
+              <Link
+                key={code}
+                to={localizePath(`/geo/${code}`, locale)}
+                className="rounded-full border border-slate-600 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:border-amber-400 hover:text-white"
+              >
+                {c.name[locale]}
+              </Link>
+            )
+          })}
+          <Link
+            to={localizePath('/geo', locale)}
+            className="rounded-full border border-amber-500 px-4 py-2.5 text-sm font-semibold text-amber-400 transition-colors hover:text-amber-300"
+          >
+            {t('geo.page.all')}
+          </Link>
+        </div>
+      </section>
       <div className="mt-6 flex flex-wrap gap-3">
         <Link to="/blog" className="pill-btn-outline">← All posts</Link>
         <Link to="/register" className="pill-btn">Create an account</Link>

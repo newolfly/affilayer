@@ -86,9 +86,22 @@ export function relatedPosts(post: Post, count = 3): Post[] {
   return byScore.slice(0, count).map((x) => x.p)
 }
 
+/** Country codes linked from a post's "Browse by country" block.
+ *  Navigation only — no claim that any offer runs in these countries.
+ *  Finance posts point at the three Finance country pages (es/mx/ar);
+ *  the geo post points at a spread of featured countries; everything
+ *  else points at the same featured set. The /geo hub link is always
+ *  shown alongside. */
+export function relatedCountryCodes(post: Post): string[] {
+  if (post.tags.includes('finance')) return ['es', 'mx', 'ar', 'us', 'uk', 'br']
+  if (post.tags.includes('geo')) return ['us', 'uk', 'br', 'in', 'mx', 'ng']
+  return ['us', 'uk', 'br', 'in', 'es', 'mx']
+}
+
 export const POSTS: Post[] = [
   {
     slug: 'affilayer-is-live',
+    heroImage: '/blog/affilayer-is-live.jpg',
     title: 'AffiLayer is live: what the network offers on day one',
     description:
       'AffiLayer opens 7 November 2026 with direct CPA offers, SmartLink routing, full-funnel tracking and an append-only commission ledger.',
@@ -116,6 +129,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'what-is-a-cpa-network',
+    heroImage: '/blog/what-is-a-cpa-network.jpg',
     title: 'What is a CPA network? How affiliates, advertisers and the network fit together',
     description:
       'A CPA network connects advertisers who pay for a defined action with affiliates who drive it — and handles tracking, attribution and payouts.',
@@ -146,6 +160,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'cpa-vs-cpl-vs-cps-vs-cpc',
+    heroImage: '/blog/cpa-vs-cpl-vs-cps-vs-cpc.jpg',
     title: 'CPA vs CPL vs CPS vs CPC: which payout model pays you, and when',
     description:
       'CPA, CPL, CPS and CPC differ in one thing: what triggers payment. The trigger decides who bears the risk — and when a commission becomes payable.',
@@ -175,6 +190,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'what-is-a-smartlink',
+    heroImage: '/blog/what-is-a-smartlink.jpg',
     title: 'What is a SmartLink? One link, many offers — and what ours does differently',
     description:
       'A SmartLink is one tracking link that routes each visitor to an eligible offer for their country and device. Ours uses fixed, published rules.',
@@ -203,6 +219,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'how-affiliate-tracking-works',
+    heroImage: '/blog/how-affiliate-tracking-works.jpg',
     title: 'How affiliate tracking actually works: click IDs, postbacks and S2S',
     description:
       'A click gets a unique ID, the conversion is linked back to it, and the record is signed and deduplicated. That chain is the whole of tracking.',
@@ -228,6 +245,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'why-conversions-go-missing',
+    heroImage: '/blog/why-conversions-go-missing.jpg',
     title: 'Why your conversions go missing: pixels, ad blockers and the case for server-to-server',
     description:
       'A conversion that never reaches the network never pays. Pixels lose conversions to browsers; server-to-server reporting does not depend on them.',
@@ -256,6 +274,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'how-to-choose-a-cpa-network',
+    heroImage: '/blog/how-to-choose-a-cpa-network.jpg',
     title: 'How to choose a CPA network: 7 checks before you send your first click',
     description:
       'Seven checks before you send traffic: tracking you can audit, a ledger you can read, honest payout terms, and no promises the network cannot keep.',
@@ -286,6 +305,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'subid-tracking-explained',
+    heroImage: '/blog/subid-tracking-explained.jpg',
     title: 'Sub IDs explained: the 5 parameters that tell you which click earned',
     description:
       'Sub IDs are labels you attach to your own clicks — campaign, placement, creative. Five of them, and they are how you learn what actually converts.',
@@ -308,6 +328,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'what-does-net30-mean',
+    heroImage: '/blog/what-does-net30-mean.jpg',
     title: 'What does Net30 mean? Payout timing, holds and the real wait for your first payment',
     description:
       'Net30 means approved commissions become payable 30 days after the end of the month in which they were approved. A worked example, with dates.',
@@ -336,6 +357,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'offer-caps-explained',
+    heroImage: '/blog/offer-caps-explained.jpg',
     title: 'Offer caps explained: daily caps, total caps, and what happens when a cap is hit',
     description:
       'A cap is the advertiser saying "this much, and no more". Daily caps reset; total caps end the offer. A capped click is refused, not wasted.',
@@ -362,6 +384,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'geo-targeting-cpa-offers',
+    heroImage: '/blog/geo-targeting-cpa-offers.jpg',
     title: 'Geo targeting in CPA: why the same offer pays differently in every country',
     description:
       'The same offer in the United States and in Brazil is two different offers: different audiences, different payouts, different rules. Geo decides.',
@@ -384,11 +407,12 @@ export const POSTS: Post[] = [
       ] },
       { kind: 'h2', text: 'What that means for affiliates' },
       { kind: 'p', text: 'Know where your traffic comes from before you pick an offer. Mixed-country traffic needs either a SmartLink (which routes each visitor to an offer for their country) or separate links per country. Sending traffic from a country the offer does not accept is the fastest way to earn nothing.' },
-      { kind: 'product', title: 'What AffiLayer does here', text: 'Country pages for 11 countries, per-offer GEO targeting, and a SmartLink that routes by country first.', href: '/geo', cta: 'Browse by country' },
+      { kind: 'product', title: 'What AffiLayer does here', text: 'Country pages for 195 countries, per-offer GEO targeting, and a SmartLink that routes by country first.', href: '/geo', cta: 'Browse by country' },
     ],
   },
   {
     slug: 'affiliate-fraud-patterns',
+    heroImage: '/blog/affiliate-fraud-patterns.jpg',
     title: 'Affiliate fraud: the patterns that get accounts rejected — and how to stay clean',
     description:
       'Bots, misleading creatives, forced clicks and incentivised traffic. The patterns are old, the detection is straightforward, and clean traffic has nothing to fear.',
@@ -423,6 +447,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'publish-your-first-offer',
+    heroImage: '/blog/publish-your-first-offer.jpg',
     title: 'How to publish your first offer on AffiLayer: payouts, caps, geos and traffic rules',
     description:
       'Publish an offer in four parts: the payout and conversion action, the caps, the countries and devices, and the traffic rules. Then approve affiliates.',
@@ -450,6 +475,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'what-to-put-in-an-offer-brief',
+    heroImage: '/blog/what-to-put-in-an-offer-brief.jpg',
     title: 'What Advertisers Should Put in an Offer Brief',
     description:
       'An offer brief is the agreement before the agreement: payout, caps, countries, traffic rules, conversion definition. What to write, and why each line matters.',
@@ -481,6 +507,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'approving-affiliates-what-to-check',
+    heroImage: '/blog/approving-affiliates-what-to-check.jpg',
     title: 'Approving Affiliates: What to Check Before You Say Yes',
     description:
       'Approval is a gate, not a guarantee. Check traffic source, vertical fit, GEO and quality signals — and know what saying yes does and does not promise.',
@@ -522,6 +549,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'setting-caps-and-payouts',
+    heroImage: '/blog/setting-caps-and-payouts.jpg',
     title: 'Setting Caps and Payouts Without Losing Money',
     description:
       'Daily caps, total caps and the payout model are your budget controls. How to set them, what happens when a cap is hit, and when the money actually moves.',
@@ -558,6 +586,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'finance-cpa-offers-explained',
+    heroImage: '/blog/finance-cpa-offers-explained.jpg',
     title: 'Finance CPA Offers: What Converts and What to Watch',
     description:
       'Finance CPA pays for intent — but compliance and lead quality decide whether a lead is worth anything. What converts, what gets rejected, and what to watch.',
@@ -595,6 +624,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'gaming-cpa-offers-explained',
+    heroImage: '/blog/gaming-cpa-offers-explained.jpg',
     title: 'Gaming CPA Offers: Traffic, Payouts and Player Quality',
     description:
       'Gaming traffic is fast, huge and mixed in quality. Installs pay for volume, deposits pay for players — and that difference decides if the traffic is worth it.',
@@ -630,6 +660,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'dating-sweepstakes-cpa-offers',
+    heroImage: '/blog/dating-sweepstakes-cpa-offers.jpg',
     title: 'Dating and Sweepstakes CPA: Traffic That Converts',
     description:
       'Dating and sweepstakes traffic is fast, mobile and impulse-led — and the verticals where a misleading creative costs you the account fastest. What to watch.',
@@ -670,6 +701,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'reading-your-commission-ledger',
+    heroImage: '/blog/reading-your-commission-ledger.jpg',
     title: 'Pending, Approved, Rejected, Reversed: Reading Your Ledger',
     description:
       'Every commission on AffiLayer sits in one of four ledger states — pending, approved, rejected or reversed. Here is what each one means, and when it pays.',
@@ -713,6 +745,7 @@ export const POSTS: Post[] = [
   },
   {
     slug: 'how-we-review-conversions',
+    heroImage: '/blog/how-we-review-conversions.jpg',
     title: 'How We Review Conversions Before They Become Payable',
     description:
       'Every conversion on AffiLayer is recorded as pending and reviewed by hand before it becomes payable. Here is what the review checks, and what happens next.',

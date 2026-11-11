@@ -23,6 +23,7 @@ const Privacy = lazy(() => import('./pages/public').then((m) => ({ default: m.Pr
 const Partner = lazy(() => import('./pages/public').then((m) => ({ default: m.Partner })))
 const WhiteLabel = lazy(() => import('./pages/public').then((m) => ({ default: m.WhiteLabel })))
 const Advertise = lazy(() => import('./pages/public').then((m) => ({ default: m.Advertise })))
+const Pricing = lazy(() => import('./pages/public').then((m) => ({ default: m.Pricing })))
 const NotFound = lazy(() => import('./pages/public').then((m) => ({ default: m.NotFound })))
 const Blog = lazy(() => import('./pages/blog').then((m) => ({ default: m.Blog })))
 const BlogPost = lazy(() => import('./pages/blog').then((m) => ({ default: m.BlogPost })))
@@ -164,6 +165,7 @@ export default function App() {
           <Route path="/partner" element={<Partner />} />
           <Route path="/white-label" element={<WhiteLabel />} />
           <Route path="/advertise" element={<Advertise />} />
+          <Route path="/pricing" element={<Pricing />} />
           <Route path="/geo" element={<GeoIndex />} />
           <Route path="/geo/:code" element={<GeoPage />} />
           {/* Public, Spanish (same components, locale from the URL) */}

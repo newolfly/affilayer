@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { DICT } from './i18n-dict'
 import type { DictKey } from './i18n-dict'
+import { COUNTRIES } from './geo-data'
 
 export type Locale = 'en' | 'es' | 'pt'
 
@@ -13,12 +14,12 @@ export const LOCALES: { code: Locale; label: string; short: string }[] = [
 ]
 
 /** Base public paths that exist in English, Spanish and Portuguese.
- *  Everything else on the public site is English-only for now. */
+ *  Everything else on the public site is English-only for now.
+ *  Geo country paths are derived from geo-data.ts, so every country
+ *  page gets hreflang alternates — not just the featured ones. */
 export const LOCALIZED_BASE_PATHS: string[] = [
-  '/',
- '/affiliates', '/advertisers', '/how-it-works', '/geo', '/brand', '/blog',
-  '/geo/us', '/geo/uk', '/geo/ca', '/geo/au', '/geo/de', '/geo/fr', '/geo/br', '/geo/in',
-  '/geo/es', '/geo/mx', '/geo/ar',
+  '/', '/affiliates', '/advertisers', '/how-it-works', '/geo', '/brand', '/blog',
+  ...COUNTRIES.map((c) => `/geo/${c.code}`),
 ]
 
 /** Region codes for the geo pages whose Spanish copy is written for one

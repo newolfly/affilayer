@@ -16,6 +16,8 @@ export type SeoMeta = {
   title: string
   description: string
   ogType?: 'website' | 'article'
+  /** Per-page og:image / twitter:image; defaults to the site OG image. */
+  ogImage?: string
   jsonLd?: Record<string, unknown> | Record<string, unknown>[]
   /** True for pages search engines must not index (app/auth routes, 404). */
   noindex?: boolean
@@ -105,7 +107,7 @@ function blogPostingJsonLd(slug: string) {
     description: post.description,
     datePublished: post.date,
     dateModified: post.updated ?? post.date,
-    image: post.heroImage ?? OG_IMAGE,
+    image: post.heroImage ? `${SITE_URL}${post.heroImage}` : OG_IMAGE,
     articleSection: post.category,
     inLanguage: 'en',
     author: { '@type': 'Organization', name: 'AffiLayer', url: `${SITE_URL}/` },
@@ -146,7 +148,7 @@ const HOWTO = {
   ],
 }
 
-/** ItemList of the 11 country pages, for /geo. */
+/** ItemList of all 195 country pages, for /geo. */
 function geoItemListLd(locale: Locale) {
   return {
     '@context': 'https://schema.org',
@@ -288,6 +290,12 @@ const PAGES: Record<string, SeoMeta> = {
       'Advertise with AffiLayer: set your payout, caps and traffic rules, approve affiliates, and pay only for conversions you have reviewed.',
     jsonLd: webPage('/advertise', 'Advertise with AffiLayer', 'Advertise with AffiLayer and pay only for conversions you have reviewed.'),
   },
+  '/pricing': {
+    title: 'Pricing | AffiLayer — Free to Join, Pay for Reviewed Conversions',
+    description:
+      'AffiLayer pricing: free to join for affiliates and advertisers, no monthly fee — advertisers pay only for conversions they have reviewed. White-label pricing agreed per setup.',
+    jsonLd: webPage('/pricing', 'AffiLayer pricing', 'AffiLayer pricing: free to join, no monthly fee, advertisers pay only for conversions they have reviewed.'),
+  },
 }
 
 function metaFor(pathname: string): SeoMeta {
@@ -321,6 +329,7 @@ function metaFor(pathname: string): SeoMeta {
         title: `${post.title} | AffiLayer Blog`,
         description: post.description,
         ogType: 'article',
+        ogImage: post.heroImage ? `${SITE_URL}${post.heroImage}` : undefined,
         jsonLd: [
           posting,
           breadcrumb([
@@ -616,11 +625,11 @@ export function RouteSeo() {
     setMeta('og:description', meta.description, 'property')
     setMeta('og:url', url, 'property')
     setMeta('og:type', meta.ogType ?? 'website', 'property')
-    setMeta('og:image', OG_IMAGE, 'property')
+    setMeta('og:image', meta.ogImage ?? OG_IMAGE, 'property')
     setMeta('og:locale', locale === 'es' ? 'es_ES' : locale === 'pt' ? 'pt_BR' : 'en_US', 'property')
     setMeta('twitter:title', meta.title)
     setMeta('twitter:description', meta.description)
-    setMeta('twitter:image', OG_IMAGE)
+    setMeta('twitter:image', meta.ogImage ?? OG_IMAGE)
     setCanonical(url)
     setHreflang(basePath(pathname))
     setJsonLd(meta.jsonLd)
