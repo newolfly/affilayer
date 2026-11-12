@@ -250,6 +250,41 @@ function Hero() {
   )
 }
 
+/** Launch campaign banner — a slim card directly under the hero linking to
+ *  the launch announcement post. Facts only: 9 live offers, the campaign
+ *  window to 12 December 2026, free to join. */
+function LaunchCampaignBanner() {
+  const t = useT()
+  const locale = useLocale()
+  return (
+    <section className="mt-10">
+      <Reveal>
+        <Link
+          to={localizePath('/blog/affilayer-launch-announcement', locale)}
+          className="lift group grid overflow-hidden rounded-2xl border border-amber-500/40 bg-[#111C30]/60 md:grid-cols-5"
+        >
+          <img
+            src="/promo/campaign-hero.webp"
+            alt="AffiLayer launch campaign artwork — glowing golden layers connected as a network"
+            width={1600}
+            height={900}
+            loading="lazy"
+            className="h-40 w-full object-cover md:col-span-2 md:h-full"
+          />
+          <span className="block p-6 md:col-span-3">
+            <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">{t('home.campaign.kicker')}</span>
+            <span className="mt-2 block text-2xl font-bold text-white">{t('home.campaign.title')}</span>
+            <span className="mt-2 block text-sm leading-relaxed text-slate-300">{t('home.campaign.body')}</span>
+            <span className="mt-4 inline-flex items-center gap-1.5 font-semibold text-amber-400 group-hover:text-amber-300">
+              {t('home.campaign.cta')} <Icon name="arrow-right" className="h-4 w-4" />
+            </span>
+          </span>
+        </Link>
+      </Reveal>
+    </section>
+  )
+}
+
 /** Country grid on the home page — the GEO-search entry point.
  *  Featured countries only (31); the full 195 live on /geo. */
 function BrowseByCountry() {
@@ -465,6 +500,7 @@ export function Home() {
   return (
     <PublicLayout>
       <Hero />
+      <LaunchCampaignBanner />
       <ProductCards />
       <BenefitsSection />
       <BrowseByCountry />

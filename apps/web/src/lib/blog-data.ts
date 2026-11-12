@@ -101,7 +101,7 @@ export function relatedCountryCodes(post: Post): string[] {
 export const POSTS: Post[] = [
   {
     slug: 'affilayer-launch-announcement',
-    heroImage: '/blog/affilayer-is-live.jpg',
+    heroImage: '/promo/launch-announcement-card.jpg',
     title: 'AffiLayer is live: a CPA network with real offers, honest tracking, and Net-30 USDT payouts',
     description:
       'AffiLayer is live with nine CPA offers — sweeps, surveys, VPN trials, finance and dating — honest tracking and Net-30 USDT payouts.',
