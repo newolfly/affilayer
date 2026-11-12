@@ -6,6 +6,14 @@
     <description>Launch notes and plain notes on affiliate marketing — what we built, what changed, and what we learned running the network.</description>
     <language>en</language>
     <item>
+      <title>AffiLayer is live: a CPA network with real offers, honest tracking, and Net-30 USDT payouts</title>
+      <link>https://affilayer.com/blog/affilayer-launch-announcement</link>
+      <guid isPermaLink="true">https://affilayer.com/blog/affilayer-launch-announcement</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 GMT</pubDate>
+      <description>AffiLayer is live with nine CPA offers — sweeps, surveys, VPN trials, finance and dating — honest tracking and Net-30 USDT payouts.</description>
+      <category>Launch Notes</category><category>launch</category><category>offers</category><category>payouts</category><category>tracking</category>
+    </item>
+    <item>
       <title>What is a CPA network? How affiliates, advertisers and the network fit together</title>
       <link>https://affilayer.com/blog/what-is-a-cpa-network</link>
       <guid isPermaLink="true">https://affilayer.com/blog/what-is-a-cpa-network</guid>
@@ -164,6 +172,14 @@
       <pubDate>Tue, 10 Nov 2026 00:00:00 GMT</pubDate>
       <description>Every conversion on AffiLayer is recorded as pending and reviewed by hand before it becomes payable. Here is what the review checks, and what happens next.</description>
       <category>Guides</category><category>review</category><category>conversions</category><category>payouts</category>
+    </item>
+    <item>
+      <title>AffiLayer is live: what the network offers on day one</title>
+      <link>https://affilayer.com/blog/affilayer-is-live</link>
+      <guid isPermaLink="true">https://affilayer.com/blog/affilayer-is-live</guid>
+      <pubDate>Sat, 07 Nov 2026 00:00:00 GMT</pubDate>
+      <description>AffiLayer opens 7 November 2026 with direct CPA offers, SmartLink routing, full-funnel tracking and an append-only commission ledger.</description>
+      <category>Launch Notes</category><category>launch</category><category>smartlink</category><category>tracking</category><category>ledger</category>
     </item>
   </channel>
 </rss>

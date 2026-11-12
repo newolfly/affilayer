@@ -58,12 +58,14 @@ def rfc822(iso_date: str) -> str:
 def main() -> int:
     posts = parse_posts(BLOG_DATA.read_text())
     # Only posts whose publish date has arrived — future-dated posts are
-    # a calendar, not published content.
+    # a calendar, not published content. ALL published posts belong in
+    # the feed: an earlier 20-item cap silently dropped the oldest post
+    # (the 7 Nov launch post, F-02) once the blog passed 20 posts.
     today = datetime.date.today().isoformat()
     posts = [p for p in posts if p["date"] <= today]
     posts.sort(key=lambda p: p["date"], reverse=True)
     items = []
-    for p in posts[:20]:
+    for p in posts:
         link = f"{SITE}/blog/{p['slug']}"
         cats = "".join(f"<category>{html.escape(c)}</category>" for c in [p["category"], *p["tags"]])
         items.append(

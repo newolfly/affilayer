@@ -9,7 +9,7 @@ export const FAQ_GROUPS: { group: string; items: { q: string; a: string }[] }[] 
       },
       {
         q: 'Which verticals do you work with?',
-        a: 'Our catalogue covers Dating, Finance, Gaming, Sweepstakes, Nutra and iGaming. The exact offers available depend on the advertisers currently on the network — the marketplace in your dashboard always shows the live list.',
+        a: 'Our catalogue covers Dating, Finance, Sweepstakes, Surveys, VPN and Entertainment. The exact offers available depend on the advertisers currently on the network — the marketplace in your dashboard always shows the live list.',
       },
       {
         q: 'What is SmartLink?',

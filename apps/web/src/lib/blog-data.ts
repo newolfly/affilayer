@@ -100,13 +100,43 @@ export function relatedCountryCodes(post: Post): string[] {
 
 export const POSTS: Post[] = [
   {
+    slug: 'affilayer-launch-announcement',
+    heroImage: '/blog/affilayer-is-live.jpg',
+    title: 'AffiLayer is live: a CPA network with real offers, honest tracking, and Net-30 USDT payouts',
+    description:
+      'AffiLayer is live with nine CPA offers — sweeps, surveys, VPN trials, finance and dating — honest tracking and Net-30 USDT payouts.',
+    date: '2026-11-12',
+    author: DEFAULT_AUTHOR,
+    category: 'Launch Notes',
+    tags: ['launch', 'offers', 'payouts', 'tracking'],
+    type: 'news',
+    excerpt:
+      'AffiLayer is live with its first nine offers open, a launch campaign running to 12 December, and the same open books we promised on day one.',
+    body: [
+      { kind: 'p', text: 'AffiLayer is live.' },
+      { kind: 'p', text: 'We built a CPA affiliate network for affiliates who want three simple things: real offers, tracking they can trust, and payouts that actually arrive.' },
+      { kind: 'h2', text: 'What is live today' },
+      { kind: 'list', items: [
+        'Real offers from day one — sweeps, surveys, VPN trials, finance and dating, starting with our first nine CPAlead offers, with more coming as our MyLead catalogue opens up.',
+        'Every click tracked, every conversion attributed — our tracking runs on a Cloudflare Worker, and every approved commission is written to an append-only commission ledger. Nothing is edited after the fact.',
+        'Payouts in USDT (TRC20), Net-30, manual and admin-approved — never automatic, never instant-promised. Affiliates join free and earn on attributed conversions that pass review.',
+        'Caps and conversion rules up front — every offer shows its payout, countries, devices and cap before you promote it.',
+      ] },
+      { kind: 'p', text: 'Our launch campaign runs from today until 12 December 2026, with the first nine offers open for the whole window.' },
+      { kind: 'h2', text: 'What we are not claiming' },
+      { kind: 'p', text: 'We are a new network. Our first payout cycle is in progress, and we will publish proof when the first affiliates are paid. We would rather under-promise and pay than the other way around.' },
+      { kind: 'p', text: 'If you are an affiliate in dating, lead-gen, sweeps, surveys, VPN or finance, come and take a look: affilayer.com. Advertisers who want their offer listed can reach us at support@affilayer.com.' },
+      { kind: 'p', text: '— The AffiLayer team' },
+    ],
+  },
+  {
     slug: 'affilayer-is-live',
     heroImage: '/blog/affilayer-is-live.jpg',
     title: 'AffiLayer is live: what the network offers on day one',
     description:
       'AffiLayer opens 7 November 2026 with direct CPA offers, SmartLink routing, full-funnel tracking and an append-only commission ledger.',
     date: '2026-11-07',
-    updated: '2026-11-10',
+    updated: '2026-11-12',
     author: DEFAULT_AUTHOR,
     category: 'Launch Notes',
     tags: ['launch', 'smartlink', 'tracking', 'ledger'],
@@ -124,7 +154,7 @@ export const POSTS: Post[] = [
       { kind: 'h2', text: 'A ledger, not an estimate' },
       { kind: 'p', text: 'Commissions move through pending, approved, rejected or reversed states with a record of each change. Payouts are manual and admin-approved, on a Net30 schedule by default.' },
       { kind: 'p', text: 'The Supabase backend is live; demo-mode writes are now stored records. Our offer catalogue is small while we onboard advertisers offer by offer.' },
-      { kind: 'p', text: 'If you run traffic in Dating, Finance, Gaming, Sweepstakes, Nutra or iGaming, create an account and apply — early partners shape the catalogue.' },
+      { kind: 'p', text: 'If you run traffic in Dating, Finance, Sweepstakes, Surveys, VPN or Entertainment, create an account and apply — early partners shape the catalogue.' },
     ],
   },
   {
@@ -523,7 +553,7 @@ export const POSTS: Post[] = [
       { kind: 'h2', text: '1. The traffic source' },
       { kind: 'p', text: 'Ask where the traffic comes from — a website, a mailing list, paid ads, a community — and whether you can verify it. A source you cannot verify is one of the common reasons applications are declined, and it is the first thing the network\'s own review looks at too. If the affiliate cannot show you the source, you cannot judge whether it fits your offer, and you should not approve on trust alone. A verifiable source with modest volume beats an unverifiable one with big numbers.' },
       { kind: 'h2', text: '2. Vertical fit' },
-      { kind: 'p', text: 'Does the affiliate work in your vertical? AffiLayer\'s catalogue covers Dating, Finance, Gaming, Sweepstakes, Nutra and iGaming, and an affiliate who runs Finance traffic well may know nothing about Gaming audiences. Experience in the vertical is not a guarantee, but it is a signal: the affiliate already knows what the audience responds to, what creatives are honest for the product, and what a normal conversion rate looks like. A mismatch is not an automatic no — but it is a reason to start with a low cap and watch the first conversions closely.' },
+      { kind: 'p', text: 'Does the affiliate work in your vertical? AffiLayer\'s catalogue covers Dating, Finance, Sweepstakes, Surveys, VPN and Entertainment, and an affiliate who runs Finance traffic well may know nothing about Dating audiences. Experience in the vertical is not a guarantee, but it is a signal: the affiliate already knows what the audience responds to, what creatives are honest for the product, and what a normal conversion rate looks like. A mismatch is not an automatic no — but it is a reason to start with a low cap and watch the first conversions closely.' },
       { kind: 'h2', text: '3. GEO' },
       { kind: 'p', text: 'Check that the countries the affiliate\'s traffic comes from are countries your offer accepts. Traffic from outside your accepted list is refused — it cannot convert — so an affiliate whose audience is in the wrong countries will earn nothing and waste their traffic, however good it is. This is the simplest check on the list and the most often skipped: match their GEO to your offer\'s GEO before you approve, not after the clicks arrive.' },
       { kind: 'h2', text: '4. Quality signals' },

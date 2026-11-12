@@ -12,7 +12,7 @@ import { isDemoMode, createTicket } from '../lib/data'
 import { useAuth } from '../lib/auth'
 import { COUNTRIES, FEATURED_CODES } from '../lib/geo-data'
 
-const VERTICALS = ['Dating', 'Finance', 'Gaming', 'Sweepstakes', 'Nutra', 'iGaming']
+const VERTICALS = ['Dating', 'Finance', 'Sweepstakes', 'Surveys', 'VPN', 'Entertainment']
 
 /** Hero illustration: the layered AffiLayer "A" as a hub, with offer nodes
  *  (CPA / CPL / CPS / SmartLink) connected by a flowing tracking path.
