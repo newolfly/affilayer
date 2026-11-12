@@ -35,6 +35,22 @@ const OFFER = {
 const recordedClicks = [];
 let failures = 0;
 
+// CPAlead receiver cases: a CPAlead-shaped offer (signed _src_sig
+// link on a mirror domain, affiliate payout 2.93 vs feed 3.90) plus
+// mock conversion/ledger state for the postback path.
+const CPALEAD_OFFER_ID = '77777777-7777-7777-7777-777777777777';
+const CPALEAD_OFFER = {
+  id: CPALEAD_OFFER_ID,
+  name: 'CPAlead Test Offer (CPAlead 5547320)',
+  status: 'active',
+  landing_url: 'https://www.qckclk.com/view.php?id=5547320&pub=3370722&_src=api&_src_sig=deadbeefcafe',
+  payout: 2.93,
+  payout_model: 'CPA',
+  currency: 'USD',
+};
+const mockConversions = [];
+const mockLedger = [];
+
 // H-06: mutable mock catalogue + click history so the SmartLink cap
 // cases can stage a capped top-pick offer. CAPPED beats OFFER on
 // payout (20 > 12), so it wins the pick whenever it is eligible.
@@ -130,7 +146,81 @@ const server = http.createServer((req, res) => {
       return send(200, true);
     }
     if (fn === 'tracking_get_offer') {
-      return send(200, params.p_offer_id === OFFER_ID ? OFFER : null);
+      if (params.p_offer_id === OFFER_ID) return send(200, OFFER);
+      if (params.p_offer_id === CPALEAD_OFFER_ID) return send(200, CPALEAD_OFFER);
+      return send(200, null);
+    }
+    if (fn === 'tracking_get_click') {
+      const row = recordedClicks.find((c) => c.click_id === params.p_click_id);
+      if (!row) return send(200, null);
+      return send(200, {
+        id: '22222222-2222-2222-2222-222222222222',
+        click_id: row.click_id,
+        affiliate_code: row.affiliate_code,
+        offer_id: row.offer_id,
+        is_smartlink: row.is_smartlink === true,
+        created_at: new Date().toISOString(),
+      });
+    }
+    if (fn === 'tracking_find_conversion') {
+      let row = null;
+      if (params.p_idempotency_key) {
+        row = mockConversions.find((c) => c.idempotency_key === params.p_idempotency_key) ?? null;
+      } else if (params.p_click_id && params.p_offer_id) {
+        row = mockConversions.find((c) => c.click_id === params.p_click_id && c.offer_id === params.p_offer_id) ?? null;
+      } else if (params.p_id) {
+        row = mockConversions.find((c) => c.id === params.p_id) ?? null;
+      }
+      return send(200, row);
+    }
+    if (fn === 'tracking_record_conversion') {
+      if (params.p_affiliate_code === 'AFF-PENDING-001') {
+        return send(400, {
+          code: '42501',
+          message: 'tracking_record_conversion: affiliate not approved (status pending)',
+        });
+      }
+      const conv = {
+        id: params.p_conversion_id,
+        click_id: params.p_click_id,
+        offer_id: params.p_offer_id,
+        affiliate_code: params.p_affiliate_code,
+        payout: params.p_payout,
+        currency: params.p_currency,
+        status: 'pending',
+        idempotency_key: params.p_idempotency_key,
+        sub1: params.p_sub1 ?? null,
+        created_at: new Date().toISOString(),
+      };
+      mockConversions.push(conv);
+      return send(200, { id: conv.id, conversion_id: conv.id, duplicate: false });
+    }
+    if (fn === 'tracking_resolve_affiliate') {
+      const known = ['AFF-APPROVED-001', 'AFF-HOUSE', 'smartlink'];
+      return send(200, known.includes(params.p_affiliate_code) ? { profile_id: AFF_ID } : null);
+    }
+    if (fn === 'tracking_record_ledger_entry') {
+      const entry = {
+        id: `ledger-${mockLedger.length + 1}`,
+        conversion_id: params.p_conversion_id,
+        affiliate_id: params.p_affiliate_id,
+        offer_id: params.p_offer_id,
+        amount: params.p_amount,
+        currency: params.p_currency,
+      };
+      mockLedger.push(entry);
+      return send(200, { id: entry.id, conversion_id: entry.conversion_id, duplicate: false });
+    }
+    if (fn === 'tracking_list_conversions') {
+      return send(200, mockConversions.map((c) => {
+        const led = mockLedger.find((e) => e.conversion_id === c.id);
+        return {
+          ...c,
+          ledger_id: led?.id ?? null,
+          ledger_amount: led?.amount ?? null,
+          ledger_status: led ? 'pending' : null,
+        };
+      }));
     }
     if (fn === 'tracking_list_offers') {
       return send(200, mockOffers);
@@ -342,6 +432,63 @@ const h06e2Res = await smartlink();
 const h06e2Loc = h06e2Res.headers.get('Location') ?? '';
 check('H-06 monthly filter: click this month -> 302 to second', h06e2Res.status === 302, `got ${h06e2Res.status}`);
 check('H-06 monthly filter: redirects to the second offer', h06e2Loc.startsWith('https://example.com/real-offer?click_id=clk_'), h06e2Loc);
+
+// ---------------------------------------------------------------------------
+// CPAlead postback receiver: sub-ID appending + S2S postback mapping.
+// ---------------------------------------------------------------------------
+const SECRET = 'test-secret-do-not-use-in-production';
+const postback = (qs, headers = {}) =>
+  call(new Request(`https://go.affilayer.test/api/postbacks/cpalead?${qs}`, { method: 'GET', headers }));
+
+// Click chain: a CPAlead offer's redirect carries click_id AND the
+// CPAlead sub-IDs (subid = click id, subid2 = affiliate code).
+const cpaClickRes = await getClick(`/c/AFF-APPROVED-001/${CPALEAD_OFFER_ID}`);
+const cpaLoc = cpaClickRes.headers.get('Location') ?? '';
+const cpaClickId = new URL(cpaLoc).searchParams.get('click_id') ?? '';
+check('CPAlead offer click -> 302', cpaClickRes.status === 302, `got ${cpaClickRes.status}`);
+check('CPAlead redirect keeps the exact signed link', cpaLoc.startsWith('https://www.qckclk.com/view.php?id=5547320&pub=3370722&_src=api&_src_sig=deadbeefcafe&click_id=clk_'), cpaLoc);
+check('CPAlead redirect appends subid = click id', new URL(cpaLoc).searchParams.get('subid') === cpaClickId && cpaClickId.startsWith('clk_'), cpaLoc);
+check('CPAlead redirect appends subid2 = affiliate code', new URL(cpaLoc).searchParams.get('subid2') === 'AFF-APPROVED-001', cpaLoc);
+
+// A non-CPAlead offer's redirect is unchanged: click_id only, no subid.
+const plainClickRes = await getClick(`/c/AFF-APPROVED-001/${OFFER_ID}`);
+const plainLoc = plainClickRes.headers.get('Location') ?? '';
+check('plain offer redirect has click_id and NO subid', plainLoc.includes('click_id=clk_') && new URL(plainLoc).searchParams.get('subid') === null && new URL(plainLoc).searchParams.get('subid2') === null, plainLoc);
+
+// Caller validation: no secret + not the relay IP -> 403.
+const noAuthRes = await postback(`subid=${cpaClickId}&lead_id=lead-x&payout=3.90`);
+check('postback without secret/IP -> 403', noAuthRes.status === 403, `got ${noAuthRes.status}`);
+
+// Wrong secret -> 403.
+const badSecretRes = await postback(`subid=${cpaClickId}&lead_id=lead-x&payout=3.90&secret=wrong`);
+check('postback with wrong secret -> 403', badSecretRes.status === 403, `got ${badSecretRes.status}`);
+
+// Valid secret, unknown click -> 404.
+const unknownClickRes = await postback(`subid=clk_nope&lead_id=lead-x&payout=3.90&secret=${SECRET}`);
+check('postback with unknown click -> 404', unknownClickRes.status === 404, `got ${unknownClickRes.status}`);
+
+// Valid secret, missing lead_id -> 400.
+const noLeadRes = await postback(`subid=${cpaClickId}&payout=3.90&secret=${SECRET}`);
+check('postback without lead_id -> 400', noLeadRes.status === 400, `got ${noLeadRes.status}`);
+
+// Happy path via the relay IP (no secret): records at the AFFILIATE
+// rate (2.93), not the reported feed payout (3.90).
+const pbRes = await postback(
+  `subid=${cpaClickId}&lead_id=lead-001&payout=3.90&campaign_id=5547320`,
+  { 'cf-connecting-ip': '34.69.179.33' },
+);
+const pbBody = await pbRes.json();
+check('postback from relay IP -> 200', pbRes.status === 200, `got ${pbRes.status} ${JSON.stringify(pbBody)}`);
+check('postback records the affiliate payout, not the feed payout', pbBody.ok === true && pbBody.duplicate === false && pbBody.payout === 2.93, JSON.stringify(pbBody));
+check('conversion stored at affiliate rate with cpalead dedupe key', mockConversions.length === 1 && mockConversions[0]?.payout === 2.93 && mockConversions[0]?.idempotency_key === 'cpalead:lead-001' && mockConversions[0]?.status === 'pending', JSON.stringify(mockConversions));
+check('ledger row created at the affiliate rate', mockLedger.length === 1 && mockLedger[0]?.amount === 2.93 && mockLedger[0]?.conversion_id === mockConversions[0]?.id, JSON.stringify(mockLedger));
+
+// Replay of the same lead_id (CPAlead retry) -> 200 duplicate,
+// nothing recorded twice.
+const replayRes = await postback(`subid=${cpaClickId}&lead_id=lead-001&payout=3.90&secret=${SECRET}`);
+const replayBody = await replayRes.json();
+check('replayed lead_id -> 200 duplicate', replayRes.status === 200 && replayBody.ok === true && replayBody.duplicate === true, `got ${replayRes.status} ${JSON.stringify(replayBody)}`);
+check('replay recorded no second conversion or ledger row', mockConversions.length === 1 && mockLedger.length === 1, `conv ${mockConversions.length} ledger ${mockLedger.length}`);
 
 server.close();
 

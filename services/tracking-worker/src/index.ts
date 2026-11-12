@@ -6,6 +6,7 @@
  *   GET  /c/:affiliateCode/:offerId   -> 302 to landing URL (records a click)
  *   GET  /s/:smartlinkCode           -> 302 to the deterministic SmartLink pick
  *   POST /conversion                  -> HMAC-signed, idempotent, deduped (201 / 200 duplicate)
+ *   GET  /api/postbacks/cpalead       -> CPAlead S2S postback receiver (relay-IP or secret gated)
  *   GET  /api/stats                   -> operator-only aggregation (Bearer POSTBACK_SECRET)
  *   GET  /api/clicks/:clickId         -> operator-only click + its conversion
  *   POST /api/payments/deposits       -> advertiser deposit (NOWPayments invoice, JWT)
@@ -158,6 +159,47 @@ function appendQuery(url: string, key: string, value: string): string {
   const sep = url.includes('?') ? '&' : '?';
   return `${url}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
 }
+
+/**
+ * CPAlead tracking links carry a signed `_src_sig` parameter on
+ * rotating mirror domains (qckclk.com, cdnnd.com, lnksforyou.com, …),
+ * so the signature param — not the hostname — is the stable marker of
+ * a CPAlead link. CPAlead's docs require the API-returned link to be
+ * used exactly as given; sub-ID parameters are the one sanctioned
+ * addition (appended, never rebuilt).
+ */
+function isCpaleadLandingUrl(url: string): boolean {
+  return /[?&]_src_sig=/.test(url);
+}
+
+/**
+ * Redirect target for a recorded click: the offer landing URL plus the
+ * AffiLayer click id. CPAlead offers additionally receive the click id
+ * and affiliate code as CPAlead sub-IDs (subid / subid2) so CPAlead's
+ * S2S postback can return {subid} = this click (see
+ * handleCpaleadPostback). All other offers get click_id only, exactly
+ * as before.
+ */
+function redirectLocation(offer: Offer, clickId: string, affiliateCode: string): string {
+  let target = appendQuery(offer.landingUrl, 'click_id', clickId);
+  if (isCpaleadLandingUrl(offer.landingUrl)) {
+    target = appendQuery(target, 'subid', clickId);
+    target = appendQuery(target, 'subid2', affiliateCode);
+  }
+  return target;
+}
+
+/** Constant-time string comparison (same pattern as postbacks.ts). */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/** CPAlead's S2S postback relay — the only source IP accepted without
+ *  the shared secret on /api/postbacks/cpalead. */
+const CPALEAD_POSTBACK_IP = '34.69.179.33';
 
 function clientIp(request: Request): string | undefined {
   const cf = request.headers.get('cf-connecting-ip');
@@ -502,6 +544,164 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
     },
     201,
   );
+}
+
+/**
+ * GET /api/postbacks/cpalead — CPAlead S2S postback receiver.
+ *
+ * CPAlead calls this when a conversion fires on one of its offers,
+ * with its macros already substituted:
+ *   ?subid=<AffiLayer click id>&payout=<feed payout>&lead_id=<dedupe
+ *   id>&campaign_id=<CPAlead offer id>
+ * (subid/subid2 were appended to the tracking link at click time — see
+ * redirectLocation.) The subid2 value CPAlead echoes back is not
+ * trusted; attribution always comes from the stored click row.
+ *
+ * Caller validation: the request must come from CPAlead's postback
+ * relay IP (34.69.179.33, via cf-connecting-ip) OR carry
+ * ?secret=<POSTBACK_SECRET> (constant-time compared, never logged).
+ * The secret path exists so our own end-to-end tests can run from
+ * hosts CPAlead's relay never touches; CPAlead itself is registered
+ * with the plain URL and passes on source IP alone.
+ *
+ * Recording mirrors POST /conversion exactly (same store path, same
+ * 014 proof, same 022 approval gate, same ledger + postback fan-out),
+ * with ONE difference: the amount recorded is the offer's affiliate
+ * payout from the DB (offers.payout — the margin was applied at
+ * import), never the {payout} CPAlead reports. The reported payout is
+ * logged for reconciliation only. Dedup is on the CPAlead lead_id
+ * (stored as idempotency_key `cpalead:<lead_id>`); a replay returns
+ * 200 without double-recording. CPAlead requires a fast 2xx with no
+ * redirects; every response here is JSON, never 3xx.
+ */
+async function handleCpaleadPostback(request: Request, env: Env, url: URL): Promise<Response> {
+  const store = getStore(env);
+  const ip = clientIp(request);
+  const secretParam = url.searchParams.get('secret') ?? '';
+  const secretOk =
+    !!env.POSTBACK_SECRET &&
+    secretParam.length > 0 &&
+    timingSafeEqualStr(secretParam, env.POSTBACK_SECRET);
+  if (ip !== CPALEAD_POSTBACK_IP && !secretOk) {
+    return json({ error: 'forbidden' }, 403);
+  }
+
+  const clickId = url.searchParams.get('subid') ?? '';
+  const leadId = url.searchParams.get('lead_id') ?? '';
+  if (!clickId || !leadId) {
+    return json({ error: 'subid and lead_id are required' }, 400);
+  }
+  const reportedRaw = url.searchParams.get('payout');
+  const reportedPayout = reportedRaw != null ? Number(reportedRaw) : Number.NaN;
+
+  // A conversion must belong to a real click on a real offer — the
+  // same rule as POST /conversion. The click row decides the offer
+  // and the affiliate; nothing in the query string can override them.
+  const click = await store.getClick(clickId);
+  if (!click) return json({ error: 'unknown click' }, 404);
+  const offer = await store.getOffer(click.offerId);
+  if (!offer) return json({ error: 'unknown offer' }, 404);
+
+  // Dedup: a repeated lead_id (CPAlead retries postbacks) returns 200
+  // with the original conversion and records nothing new. The
+  // click+offer pair is the secondary key, exactly as in
+  // handleConversion.
+  const idempotencyKey = `cpalead:${leadId}`;
+  const existing =
+    (await store.findConversionByIdempotencyKey(idempotencyKey)) ??
+    (await store.findConversionByClickAndOffer(clickId, click.offerId));
+  if (existing) {
+    try {
+      await ensureLedgerEntry(store, existing, offer);
+    } catch (err) {
+      console.error('cpalead duplicate-path ledger backfill failed:', err, { conversionId: existing.id });
+    }
+    return json({ ok: true, duplicate: true, conversion_id: existing.id });
+  }
+
+  // Same pre-record guards as POST /conversion: a CPS offer without a
+  // rate fails visibly, and the ledger currency must be settleable.
+  if (offer.payoutModel === 'CPS' && (offer.rateBps == null || offer.rateBps <= 0 || offer.rateBps > 10000)) {
+    return json({ error: 'CPS offer has no commission rate' }, 422);
+  }
+  const currency = offer.currency ?? 'USD';
+  if (!ALLOWED_CURRENCIES.has(currency)) {
+    return json({ error: 'unsupported currency' }, 422);
+  }
+  // Bare SmartLink clicks attribute to the house affiliate (never
+  // paid out) — same rule as POST /conversion.
+  const affiliateCode =
+    click.affiliateCode === SMARTLINK_AFFILIATE_CODE || !click.affiliateCode
+      ? HOUSE_AFFILIATE_CODE
+      : click.affiliateCode;
+  // The affiliate rate from the DB — NOT the reported {payout}.
+  const payout = offer.payout;
+  const conversion: Conversion = {
+    id: crypto.randomUUID(),
+    clickId,
+    offerId: offer.id,
+    affiliateCode,
+    payout,
+    currency,
+    status: 'pending',
+    idempotencyKey,
+    sub1: click.sub1,
+    createdAt: new Date().toISOString(),
+  };
+  let recordedConversion: Conversion;
+  try {
+    recordedConversion = await store.recordConversion(conversion);
+  } catch (err) {
+    // 022 gate: the DB raises before inserting, so no conversion row
+    // and no ledger row exist for a rejected affiliate.
+    if (isAffiliateNotApprovedError(err)) {
+      return json({ error: 'affiliate not approved' }, 403);
+    }
+    throw err;
+  }
+
+  const commission = computeCommission(payout, offer.payoutModel ?? 'CPA', offer.rateBps);
+  const ledgerEntry = await store.recordLedgerEntry({
+    id: crypto.randomUUID(),
+    conversionId: recordedConversion.id,
+    affiliateCode,
+    offerId: offer.id,
+    amount: commission,
+    currency,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  });
+  // Reconciliation signal only: what CPAlead says it paid vs the
+  // affiliate rate we recorded. Never affects the ledger.
+  if (Number.isFinite(reportedPayout) && reportedPayout !== payout) {
+    console.log('cpalead postback: reported payout differs from affiliate rate', {
+      leadId,
+      reportedPayout,
+      recordedPayout: payout,
+    });
+  }
+
+  // Outbound postback fan-out, same as POST /conversion (failures
+  // never fail the conversion itself).
+  const configs = await store.getPostbackConfigs(offer.id, affiliateCode);
+  const vars: Record<string, string> = {
+    click_id: clickId,
+    conversion_id: recordedConversion.id,
+    payout: String(payout),
+    currency,
+    status: conversion.status,
+    sub1: click.sub1 ?? '',
+  };
+  await deliverPostbacks(store, configs, vars);
+
+  return json({
+    ok: true,
+    duplicate: false,
+    conversion_id: recordedConversion.id,
+    ledger_entry_id: ledgerEntry.id,
+    payout,
+    currency,
+  });
 }
 
 async function handleStats(url: URL, env: Env): Promise<Response> {
@@ -1083,7 +1283,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       if (rejected) return rejected;
       return new Response(null, {
         status: 302,
-        headers: { Location: appendQuery(offer.landingUrl, 'click_id', click.clickId) },
+        headers: { Location: redirectLocation(offer, click.clickId, click.affiliateCode) },
       });
     }
 
@@ -1195,7 +1395,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         if (!rejected) {
           return new Response(null, {
             status: 302,
-            headers: { Location: appendQuery(picked.landingUrl, 'click_id', click.clickId) },
+            headers: { Location: redirectLocation(picked, click.clickId, click.affiliateCode) },
           });
         }
         if (rejected.status === 409) {
@@ -1211,6 +1411,11 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     // POST /conversion (HMAC-signed JSON)
     if (request.method === 'POST' && path === '/conversion') {
       return handleConversion(request, env);
+    }
+
+    // GET /api/postbacks/cpalead — CPAlead S2S postback receiver
+    if (request.method === 'GET' && path === '/api/postbacks/cpalead') {
+      return handleCpaleadPostback(request, env, url);
     }
 
     // GET /api/stats — operator only
