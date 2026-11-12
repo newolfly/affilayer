@@ -842,7 +842,7 @@ export function Terms() {
       <h1 className="text-3xl font-bold text-white">Terms of Service</h1>
       <Slogan className="mt-4">{t('terms.slogan')}</Slogan>
       <p className="mt-2 text-sm text-slate-400">
-        Operated by MarketSync Global LLC, New Mexico, USA. Last updated: 10 November 2026.
+        Operated by MarketSync Global LLC, New Mexico, USA. Last updated: 12 November 2026.
       </p>
       <PageArt
         variant="terms"
@@ -870,6 +870,7 @@ export function Terms() {
         <p><strong>10. Restricted verticals and geographies.</strong> Offers must comply with the law in every country they target. We do not accept offers for illegal goods or services, deceptive financial products, or anything that misleads the visitor about what they are signing up for. Affiliates must follow advertising law in the countries they target, including any disclosure rules for advertising. We may refuse or remove any offer or account, and may restrict countries or verticals where we cannot operate lawfully.</p>
         <p><strong>11. Liability.</strong> AffiLayer provides tracking, reporting and payout administration as described here. We are not liable for the performance of any offer, the behaviour of any advertiser or affiliate, or earnings that were never guaranteed.</p>
         <p><strong>12. Changes and contact.</strong> These terms may be updated; the current version on this page applies. Questions about these terms: support@affilayer.com. These terms are governed by the laws of New Mexico, USA.</p>
+        <p><strong>13. Changes we may make.</strong> We may change how AffiLayer works at any time when we need to, and — where the law allows — without prior notice. This includes: adding, changing, pausing or removing offers; changing payouts, caps, countries or availability; suspending or closing accounts that break these terms, send fraudulent traffic or threaten the security or operation of the network; correcting errors in tracking, reporting or payments; and pausing the service, in whole or in part, for maintenance, security or legal reasons. We may also update these Terms at any time. Changes to the service take effect as soon as they are applied, and changes to these Terms take effect when they are posted on this page. If you keep using AffiLayer after a change, you accept the change. Commissions already approved and recorded in the ledger are still governed by sections 4 and 8.</p>
       </div>
     </PublicLayout>
   )
