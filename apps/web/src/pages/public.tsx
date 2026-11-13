@@ -10,7 +10,8 @@ import { useLocale, useT, localizePath } from '../lib/i18n'
 import type { Locale } from '../lib/i18n'
 import { isDemoMode, createTicket } from '../lib/data'
 import { useAuth } from '../lib/auth'
-import { COUNTRIES, FEATURED_CODES } from '../lib/geo-data'
+import { COUNTRIES, FEATURED_CODES, REGION_LABELS, REGION_ORDER, countriesByRegion, countryFlag } from '../lib/geo-data'
+import type { Country } from '../lib/geo-data'
 
 const VERTICALS = ['Dating', 'Finance', 'Sweepstakes', 'Surveys', 'VPN', 'Entertainment']
 
@@ -285,35 +286,111 @@ function LaunchCampaignBanner() {
   )
 }
 
-/** Country grid on the home page — the GEO-search entry point.
- *  Featured countries only (31); the full 195 live on /geo. */
+/** Homepage country browser — folded by design (Sojib, 13 Nov): the
+ *  grid shows only the top 24 of the curated FEATURED_CODES order,
+ *  each with its flag; a search box filters all 195 client-side; and
+ *  the full list sits behind an expander instead of rendering as a
+ *  wall on the homepage. The full catalogue lives on /geo. */
+const HOME_COUNTRY_CODES = FEATURED_CODES.slice(0, 24)
+
+function CountryCard({ c, locale, i }: { c: Country; locale: Locale; i: number }) {
+  return (
+    <Reveal delay={(i % 4) * 80}>
+      <Link
+        to={localizePath(`/geo/${c.code}`, locale)}
+        className="lift flex items-center justify-between rounded-2xl border border-slate-800 bg-[#111C30]/60 px-5 py-4"
+      >
+        <span className="flex items-center gap-3 font-semibold text-white">
+          <span className="text-xl leading-none" aria-hidden>{countryFlag(c.code)}</span>
+          {c.name[locale]}
+        </span>
+        <Icon name="arrow-right" className="h-4 w-4 text-amber-400" />
+      </Link>
+    </Reveal>
+  )
+}
+
 function BrowseByCountry() {
   const t = useT()
   const locale = useLocale()
+  const [query, setQuery] = useState('')
+  const [showAll, setShowAll] = useState(false)
+  const q = query.trim().toLowerCase()
+  const matches = q
+    ? COUNTRIES.filter((c) => c.code === q || c.name.en.toLowerCase().includes(q) || c.name[locale].toLowerCase().includes(q))
+    : []
+  const shownMatches = matches.slice(0, 24)
+  const featured = HOME_COUNTRY_CODES
+    .map((code) => COUNTRIES.find((x) => x.code === code))
+    .filter((c): c is Country => Boolean(c))
   return (
     <section className="mt-14">
       <h2 className="text-center text-3xl font-bold text-white">{t('browse.title')}</h2>
       <p className="mx-auto mt-3 max-w-2xl text-center text-slate-300">{t('browse.sub')}</p>
-      <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {FEATURED_CODES.map((code, i) => {
-          const c = COUNTRIES.find((x) => x.code === code)
-          if (!c) return null
-          return (
-          <Reveal key={c.code} delay={(i % 4) * 80}>
-            <Link
-              to={localizePath(`/geo/${c.code}`, locale)}
-              className="lift flex items-center justify-between rounded-2xl border border-slate-800 bg-[#111C30]/60 px-5 py-4"
-            >
-              <span className="flex items-center gap-3 font-semibold text-white">
-                <span className="text-amber-400"><Icon name="globe" className="h-5 w-5" /></span>
-                {c.name[locale]}
-              </span>
-              <Icon name="arrow-right" className="h-4 w-4 text-amber-400" />
-            </Link>
-          </Reveal>
-          )
-        })}
+      <div className="mx-auto mt-6 max-w-md">
+        <label className="sr-only" htmlFor="home-country-search">{t('browse.search')}</label>
+        <input
+          id="home-country-search"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t('browse.search')}
+          className="w-full rounded-xl border border-slate-700 bg-[#111C30]/60 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-amber-400 focus:outline-none"
+        />
       </div>
+      {q ? (
+        shownMatches.length > 0 ? (
+          <>
+            <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {shownMatches.map((c, i) => <CountryCard key={c.code} c={c} locale={locale} i={i} />)}
+            </div>
+            {matches.length > shownMatches.length && (
+              <p className="mt-4 text-center text-sm text-slate-400">
+                {t('browse.moreMatches', { n: String(matches.length - shownMatches.length) })}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="mt-8 text-center text-slate-400">{t('browse.noMatch', { q: query.trim() })}</p>
+        )
+      ) : (
+        <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {featured.map((c, i) => <CountryCard key={c.code} c={c} locale={locale} i={i} />)}
+        </div>
+      )}
+      <p className="mt-6 text-center">
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          aria-expanded={showAll}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-400 hover:text-amber-300"
+        >
+          {showAll ? t('browse.hideAll') : t('browse.showAll', { n: String(COUNTRIES.length) })}
+          <Icon name="arrow-right" className={`h-4 w-4 transition-transform ${showAll ? '-rotate-90' : 'rotate-90'}`} />
+        </button>
+      </p>
+      {showAll && (
+        <div className="mt-6 space-y-8 rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6">
+          {REGION_ORDER.map((region) => (
+            <div key={region}>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+                {REGION_LABELS[region][locale]} <span className="text-slate-500">· {countriesByRegion(region).length}</span>
+              </h3>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {countriesByRegion(region).map((c) => (
+                  <Link
+                    key={c.code}
+                    to={localizePath(`/geo/${c.code}`, locale)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 px-3 py-1.5 text-sm text-slate-200 transition-colors hover:border-amber-400 hover:text-white"
+                  >
+                    <span aria-hidden>{countryFlag(c.code)}</span> {c.name[locale]}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <p className="mt-6 text-center">
         <Link to={localizePath('/geo', locale)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-400 hover:text-amber-300">
           {t('browse.all')} <Icon name="arrow-right" className="h-4 w-4" />
@@ -667,6 +744,17 @@ export function AdvertisersPage() {
           { n: '4', t: t('adv.funnel.4.t'), d: t('adv.funnel.4.d'), to: '/app/advertiser/conversions', cta: t('adv.funnel.4.cta'), icon: 'chart' },
         ]}
       />
+      <BalanceSteps
+        heading={t('adv.balance.title')}
+        sub={t('adv.balance.sub')}
+        steps={[
+          { n: '1', t: t('adv.balance.1.t'), d: t('adv.balance.1.d'), icon: 'wallet' },
+          { n: '2', t: t('adv.balance.2.t'), d: t('adv.balance.2.d'), icon: 'banknote' },
+          { n: '3', t: t('adv.balance.3.t'), d: t('adv.balance.3.d'), icon: 'tag' },
+          { n: '4', t: t('adv.balance.4.t'), d: t('adv.balance.4.d'), icon: 'check' },
+        ]}
+        cta={{ label: t('adv.balance.cta'), to: '/app/advertiser/billing' }}
+      />
       <Link to="/register" className="pill-btn mt-6">{t('adv.register')}</Link>
       <MoneyLinks current="/advertisers" />
       <PageFaqs which="advertisers" />
@@ -713,6 +801,17 @@ export function AffiliatesPage() {
           { n: '5', t: t('aff.funnel.5.t'), d: t('aff.funnel.5.d'), to: '/app/affiliate/earnings', cta: t('aff.funnel.5.cta'), icon: 'wallet' },
         ]}
       />
+      <BalanceSteps
+        heading={t('aff.balance.title')}
+        sub={t('aff.balance.sub')}
+        steps={[
+          { n: '1', t: t('aff.balance.1.t'), d: t('aff.balance.1.d'), icon: 'tag' },
+          { n: '2', t: t('aff.balance.2.t'), d: t('aff.balance.2.d'), icon: 'chart' },
+          { n: '3', t: t('aff.balance.3.t'), d: t('aff.balance.3.d'), icon: 'wallet' },
+          { n: '4', t: t('aff.balance.4.t'), d: t('aff.balance.4.d'), icon: 'banknote' },
+        ]}
+        cta={{ label: t('aff.balance.cta'), to: '/app/affiliate/payouts' }}
+      />
       <Link to="/register" className="pill-btn mt-6">{t('aff.register')}</Link>
       <MoneyLinks current="/affiliates" />
       <PageFaqs which="affiliates" />
@@ -755,6 +854,43 @@ export function FunnelSteps({ heading, steps }: {
           </Reveal>
         ))}
       </div>
+    </section>
+  )
+}
+
+/** Classical balance flow, worded exactly as the built mechanics
+ *  work: advertisers deposit → balance credited → offers run → pay
+ *  per approved conversion; affiliates earn → balance in the ledger →
+ *  save a USDT wallet → request a withdrawal. Copy-only section; the
+ *  CTA links to the real dashboard page where the money actions live
+ *  (Billing for advertisers, Payouts for affiliates). */
+export function BalanceSteps({ heading, sub, steps, cta }: {
+  heading: string
+  sub: string
+  steps: { n: string; t: string; d: string; icon: IconName }[]
+  cta: { label: string; to: string }
+}) {
+  return (
+    <section className="mt-14">
+      <h2 className="text-center text-3xl font-bold text-white">{heading}</h2>
+      <p className="mx-auto mt-3 max-w-2xl text-center text-slate-300">{sub}</p>
+      <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {steps.map((s, i) => (
+          <Reveal key={s.t} delay={(i % 4) * 80}>
+            <div className="lift relative h-full rounded-2xl border border-slate-800 bg-[#111C30]/60 p-6">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-sm font-bold text-[#0B1220]" aria-hidden>{s.n}</span>
+                <span className="text-amber-400"><Icon name={s.icon} className="h-5 w-5" /></span>
+              </div>
+              <h3 className="mt-3 text-lg font-bold text-white">{s.t}</h3>
+              <p className="mt-1 text-sm text-slate-300">{s.d}</p>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+      <p className="mt-6 text-center">
+        <Link to={cta.to} className="pill-btn">{cta.label}</Link>
+      </p>
     </section>
   )
 }

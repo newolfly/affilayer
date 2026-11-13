@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Card, Empty, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { conversionCommission, decideConversion, decidePayout, decideProfile, getClicks, getConversions, getLedgerEntries, getNpPayouts, getOffers, getPayouts, getProfiles, getStats, isDemoMode, offerPayoutLabel, releasePayoutReservation } from '../lib/data'
+import { buildDailyClickSeries, conversionCommission, decideConversion, decidePayout, decideProfile, getClicks, getConversions, getLedgerEntries, getNpPayouts, getOffers, getPayouts, getProfiles, getStats, isDemoMode, offerPayoutLabel, releasePayoutReservation } from '../lib/data'
 import { executePayout, getCustodyBalance, refreshPayoutStatus, verifyPayout } from '../lib/payments'
-import { demoDailySeries } from '../lib/demo-data'
 import { logAudit, newId, resetDemo, updateDemo, useDemoState } from '../lib/demo-store'
 import type { NetworkSettings } from '../lib/demo-store'
 import { detectFraudSignals, ledgerTransition } from '@affilayer/shared'
@@ -18,8 +17,14 @@ const dangerCls = 'rounded-lg border border-red-300 px-3 py-2.5 text-sm font-sem
 
 export function AdminOverview() {
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, pending: 0, revenue: 0 })
+  const [dailyClicks, setDailyClicks] = useState(() => buildDailyClickSeries([]))
   const { profiles } = useDemoState()
-  useEffect(() => { getStats().then(setStats) }, [])
+  // Chart reads the same click rows the Clicks counter counts
+  // (getStats -> getClicks), bucketed per UTC day, zero-filled.
+  useEffect(() => {
+    getStats().then(setStats)
+    getClicks().then((clicks) => setDailyClicks(buildDailyClickSeries(clicks)))
+  }, [])
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -28,7 +33,7 @@ export function AdminOverview() {
         <Stat label="Conversions" value={String(stats.conversions)} icon="check" />
         <Stat label="Pending conversions" value={String(stats.pending)} icon="clock" />
       </div>
-      <Card title="Clicks — last 7 days (demo sample)"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
+      <Card title="Clicks — last 7 days"><BarChart data={dailyClicks} /></Card>
     </div>
   )
 }

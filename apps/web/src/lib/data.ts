@@ -595,6 +595,39 @@ export function computeStats(clicks: Click[], conversions: Conversion[], ledger:
   }
 }
 
+export interface DailyClickPoint {
+  /** ISO date (UTC), e.g. "2026-11-13". */
+  date: string
+  /** Short weekday label for that UTC date, e.g. "Fri". */
+  label: string
+  value: number
+}
+
+/** Real clicks per day for the last 7 UTC days (today included),
+ *  oldest → newest, zero-filled for days with no clicks. Buckets by
+ *  the UTC date prefix of `createdAt` — the same convention `inRange`
+ *  and the admin tables (createdAt.slice(0, 10)) already use, and the
+ *  same click rows `getStats` counts, so the series always reconciles
+ *  with the Clicks counter: sum(series) = clicks in the last 7 days. */
+export function buildDailyClickSeries(clicks: Click[], now: Date = new Date()): DailyClickPoint[] {
+  const dayMs = 86400000
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  const days: DailyClickPoint[] = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(todayUtc - (6 - i) * dayMs)
+    return {
+      date: d.toISOString().slice(0, 10),
+      label: d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
+      value: 0,
+    }
+  })
+  const indexByDate = new Map(days.map((d, i) => [d.date, i]))
+  for (const c of clicks) {
+    const i = indexByDate.get(c.createdAt.slice(0, 10))
+    if (i !== undefined) days[i].value += 1
+  }
+  return days
+}
+
 /** Stats: prefer the tracking service /api/stats when reachable, else compute locally. */
 export async function getStats(filters: ReportFilters = {}): Promise<Stats> {
   const [clicks, conversions, ledger, offers] = await Promise.all([

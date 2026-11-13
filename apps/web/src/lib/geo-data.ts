@@ -714,3 +714,15 @@ export function relatedCountries(code: string, count = 6): Country[] {
     .filter((c) => c.code !== code)
     .slice(0, count)
 }
+
+/** Flag emoji for a country — a regional-indicator pair computed from
+ *  the ISO code, so flags cost zero image weight (Sojib's lightweight
+ *  rule, 13 Nov). The site code 'uk' maps to the ISO code GB for the
+ *  flag only; URLs keep using 'uk'. */
+export function countryFlag(code: string): string {
+  const iso = (code === 'uk' ? 'gb' : code).toUpperCase()
+  if (!/^[A-Z]{2}$/.test(iso)) return ''
+  return String.fromCodePoint(
+    ...[...iso].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65),
+  )
+}

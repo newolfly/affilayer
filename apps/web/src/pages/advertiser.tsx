@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
 import { conversionCommission, getCampaigns, getClicks, getConversions, getLedgerEntries, getMyAdvertiserBalances, getMyDeposits, getOffers, getProfiles, getStats, isDemoMode, offerPayoutLabel, createOffer, sumCommissions } from '../lib/data'
@@ -19,7 +20,13 @@ const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-ambe
 export function AdvertiserDashboard() {
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, revenue: 0 })
   const [offers, setOffers] = useState<Offer[]>([])
-  useEffect(() => { getStats().then(setStats); getOffers().then(setOffers) }, [])
+  const [balances, setBalances] = useState<AdvertiserBalance[]>([])
+  useEffect(() => {
+    getStats().then(setStats)
+    getOffers().then(setOffers)
+    if (!isDemoMode) getMyAdvertiserBalances().then(setBalances)
+  }, [])
+  const balanceUsd = balances.find((b) => b.currency === 'USD')?.balance ?? 0
   return (
     <div className="space-y-4">
       <FirstSteps role="advertiser" />
@@ -29,6 +36,17 @@ export function AdvertiserDashboard() {
         <Stat label="Approved" value={String(stats.approved)} icon="shield" />
         <Stat label="Commission payable" value={`$${stats.revenue.toFixed(2)}`} icon="banknote" />
       </div>
+      {!isDemoMode && (
+        <Card title="Balance">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-600">
+              Available balance <span className="ml-1 text-base font-bold text-slate-900">${balanceUsd.toFixed(2)}</span>
+              <span className="ml-2">Deposits fund your offers — you pay per approved conversion, drawn from this balance.</span>
+            </p>
+            <Link to="/app/advertiser/billing" className={btnCls}>Add funds</Link>
+          </div>
+        </Card>
+      )}
       <Card title="Clicks — last 7 days (demo sample)"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
       <Card title="Your offers">
         {offers.map((o) => <div key={o.id} className="flex justify-between border-b border-slate-100 py-2 text-sm last:border-0"><span>{o.name}</span><span>{o.status} · {offerPayoutLabel(o)}</span></div>)}

@@ -4,7 +4,7 @@ import { PageArt, PageHighlights } from '../components/illustrations'
 import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
 import { useLocale, useT, localizePath } from '../lib/i18n'
-import { COUNTRIES, countryByCode, countriesByRegion, REGION_LABELS, REGION_ORDER, relatedCountries } from '../lib/geo-data'
+import { COUNTRIES, countryByCode, countriesByRegion, countryFlag, REGION_LABELS, REGION_ORDER, relatedCountries } from '../lib/geo-data'
 import { geoSeoByCode } from '../lib/geo-seo-data'
 import { publishedPosts } from '../lib/blog-data'
 import type { Post } from '../lib/blog-data'
@@ -163,6 +163,42 @@ export function GeoPage() {
             <dd>{country.languages.join(', ')}</dd>
           </div>
         </dl>
+      </section>
+      {/* Join/value block (Sojib, 13 Nov): how a visitor in this
+       *  country joins and what they get — data-driven from geo-data
+       *  (name, currency; languages are in the facts box above),
+       *  honest facts only, no local presence claimed. */}
+      <section className="mt-8 max-w-3xl rounded-2xl border border-amber-500/40 bg-[#111C30]/60 p-6" aria-label={t('geo.join.title', { country: name })}>
+        <h2 className="flex items-center gap-2.5 text-xl font-bold text-white">
+          <span className="text-2xl leading-none" aria-hidden>{countryFlag(country.code)}</span>
+          {t('geo.join.title', { country: name })}
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-slate-300">{t('geo.join.lead', { country: name })}</p>
+        <ul className="mt-4 space-y-2 text-sm leading-relaxed text-slate-300">
+          <li className="flex gap-2">
+            <span className="mt-0.5 shrink-0 text-amber-400"><Icon name="check" className="h-4 w-4" /></span>
+            <span>{t('geo.join.usdt')}</span>
+          </li>
+          {country.currencyCode && country.currencyName && (
+            <li className="flex gap-2">
+              <span className="mt-0.5 shrink-0 text-amber-400"><Icon name="check" className="h-4 w-4" /></span>
+              <span>{t('geo.join.currency', { currency: `${country.currencyName} (${country.currencyCode})` })}</span>
+            </li>
+          )}
+          <li className="flex gap-2">
+            <span className="mt-0.5 shrink-0 text-amber-400"><Icon name="check" className="h-4 w-4" /></span>
+            <span>{t('geo.join.smart')}</span>
+          </li>
+        </ul>
+        <ol className="mt-5 grid gap-2 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((n) => (
+            <li key={n} className="flex items-center gap-2.5 text-sm text-slate-200">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 text-xs font-bold text-[#0B1220]" aria-hidden>{n}</span>
+              {t(`geo.join.step.${n}` as `geo.join.step.${1 | 2 | 3 | 4}`, { country: name })}
+            </li>
+          ))}
+        </ol>
+        <Link to="/register" className="pill-btn mt-6">{t('geo.join.cta')}</Link>
       </section>
       {seo && (
         <p className="mt-4 max-w-3xl rounded-xl border border-amber-500/40 bg-amber-500/10 p-5 leading-relaxed text-slate-200">

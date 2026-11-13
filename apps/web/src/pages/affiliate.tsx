@@ -30,10 +30,19 @@ export function AffiliateDashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, pending: 0, revenue: 0, epc: 0, cr: 0 })
   const [offers, setOffers] = useState<Offer[]>([])
+  const [balance, setBalance] = useState(0)
   useEffect(() => {
     getStats({ affiliateCode: user?.affiliateCode }).then((s) => setStats(s))
     getOffers().then(setOffers)
   }, [user?.affiliateCode])
+  useEffect(() => {
+    // Approved balance, computed exactly like the Payouts page:
+    // ledger commission on my approved conversions only (M-05).
+    Promise.all([getConversions(), getLedgerEntries(), getOffers()]).then(([convs, ledger, os]) => {
+      const mine = convs.filter((c) => c.status === 'approved' && (isDemoMode ? c.affiliateCode === user?.affiliateCode : c.affiliateId === user?.id))
+      setBalance(sumCommissions(mine, ledger, os))
+    })
+  }, [user?.affiliateCode, user?.id])
   return (
     <div className="space-y-4">
       <FirstSteps role="affiliate" />
@@ -43,6 +52,15 @@ export function AffiliateDashboard() {
         <Stat label="Approved" value={String(stats.approved)} icon="shield" />
         <Stat label="Revenue" value={`$${stats.revenue.toFixed(2)}`} sub={`EPC $${stats.epc.toFixed(2)} · CR ${(stats.cr * 100).toFixed(1)}%`} icon="wallet" />
       </div>
+      <Card title="Your balance">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-600">
+            Approved balance <span className="ml-1 text-base font-bold text-slate-900">${balance.toFixed(2)}</span>
+            <span className="ml-2">Withdraw it in USDT (TRC20) from the Payouts page.</span>
+          </p>
+          <Link to="/app/affiliate/payouts" className={btnCls}>Withdraw</Link>
+        </div>
+      </Card>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Clicks — last 7 days (demo sample)"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
         <Card title="Conversions — last 7 days (demo sample)"><LineChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.conversions }))} /></Card>
