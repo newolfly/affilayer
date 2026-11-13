@@ -138,9 +138,11 @@ function mapConversion(row: Row): Conversion {
 }
 
 export class SupabaseStore implements Store {
-  // In-memory only for postback configs/events (delivery records, not
-  // financial truth). Demo offers/clicks/conversions/ledger rows are NOT
-  // kept here (M-08) — see the header comment.
+  // The in-memory store is only a fallback: demo-mode parity for
+  // addPostbackConfig and a best-effort sink when a postback RPC
+  // fails (migration 029 made configs/events durable — see
+  // getPostbackConfigs). Demo offers/clicks/conversions/ledger rows
+  // are NOT kept here (M-08) — see the header comment.
   private memory = new InMemoryStore();
 
   constructor(private opts: SupabaseStoreOptions) {}
@@ -165,7 +167,9 @@ export class SupabaseStore implements Store {
       | 'tracking_record_click'
       | 'tracking_record_conversion'
       | 'tracking_record_ledger_entry'
-      | 'tracking_resolve_affiliate',
+      | 'tracking_resolve_affiliate'
+      | 'tracking_get_postback_configs'
+      | 'tracking_record_postback_event',
   ): Promise<string> {
     if (!this.opts.workerProofSecret) {
       throw new Error(`supabase ${fnName}: NP_WORKER_PROOF is not configured`);
@@ -402,18 +406,76 @@ export class SupabaseStore implements Store {
     return real;
   }
 
-  // Postback configs/events stay in-memory (delivery records, not
-  // financial truth) — delegated, never sent to Postgres.
+  // Postback configs/events are DURABLE since migration 029 (audit
+  // v4, W4-05): configs are read from postback_configs via the
+  // proof-gated tracking_get_postback_configs RPC and deliveries are
+  // recorded into postback_events via tracking_record_postback_event.
+  // Before 029 both delegated to a per-isolate in-memory store, so in
+  // production the config list was always empty and outbound
+  // postbacks could never fire. Both methods fall back to the
+  // in-memory store on RPC failure — postbacks are best-effort by
+  // design and must never fail the conversion that triggered them.
   async getPostbackConfigs(offerId?: string, affiliateCode?: string): Promise<PostbackConfig[]> {
-    return this.memory.getPostbackConfigs(offerId, affiliateCode);
+    try {
+      let affiliateId: string | null = null;
+      if (affiliateCode) {
+        const affiliate = await this.rpc<{ profile_id: string } | null>(
+          'tracking_resolve_affiliate',
+          {
+            p_affiliate_code: affiliateCode,
+            p_proof: await this.workerProofFor('tracking_resolve_affiliate'),
+          },
+        );
+        affiliateId = affiliate?.profile_id ?? null;
+        // An unresolvable code is fine: the RPC then returns only
+        // global (unscoped) configs.
+      }
+      const rows = await this.rpc<Row[]>('tracking_get_postback_configs', {
+        p_affiliate_id: affiliateId,
+        p_proof: await this.workerProofFor('tracking_get_postback_configs'),
+      });
+      const configs: PostbackConfig[] = rows.map((row) => ({
+        id: String(row.id),
+        offerId: str(row.offer_id) ?? undefined,
+        affiliateCode,
+        url: str(row.url) ?? '',
+        secret: str(row.secret) ?? undefined,
+      }));
+      // Same offer filter the in-memory store applies.
+      return configs.filter((c) => !c.offerId || !offerId || c.offerId === offerId);
+    } catch (err) {
+      console.error('supabase getPostbackConfigs failed, using in-memory fallback:', err);
+      return this.memory.getPostbackConfigs(offerId, affiliateCode);
+    }
   }
 
   async addPostbackConfig(config: PostbackConfig): Promise<PostbackConfig> {
+    // No HTTP route calls this (configs are managed as postback_configs
+    // rows in the DB). Kept on the in-memory store for demo mode parity.
     return this.memory.addPostbackConfig(config);
   }
 
   async recordPostbackEvent(event: PostbackEvent): Promise<PostbackEvent> {
-    return this.memory.recordPostbackEvent(event);
+    try {
+      const id = await this.rpc<string>('tracking_record_postback_event', {
+        p_conversion_ref: event.conversionId ?? null,
+        p_postback_config_id: event.configId ?? null,
+        p_url: event.url,
+        p_payload: {
+          status_code: event.statusCode ?? null,
+          error: event.error ?? null,
+          attempts: event.attempts,
+        },
+        p_status: event.status,
+        p_attempts: event.attempts,
+        p_response_status: event.statusCode ?? null,
+        p_proof: await this.workerProofFor('tracking_record_postback_event'),
+      });
+      return { ...event, id: id ?? event.id };
+    } catch (err) {
+      console.error('supabase recordPostbackEvent failed, using in-memory fallback:', err);
+      return this.memory.recordPostbackEvent(event);
+    }
   }
 
   async listPostbackEvents(): Promise<PostbackEvent[]> {

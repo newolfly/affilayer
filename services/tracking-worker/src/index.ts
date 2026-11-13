@@ -100,6 +100,11 @@ import {
 
 export interface Env {
   POSTBACK_SECRET?: string;
+  /** Dedicated secret for the CPAlead receiver's ?secret= path. When
+   *  set it replaces POSTBACK_SECRET for that check only, so the
+   *  widely-shared conversion HMAC key no longer travels in URLs
+   *  (audit v4, W4-06). Unset = legacy POSTBACK_SECRET behaviour. */
+  CPALEAD_POSTBACK_SECRET?: string;
   /** Bearer token for /api/stats and /api/clicks. Falls back to
    *  POSTBACK_SECRET until set (R22) — see isOperator(). */
   OPERATOR_TOKEN?: string;
@@ -147,6 +152,10 @@ const SECURITY_HEADERS: Record<string, string> = {
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'content-security-policy': "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+  // Audit v4 (W4-01 / v3 M-03): the two headers Pages already sends
+  // but the Worker never did.
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb()',
 };
 
 function withSecurityHeaders(res: Response): Response {
@@ -202,11 +211,13 @@ function timingSafeEqualStr(a: string, b: string): boolean {
 const CPALEAD_POSTBACK_IP = '34.69.179.33';
 
 function clientIp(request: Request): string | undefined {
-  const cf = request.headers.get('cf-connecting-ip');
-  if (cf) return cf;
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return undefined;
+  // Audit v4 (W4-08): cf-connecting-ip only. The x-forwarded-for
+  // fallback was spoofable on any path where the Cloudflare header is
+  // absent, and both the CPAlead relay-IP gate and the rate limiters
+  // key off this helper. No header = undefined = limiter treats the
+  // caller as unmetered (same as before for missing IPs) and the
+  // CPAlead IP check simply fails over to the secret check.
+  return request.headers.get('cf-connecting-ip') ?? undefined;
 }
 
 /** Currencies the network settles in (ISO-4217). Anything else is rejected. */
@@ -255,7 +266,11 @@ function clickRateLimited(ip: string | undefined): boolean {
  *  a query param. */
 function isOperator(request: Request, env: Env): boolean {
   const token = env.OPERATOR_TOKEN ?? env.POSTBACK_SECRET;
-  return !!token && request.headers.get('authorization') === `Bearer ${token}`;
+  if (!token) return false;
+  // Audit v4 (W4-09): constant-time compare — the operator token is
+  // the highest-value credential of the three auth paths and was the
+  // only one compared with plain string equality.
+  return timingSafeEqualStr(request.headers.get('authorization') ?? '', `Bearer ${token}`);
 }
 
 function geoFrom(request: Request): string | undefined {
@@ -410,6 +425,10 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
   if (!postbackSecret) {
     return json({ error: 'POSTBACK_SECRET not configured' }, 500);
   }
+  // Audit v4 (W4-02 / v3 M-06): this endpoint had no rate-limit call.
+  // The HMAC gate still runs before any recording work; the limit
+  // only sheds flood traffic before signature verification burns CPU.
+  if (moneyRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
   const rawBody = await request.text();
   const signature = request.headers.get('x-affilayer-signature') ?? undefined;
   if (!(await verifySignature(postbackSecret, rawBody, signature))) {
@@ -525,7 +544,13 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
   const configs = await store.getPostbackConfigs(offerId, conversion.affiliateCode);
   const vars: Record<string, string> = {
     click_id: clickId,
-    conversion_id: conversion.id,
+    // Audit v4 (W4-03 / v3 L-13): use the recorded conversion's DB id
+    // everywhere. The create path used to return the local public id
+    // in the 201 body while the replay path returned the DB PK in the
+    // same field; the response, the ledger entry and the postback
+    // macro now all carry recordedConversion.id, matching replay and
+    // the CPAlead handler.
+    conversion_id: recordedConversion.id,
     payout: String(payout),
     currency,
     status: conversion.status,
@@ -537,7 +562,7 @@ async function handleConversion(request: Request, env: Env): Promise<Response> {
     {
       ok: true,
       duplicate: false,
-      conversion,
+      conversion: recordedConversion,
       ledgerEntry,
       commission,
       postbacks: postbacks.map((p) => ({ url: p.url, status: p.status, attempts: p.attempts })),
@@ -578,10 +603,15 @@ async function handleCpaleadPostback(request: Request, env: Env, url: URL): Prom
   const store = getStore(env);
   const ip = clientIp(request);
   const secretParam = url.searchParams.get('secret') ?? '';
+  // Audit v4 (W4-06): prefer the dedicated CPALEAD_POSTBACK_SECRET
+  // when provisioned so POSTBACK_SECRET (the conversion HMAC key and
+  // operator-token fallback) no longer has to travel in a URL. Falls
+  // back to POSTBACK_SECRET until the dedicated secret is set.
+  const expectedSecret = env.CPALEAD_POSTBACK_SECRET ?? env.POSTBACK_SECRET;
   const secretOk =
-    !!env.POSTBACK_SECRET &&
+    !!expectedSecret &&
     secretParam.length > 0 &&
-    timingSafeEqualStr(secretParam, env.POSTBACK_SECRET);
+    timingSafeEqualStr(secretParam, expectedSecret);
   if (ip !== CPALEAD_POSTBACK_IP && !secretOk) {
     return json({ error: 'forbidden' }, 403);
   }
@@ -824,6 +854,13 @@ function moneyRateLimited(ip: string | undefined, limit = 30): boolean {
   if (hits.length >= limit) return true;
   hits.push(now);
   moneyRate.set(ip, hits);
+  // Audit v4 (W4-13): prune like clickRateLimited does — entries
+  // previously accumulated forever within an isolate.
+  if (moneyRate.size > 5000) {
+    for (const [k, v] of moneyRate) {
+      if (v.length === 0 || v[v.length - 1] < now - 60_000) moneyRate.delete(k);
+    }
+  }
   return false;
 }
 
@@ -903,6 +940,12 @@ async function handleIpn(request: Request, env: Env): Promise<Response> {
   if (!np) return json({ error: 'payments not configured' }, 503);
   const sb = supabaseClient(env);
   if (!sb) return json({ error: 'supabase not configured' }, 500);
+  // Audit v4 (W4-02 / v3 M-06): the IPN handler had no rate-limit
+  // call, so an unauthenticated caller could make the Worker burn
+  // NOWPayments API re-fetches at line rate. The limit is generous
+  // (legit IPNs are sparse and NOWPayments retries on non-2xx, so a
+  // shed burst is retried later, never lost).
+  if (moneyRateLimited(clientIp(request), 120)) return json({ error: 'rate limited' }, 429);
 
   let body: unknown = null;
   try {
@@ -1055,7 +1098,11 @@ async function handleExecutePayout(request: Request, env: Env): Promise<Response
     }
 
     const batch = await np.createPayout({ address, currency, amount: payout.amount });
-    const batchId = String(batch.id);
+    // Audit v4 (W4-10): guard the raw id BEFORE String() — String(undefined)
+    // is the truthy string "undefined", so the old order could never fire
+    // and a malformed NOWPayments response would have been recorded with
+    // batch_id "undefined".
+    const batchId = batch.id ? String(batch.id) : '';
     const withdrawalId =
       batch.withdrawals && batch.withdrawals[0]?.id ? String(batch.withdrawals[0].id) : null;
     if (!batchId) return json({ error: 'NOWPayments returned no payout batch id' }, 502);
@@ -1121,6 +1168,10 @@ async function handleVerifyPayout(
 ): Promise<Response> {
   const np = npClient(env);
   if (!np) return json({ error: 'payments not configured' }, 503);
+  // Audit v4 (W4-07): the 6-digit verify code endpoint had no attempt
+  // limit. Admin-gated, but a leaked admin token should not get
+  // unlimited guesses forwarded to NOWPayments.
+  if (moneyRateLimited(clientIp(request), 10)) return json({ error: 'rate limited' }, 429);
   const auth = await requireAdmin(request, env);
   if (auth instanceof Response) return auth;
   const sb = supabaseClient(env);
@@ -1159,6 +1210,7 @@ async function handlePayoutStatus(
 ): Promise<Response> {
   const np = npClient(env);
   if (!np) return json({ error: 'payments not configured' }, 503);
+  if (moneyRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
   const auth = await requireAdmin(request, env);
   if (auth instanceof Response) return auth;
   const sb = supabaseClient(env);
@@ -1185,6 +1237,7 @@ async function handlePayoutStatus(
 async function handleCustodyBalance(request: Request, env: Env): Promise<Response> {
   const np = npClient(env);
   if (!np) return json({ error: 'payments not configured' }, 503);
+  if (moneyRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
   const auth = await requireAdmin(request, env);
   if (auth instanceof Response) return auth;
   try {
@@ -1203,6 +1256,7 @@ async function handleCustodyBalance(request: Request, env: Env): Promise<Respons
 async function handleValidateAddress(request: Request, env: Env): Promise<Response> {
   const np = npClient(env);
   if (!np) return json({ error: 'payments not configured' }, 503);
+  if (moneyRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
   const auth = await requireUser(request, env);
   if (auth instanceof Response) return auth;
 
@@ -1218,6 +1272,13 @@ async function handleValidateAddress(request: Request, env: Env): Promise<Respon
       ? body.currency
       : DEFAULT_PAYOUT_CURRENCY;
   if (!address) return json({ error: 'address is required' }, 400);
+  // Audit v4 (W4-11): the currency was forwarded to NOWPayments
+  // verbatim. Payouts only ever settle in ALLOWED_PAYOUT_CURRENCIES,
+  // so validating any other currency is a free oracle + unmetered
+  // outbound API use.
+  if (!(ALLOWED_PAYOUT_CURRENCIES as readonly string[]).includes(currency)) {
+    return json({ error: `currency ${currency} is not supported (only usdttrc20)` }, 422);
+  }
   try {
     await np.validateAddress(address, currency);
     return json({ ok: true, valid: true, address, currency });

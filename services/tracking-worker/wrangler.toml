@@ -1,7 +1,7 @@
 name = "affilayer-tracking"
 main = "src/index.ts"
 compatibility_date = "2026-11-06"
-workers_dev = true
+workers_dev = false
 upload_source_maps = true
 
 # Custom hostname: go.affilayer.com (zone affilayer.com).
