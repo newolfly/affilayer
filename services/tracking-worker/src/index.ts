@@ -164,6 +164,42 @@ function withSecurityHeaders(res: Response): Response {
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 
+/**
+ * CORS for the browser app (affilayer.com -> go.affilayer.com).
+ * The dashboard calls the /api/* money routes with a Supabase JWT from
+ * the browser; without these headers the browser blocks every call
+ * before it is sent (found 15 Nov 2026: deposits and payouts from the
+ * website never worked — the audits tested the Worker server-side,
+ * where CORS does not apply). Origins are pinned to the production
+ * site: no wildcard, no credentials mode.
+ */
+const CORS_ORIGINS = new Set(['https://affilayer.com', 'https://www.affilayer.com']);
+
+function corsOrigin(request: Request): string | null {
+  const origin = request.headers.get('origin');
+  return origin && CORS_ORIGINS.has(origin) ? origin : null;
+}
+
+function withCors(res: Response, origin: string): Response {
+  const headers = new Headers(res.headers);
+  headers.set('access-control-allow-origin', origin);
+  headers.append('vary', 'Origin');
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+function corsPreflight(origin: string): Response {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'access-control-allow-origin': origin,
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
+      'access-control-allow-headers': 'authorization, content-type',
+      'access-control-max-age': '86400',
+      vary: 'Origin',
+    },
+  });
+}
+
 function appendQuery(url: string, key: string, value: string): string {
   const sep = url.includes('?') ? '&' : '?';
   return `${url}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
@@ -1314,11 +1350,20 @@ export default {
     // unexpected throw becomes a JSON 500 with headers instead of the
     // runtime's bare 500. The 022 rejections in handleConversion are
     // mapped to 403 there, not here.
+    const url = new URL(request.url);
+    const origin = corsOrigin(request);
+    const isApi = url.pathname.startsWith('/api/');
+    // Browser preflight for the /api/* routes the dashboard calls.
+    if (request.method === 'OPTIONS' && isApi && origin) {
+      return withSecurityHeaders(corsPreflight(origin));
+    }
     try {
-      return withSecurityHeaders(await handleRequest(request, env));
+      const res = withSecurityHeaders(await handleRequest(request, env));
+      return origin && isApi ? withCors(res, origin) : res;
     } catch (err) {
       console.error('worker fetch failed:', err);
-      return withSecurityHeaders(json({ error: 'internal error' }, 500));
+      const res = withSecurityHeaders(json({ error: 'internal error' }, 500));
+      return origin && isApi ? withCors(res, origin) : res;
     }
   },
 };
