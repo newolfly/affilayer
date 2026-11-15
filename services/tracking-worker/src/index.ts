@@ -182,18 +182,36 @@ function isCpaleadLandingUrl(url: string): boolean {
 }
 
 /**
+ * CJ (Commission Junction) click links for AffiLayer's own website
+ * property carry the stable path marker /click-101928483-<link id> on
+ * rotating CJ domains (anrdoezrs.net, jdoqocy.com, tkqlhce.com,
+ * kqzyfj.com, …), so the path — not the hostname — is the stable
+ * marker of one of our CJ links. CJ accepts a sid parameter on click
+ * links (verified in CJ's Get Code panel, 14 Nov 2026); sub-affiliate
+ * sales are credited by sid and reconciled from CJ commission
+ * reports — CJ has no S2S postback.
+ */
+function isCjLandingUrl(url: string): boolean {
+  return /\/click-101928483-\d+/.test(url);
+}
+
+/**
  * Redirect target for a recorded click: the offer landing URL plus the
  * AffiLayer click id. CPAlead offers additionally receive the click id
  * and affiliate code as CPAlead sub-IDs (subid / subid2) so CPAlead's
  * S2S postback can return {subid} = this click (see
- * handleCpaleadPostback). All other offers get click_id only, exactly
- * as before.
+ * handleCpaleadPostback). CJ offers additionally receive the click id
+ * as CJ's sid so CJ's commission reports can be reconciled back to
+ * this click. All other offers get click_id only, exactly as before.
  */
 function redirectLocation(offer: Offer, clickId: string, affiliateCode: string): string {
   let target = appendQuery(offer.landingUrl, 'click_id', clickId);
   if (isCpaleadLandingUrl(offer.landingUrl)) {
     target = appendQuery(target, 'subid', clickId);
     target = appendQuery(target, 'subid2', affiliateCode);
+  }
+  if (isCjLandingUrl(offer.landingUrl)) {
+    target = appendQuery(target, 'sid', clickId);
   }
   return target;
 }
