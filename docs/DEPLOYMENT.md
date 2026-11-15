@@ -2,7 +2,18 @@
 
 Nothing in this repo deploys itself. Every step below is manual and explicit.
 
-## LIVE STATUS — 9 Nov 2026 ~04:23 +06 (DOCS/SEO + DEPLOYMENT DOCUMENTATION — R3, R7, R10; VERDICT STILL NO-GO)
+## LIVE STATUS — 16 Nov 2026 (audit v6)
+
+- **Repo:** HEAD 482455a ("Worker: add CORS for the browser app (money routes)") on top of 3b1b36a (CJ sid) and 9bb01d4 (audit v4 Worker hardening). GitHub: github.com/newolfly/affilayer. Normal pushes work.
+- **Web app:** Cloudflare Pages project `affilayer-web`. Build chain: in apps/web, `npm run build:live` (content, sitemap, RSS and asserts, then tsc + vite build, then `python3 scripts/prerender.py`, which resumes from verified markers). Deploy with the proven route below. Never deploy a partial dist: the gate is a full build, roughly 639 or more HTML files, 0 zero-byte files.
+- **Tracking Worker:** `affilayer-tracking` at go.affilayer.com. Deploy route (proven): `~/workspace/work/cf-wrangler-worker.py`, which uses the Cloudflare Global API key through the surrogate and the repo wrangler binary from services/tracking-worker. Live version 331c58a3 (15 Nov, CORS). The Worker sends CORS headers for https://affilayer.com and https://www.affilayer.com on /api/* routes only.
+- **Pages deploy route (proven):** `~/workspace/cf-wrangler-global.py` (same Global key pattern; check the script before use). The PKCE `wrangler login` route further down this doc is the fallback, not the production route.
+- **Migrations:** files 001–003 and 005–029 exist in supabase/migrations (004_seed.sql is demo seed). There is no migration registry in the database, so live application is evidenced by behaviour checks, not by a registry read. See docs/MIGRATION_RECORD.md.
+- **Money state (16 Nov):** no paid deposit ever, no executed payout ever, np_payouts empty, NOWPayments TOTP secret still unset. The money loop is unproven until the real-browser deposit test and the first real payout run.
+- **Verdict:** NO-GO as a proven business, GO as a working test platform (audit v6, 16 Nov 2026).
+- **Corrections to the 9 Nov block below:** its open blockers are closed — signup works, the super admin has signed in, docs.affilayer.com is live, custom SMTP via Resend is on, the sitemap is in Google Search Console. NOWPayments is no longer "on hold": it is wired in the Worker (deposits, IPN, payout execute) and waiting on the first real-money proof, not on code.
+
+## LIVE STATUS — 9 Nov 2026 ~04:23 +06 (SUPERSEDED — kept for history)
 
 - **Repo:** HEAD `227f728` ("Fix residual single-row RPC exposure (013)…"), **31 commits, working tree clean, local = remote** (verified 04:23 +06: `git status` empty, `git rev-list --count HEAD` = 31). GitHub: `github.com/newolfly/affilayer`.
 - **Latest Pages deployment:** `a6d9978f` (9 Nov 02:12 +06, per coordinator record — not re-probed by this workstream). Live spot-check 04:23 +06: `https://affilayer.com/` **200**, `/sitemap.xml` **200, 59 URLs** (see R7 below).
