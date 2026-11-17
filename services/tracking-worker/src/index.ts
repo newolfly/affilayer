@@ -7,6 +7,7 @@
  *   GET  /s/:smartlinkCode           -> 302 to the deterministic SmartLink pick
  *   POST /conversion                  -> HMAC-signed, idempotent, deduped (201 / 200 duplicate)
  *   GET  /api/postbacks/cpalead       -> CPAlead S2S postback receiver (relay-IP or secret gated)
+ *   GET  /api/postbacks/lospollos     -> LosPollos S2S postback receiver (secret gated)
  *   GET  /api/stats                   -> operator-only aggregation (Bearer POSTBACK_SECRET)
  *   GET  /api/clicks/:clickId         -> operator-only click + its conversion
  *   POST /api/payments/deposits       -> advertiser deposit (NOWPayments invoice, JWT)
@@ -105,6 +106,11 @@ export interface Env {
    *  widely-shared conversion HMAC key no longer travels in URLs
    *  (audit v4, W4-06). Unset = legacy POSTBACK_SECRET behaviour. */
   CPALEAD_POSTBACK_SECRET?: string;
+  /** Dedicated secret for the LosPollos receiver's ?secret= path —
+   *  same W4-06 pattern as CPALEAD_POSTBACK_SECRET. LosPollos
+   *  publishes no relay IP, so the secret in the registered postback
+   *  URL is the only caller check. Unset = POSTBACK_SECRET fallback. */
+  LOSPOLLOS_POSTBACK_SECRET?: string;
   /** Bearer token for /api/stats and /api/clicks. Falls back to
    *  POSTBACK_SECRET until set (R22) — see isOperator(). */
   OPERATOR_TOKEN?: string;
@@ -231,6 +237,13 @@ function isCjLandingUrl(url: string): boolean {
   return /\/click-101928483-\d+/.test(url);
 }
 
+/** LosPollos smartlink landings. The account's Dating smartlink lives
+ *  on kissableheart.org; LosPollos assigns one smartlink domain per
+ *  account, so a new smartlink domain gets added here when issued. */
+function isLospollosLandingUrl(url: string): boolean {
+  return /kissableheart\.org/.test(url);
+}
+
 /**
  * Redirect target for a recorded click: the offer landing URL plus the
  * AffiLayer click id. CPAlead offers additionally receive the click id
@@ -238,7 +251,10 @@ function isCjLandingUrl(url: string): boolean {
  * S2S postback can return {subid} = this click (see
  * handleCpaleadPostback). CJ offers additionally receive the click id
  * as CJ's sid so CJ's commission reports can be reconciled back to
- * this click. All other offers get click_id only, exactly as before.
+ * this click. LosPollos smartlinks additionally receive the click id
+ * as their s1 sub-ID so their S2S postback returns it as {s1} (see
+ * handleLospollosPostback). All other offers get click_id only,
+ * exactly as before.
  */
 function redirectLocation(offer: Offer, clickId: string, affiliateCode: string): string {
   let target = appendQuery(offer.landingUrl, 'click_id', clickId);
@@ -248,6 +264,9 @@ function redirectLocation(offer: Offer, clickId: string, affiliateCode: string):
   }
   if (isCjLandingUrl(offer.landingUrl)) {
     target = appendQuery(target, 'sid', clickId);
+  }
+  if (isLospollosLandingUrl(offer.landingUrl)) {
+    target = appendQuery(target, 's1', clickId);
   }
   return target;
 }
@@ -764,6 +783,170 @@ async function handleCpaleadPostback(request: Request, env: Env, url: URL): Prom
       recordedPayout: payout,
     });
   }
+
+  // Outbound postback fan-out, same as POST /conversion (failures
+  // never fail the conversion itself).
+  const configs = await store.getPostbackConfigs(offer.id, affiliateCode);
+  const vars: Record<string, string> = {
+    click_id: clickId,
+    conversion_id: recordedConversion.id,
+    payout: String(payout),
+    currency,
+    status: conversion.status,
+    sub1: click.sub1 ?? '',
+  };
+  await deliverPostbacks(store, configs, vars);
+
+  return json({
+    ok: true,
+    duplicate: false,
+    conversion_id: recordedConversion.id,
+    ledger_entry_id: ledgerEntry.id,
+    payout,
+    currency,
+  });
+}
+
+/** Affiliate share of a variable smartlink payout, applied at record
+ *  time in handleLospollosPostback: 75% to the affiliate at the
+ *  PROPOSED 25% network keep (same proposed split as the CJ, CPAlead,
+ *  NOWPayments and Systeme imports — proposed, not locked). */
+const LOSPOLLOS_AFFILIATE_SHARE = 0.75;
+
+/**
+ * GET /api/postbacks/lospollos — LosPollos S2S postback receiver.
+ *
+ * LosPollos calls the registered Global Postback URL when a
+ * conversion fires on the Dating smartlink, with its macros already
+ * substituted:
+ *   ?s1=<AffiLayer click id>&sum=<payout USD>&cid=<LosPollos
+ *   transaction id>
+ * (s1 was appended to the smartlink at click time — see
+ * redirectLocation. {cid} is LosPollos's own unique transaction id;
+ * it is the dedupe key, never the attribution source — attribution
+ * always comes from the stored click row, exactly as in the CPAlead
+ * receiver.)
+ *
+ * Caller validation: LosPollos publishes no relay IP, so the only
+ * check is ?secret=<LOSPOLLOS_POSTBACK_SECRET> (falling back to
+ * POSTBACK_SECRET until the dedicated secret is set), constant-time
+ * compared and never logged. The secret rides in the postback URL
+ * registered in the LosPollos cabinet.
+ *
+ * Recording mirrors the CPAlead receiver (same store path, same 022
+ * approval gate, same ledger + postback fan-out), with ONE
+ * difference: a smartlink has no fixed rate — the payout varies per
+ * GEO and per offer in rotation — so the amount recorded is the
+ * reported {sum} multiplied by LOSPOLLOS_AFFILIATE_SHARE, rounded to
+ * cents. The offer row's payout stays 0 and is never used here. The
+ * full reported sum is logged for reconciliation. Dedup is on the
+ * LosPollos cid (idempotency_key `lospollos:<cid>`); a replay
+ * returns 200 without double-recording. Every response is JSON,
+ * never 3xx.
+ */
+async function handleLospollosPostback(request: Request, env: Env, url: URL): Promise<Response> {
+  const store = getStore(env);
+  const secretParam = url.searchParams.get('secret') ?? '';
+  const expectedSecret = env.LOSPOLLOS_POSTBACK_SECRET ?? env.POSTBACK_SECRET;
+  const secretOk =
+    !!expectedSecret &&
+    secretParam.length > 0 &&
+    timingSafeEqualStr(secretParam, expectedSecret);
+  if (!secretOk) {
+    return json({ error: 'forbidden' }, 403);
+  }
+
+  const clickId = url.searchParams.get('s1') ?? '';
+  const cid = url.searchParams.get('cid') ?? '';
+  if (!clickId || !cid) {
+    return json({ error: 's1 and cid are required' }, 400);
+  }
+  const reportedRaw = url.searchParams.get('sum');
+  const reportedPayout = reportedRaw != null ? Number(reportedRaw) : Number.NaN;
+  if (!Number.isFinite(reportedPayout) || reportedPayout <= 0 || reportedPayout > MAX_PAYOUT) {
+    return json({ error: 'sum must be a positive payout within the per-conversion ceiling' }, 422);
+  }
+
+  // A conversion must belong to a real click on a real offer — the
+  // click row decides the offer and the affiliate; nothing in the
+  // query string can override them.
+  const click = await store.getClick(clickId);
+  if (!click) return json({ error: 'unknown click' }, 404);
+  const offer = await store.getOffer(click.offerId);
+  if (!offer) return json({ error: 'unknown offer' }, 404);
+
+  // Dedup: a repeated cid (LosPollos retries postbacks) returns 200
+  // with the original conversion and records nothing new. The
+  // click+offer pair is the secondary key, exactly as in the CPAlead
+  // receiver.
+  const idempotencyKey = `lospollos:${cid}`;
+  const existing =
+    (await store.findConversionByIdempotencyKey(idempotencyKey)) ??
+    (await store.findConversionByClickAndOffer(clickId, click.offerId));
+  if (existing) {
+    try {
+      await ensureLedgerEntry(store, existing, offer);
+    } catch (err) {
+      console.error('lospollos duplicate-path ledger backfill failed:', err, { conversionId: existing.id });
+    }
+    return json({ ok: true, duplicate: true, conversion_id: existing.id });
+  }
+
+  const currency = offer.currency ?? 'USD';
+  if (!ALLOWED_CURRENCIES.has(currency)) {
+    return json({ error: 'unsupported currency' }, 422);
+  }
+  // Bare SmartLink clicks attribute to the house affiliate (never
+  // paid out) — same rule as POST /conversion.
+  const affiliateCode =
+    click.affiliateCode === SMARTLINK_AFFILIATE_CODE || !click.affiliateCode
+      ? HOUSE_AFFILIATE_CODE
+      : click.affiliateCode;
+  // Variable smartlink payout: the affiliate amount is the reported
+  // sum at the affiliate share — NOT the offer row's payout (0).
+  const payout = Math.round(reportedPayout * LOSPOLLOS_AFFILIATE_SHARE * 100) / 100;
+  const conversion: Conversion = {
+    id: crypto.randomUUID(),
+    clickId,
+    offerId: offer.id,
+    affiliateCode,
+    payout,
+    currency,
+    status: 'pending',
+    idempotencyKey,
+    sub1: click.sub1,
+    createdAt: new Date().toISOString(),
+  };
+  let recordedConversion: Conversion;
+  try {
+    recordedConversion = await store.recordConversion(conversion);
+  } catch (err) {
+    // 022 gate: the DB raises before inserting, so no conversion row
+    // and no ledger row exist for a rejected affiliate.
+    if (isAffiliateNotApprovedError(err)) {
+      return json({ error: 'affiliate not approved' }, 403);
+    }
+    throw err;
+  }
+
+  const commission = computeCommission(payout, offer.payoutModel ?? 'CPA', offer.rateBps);
+  const ledgerEntry = await store.recordLedgerEntry({
+    id: crypto.randomUUID(),
+    conversionId: recordedConversion.id,
+    affiliateCode,
+    offerId: offer.id,
+    amount: commission,
+    currency,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  });
+  // Reconciliation signal: what LosPollos reported vs the affiliate
+  // amount recorded at the share. The difference is the network keep.
+  console.log('lospollos postback recorded', {
+    cid,
+    reportedPayout,
+    recordedPayout: payout,
+  });
 
   // Outbound postback fan-out, same as POST /conversion (failures
   // never fail the conversion itself).
@@ -1540,6 +1723,11 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     // GET /api/postbacks/cpalead — CPAlead S2S postback receiver
     if (request.method === 'GET' && path === '/api/postbacks/cpalead') {
       return handleCpaleadPostback(request, env, url);
+    }
+
+    // GET /api/postbacks/lospollos — LosPollos S2S postback receiver
+    if (request.method === 'GET' && path === '/api/postbacks/lospollos') {
+      return handleLospollosPostback(request, env, url);
     }
 
     // GET /api/stats — operator only
