@@ -191,14 +191,14 @@ const PAGES: Record<string, SeoMeta> = {
   '/': {
     title: 'AffiLayer — Global CPA Affiliate Network',
     description:
-      'AffiLayer is a new global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an auditable commission ledger.',
+      'AffiLayer is a global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an auditable commission ledger.',
     jsonLd: [ORGANIZATION, WEBSITE],
   },
   '/about': {
     title: 'About AffiLayer | Global CPA Affiliate Network',
     description:
-      'AffiLayer is a new global CPA affiliate network operated by MarketSync Global LLC, New Mexico, USA. Tracking you can audit, a ledger you can trust.',
-    jsonLd: webPage('/about', 'About AffiLayer', 'About AffiLayer, a new global CPA affiliate network.'),
+      'AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC, New Mexico, USA. Tracking you can audit, a ledger you can trust.',
+    jsonLd: webPage('/about', 'About AffiLayer', 'About AffiLayer, a global CPA affiliate network.'),
   },
   '/advantages': {
     title: 'Why AffiLayer | Advantages of a Transparent CPA Network',
@@ -296,6 +296,12 @@ const PAGES: Record<string, SeoMeta> = {
       'AffiLayer pricing: free to join for affiliates and advertisers, no monthly fee — advertisers pay only for conversions they have reviewed. White-label pricing agreed per setup.',
     jsonLd: webPage('/pricing', 'AffiLayer pricing', 'AffiLayer pricing: free to join, no monthly fee, advertisers pay only for conversions they have reviewed.'),
   },
+  '/trust': {
+    title: 'Trust & Audits | AffiLayer — The CPA Network You Can Audit',
+    description:
+      'AffiLayer publishes its forensic audit trail, its append-only ledger rules and its reconciliation — including the open items. 0 Critical, 0 High at the latest audit.',
+    jsonLd: webPage('/trust', 'Trust and audits', 'AffiLayer\u2019s published forensic audit trail, ledger rules and reconciliation.'),
+  },
 }
 
 function metaFor(pathname: string): SeoMeta {
@@ -359,7 +365,7 @@ function metaFor(pathname: string): SeoMeta {
     return {
       title: AUTH_TITLES[path] ?? 'AffiLayer — Global CPA Affiliate Network',
       description:
-        'AffiLayer is a new global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an auditable commission ledger.',
+        'AffiLayer is a global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an auditable commission ledger.',
       noindex: true,
     }
   }
@@ -379,13 +385,13 @@ const LOCALIZED_SEO: Record<string, Partial<Record<'es' | 'pt', SeoMeta>>> = {
     es: {
       title: 'AffiLayer — Red global de afiliados CPA',
       description:
-        'AffiLayer es una nueva red CPA global. Ofertas directas y enrutamiento SmartLink, seguimiento completo y un libro contable de comisiones auditable.',
+        'AffiLayer es una red CPA global. Ofertas directas y enrutamiento SmartLink, seguimiento completo y un libro contable de comisiones auditable.',
       jsonLd: [ORGANIZATION, WEBSITE],
     },
     pt: {
       title: 'AffiLayer — Rede global de afiliados CPA',
       description:
-        'A AffiLayer é uma nova rede CPA global. Ofertas diretas e roteamento SmartLink, rastreamento completo e um livro-razão de comissões auditável.',
+        'A AffiLayer é uma rede CPA global. Ofertas diretas e roteamento SmartLink, rastreamento completo e um livro-razão de comissões auditável.',
       jsonLd: [ORGANIZATION, WEBSITE],
     },
   },

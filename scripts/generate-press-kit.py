@@ -32,16 +32,16 @@ CHROME = next(
 KEY = (255, 0, 255)  # magenta key background — no brand asset uses it
 
 BOILERPLATE_SHORT = "AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC (New Mexico, USA), connecting advertisers with affiliates through direct offers and one SmartLink, with full-funnel tracking and every commission written to an auditable ledger."
-BOILERPLATE_MEDIUM = "AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC, a registered company in New Mexico, USA. Advertisers publish offers with a stated payout and conversion action; affiliates promote them and earn commission on attributed conversions. The network opened on 7 November 2026. It is deliberately small: a focused offer catalogue, a tracking engine the team can explain, and applications and conversions reviewed by hand."
+BOILERPLATE_MEDIUM = "AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC, a registered company in New Mexico, USA. Advertisers publish offers with a stated payout and conversion action; affiliates promote them and earn commission on attributed conversions. The network opened on 7 November 2026. The catalogue is focused by design, the tracking engine is documented end to end, and applications and conversions are reviewed by hand."
 BOILERPLATE_LONG = BOILERPLATE_MEDIUM + " Its three principles are tracking you can audit, an append-only commission ledger — a ledger that cannot be silently rewritten — and approval on both sides. We do not run traffic ourselves, we do not buy traffic on your behalf, and we do not promise results to either side."
 
-FACTS = """AffiLayer — fact sheet (as of 10 November 2026)
+FACTS = """AffiLayer — fact sheet (as of 13 November 2026)
 Operated by: MarketSync Global LLC, New Mexico, USA
 Opened: 7 November 2026
 Contact: support@affilayer.com
 Partnerships: partner@affilayer.com
 Payout models: CPA, CPL, CPS, CPC
-Verticals: Dating, Finance, Gaming, Sweepstakes, Nutra, iGaming
+Verticals: Dating, Finance, Sweepstakes, Surveys, VPN, Entertainment
 Languages: EN / ES / PT (dashboards in English)
 Country pages: US, UK, CA, AU, DE, FR, BR, IN, ES, MX, AR
 Offer catalogue: small and growing offer by offer

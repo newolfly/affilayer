@@ -5,6 +5,7 @@ import { PublicLayout, Reveal, Slogan } from '../components/layout'
 import { PageArt, PageHighlights } from '../components/illustrations'
 import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
+import { NetworkActivityStrip } from '../components/network-stats'
 import { FAQ_GROUPS, PAGE_FAQS, PAGE_FAQS_LOCALIZED } from '../lib/faq-data'
 import { useLocale, useT, localizePath } from '../lib/i18n'
 import type { Locale } from '../lib/i18n'
@@ -146,7 +147,7 @@ export const SUPPORT_EMAIL = 'support@affilayer.com'
 /** Rotating vertical word in the hero headline. A single span whose text
  *  changes every 3.5s (key change restarts the fade-in animation) — so the
  *  prerendered HTML and any crawler ever see exactly one vertical, never
- *  two words stacked in the H1 ("Sweepstakes Nutra"). */
+ *  two words stacked in the H1 ("Sweepstakes Surveys"). */
 function RotatingVertical() {
   const [i, setI] = useState(0)
   useEffect(() => {
@@ -578,6 +579,7 @@ export function Home() {
     <PublicLayout>
       <Hero />
       <LaunchCampaignBanner />
+      <NetworkActivityStrip />
       <ProductCards />
       <BenefitsSection />
       <BrowseByCountry />
@@ -650,9 +652,9 @@ export function About() {
       </h1>
       <Slogan className="mt-4">{t('about.slogan')}</Slogan>
       <p className="mt-4 max-w-3xl text-slate-300">
-        AffiLayer is a new global CPA affiliate network. We are deliberately small
-        right now: a focused offer catalogue, a tracking engine we can explain, and
-        a team that reviews applications and conversions by hand.
+        AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC. The
+        catalogue is focused by design — every offer states its payout and conversion
+        definition up front — and applications and conversions are reviewed by hand.
       </p>
       <PageArt
         variant="about"
@@ -694,9 +696,9 @@ export function About() {
           before money moves.
         </p>
         <p>
-          As a new network we are growing our offer catalogue and our advertiser base
-          offer by offer. If you want to work with us early, that is exactly the
-          right time to join.
+          The catalogue and the advertiser base expand offer by offer, under the same
+          review standard that built them. Accounts are open — join, get approved, and
+          run your first offer.
         </p>
       </div>
       <p className="mt-6">

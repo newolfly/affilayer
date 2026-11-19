@@ -44,7 +44,7 @@ earnings. It pays exactly like the offer the visitor was routed to.
 - Advertisers can restrict traffic sources, GEOs and devices per offer.
 - No bonus or referral program at launch.
 
-## Status (as of 10 November 2026)
+## Status (as of 13 November 2026)
 
 - Live: direct CPA offers, SmartLink, full-funnel tracking, commission ledger,
   manual admin-approved payouts, application review — on the Supabase backend.
@@ -105,7 +105,7 @@ worldwide; there is no restricted country list.
 
 - What is AffiLayer? A CPA affiliate network: advertisers publish offers,
   affiliates promote them and earn commission on attributed conversions.
-- Which verticals? Dating, Finance, Gaming, Sweepstakes, Nutra, iGaming.
+- Which verticals? Dating, Finance, Sweepstakes, Surveys, VPN, Entertainment.
 - How long does approval take? Our team reviews every application.
 - How and when do I get paid? Manual, admin-approved payouts; Net30 default.
 - What traffic is not allowed? Bots, misleading creatives, forced clicks,

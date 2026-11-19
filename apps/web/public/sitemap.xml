@@ -15,6 +15,7 @@
   <url><loc>https://affilayer.com/white-label</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://affilayer.com/advertise</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://affilayer.com/pricing</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://affilayer.com/trust</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://affilayer.com/terms</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://affilayer.com/privacy</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://affilayer.com/geo</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
@@ -217,6 +218,7 @@
   <url><loc>https://affilayer.com/blog/category/adtech-insights</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://affilayer.com/blog/category/guides</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://affilayer.com/blog/category/news</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://affilayer.com/blog/affilayer-fully-operational</loc><lastmod>2026-11-13</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://affilayer.com/blog/affilayer-launch-announcement</loc><lastmod>2026-11-12</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://affilayer.com/blog/affilayer-is-live</loc><lastmod>2026-11-12</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://affilayer.com/blog/what-is-a-cpa-network</loc><lastmod>2026-11-10</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>

@@ -114,7 +114,7 @@ export function AffiliateOfferDetail() {
   const { user } = useAuth()
   const { applications } = useDemoState()
   const [offer, setOffer] = useState<Offer | undefined>()
-  const code = user?.affiliateCode ?? 'AFF-DEMO-001'
+  const code = user?.affiliateCode ?? ''
   useEffect(() => { if (id) getOffers().then((os) => setOffer(os.find((o) => o.id === id))) }, [id])
   if (!offer) return <Card><Empty text="Offer not found." /></Card>
   const applied = applications.some((a) => a.offerId === offer.id && a.affiliateCode === code)
@@ -169,9 +169,9 @@ export function AffiliateTrackingLinks() {
   const { data: offers } = useLoad(getOffers, [] as Offer[])
   const [offerId, setOfferId] = useState('')
   const [subs, setSubs] = useState({ sub1: '', sub2: '', sub3: '', sub4: '', sub5: '' })
-  const code = user?.affiliateCode ?? 'AFF-DEMO-001'
+  const code = user?.affiliateCode ?? ''
   const url = useMemo(
-    () => (offerId ? trackingLink(code, offerId, subs) : ''),
+    () => (offerId && code ? trackingLink(code, offerId, subs) : ''),
     [offerId, code, subs],
   )
   const [copied, setCopied] = useState(false)
@@ -190,6 +190,9 @@ export function AffiliateTrackingLinks() {
             <input key={k} className={inputCls} placeholder={k} aria-label={k} value={subs[k]} onChange={(e) => setSubs((s) => ({ ...s, [k]: e.target.value }))} />
           ))}
         </div>
+        {offerId && !code && (
+          <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Your affiliate code is not available on this account yet, so a working link cannot be generated. Please contact support@affilayer.com.</p>
+        )}
         {url && (
           <div className="rounded-lg bg-slate-50 p-3">
             <p className="break-all text-sm font-mono">{url}</p>
@@ -271,7 +274,7 @@ export function AffiliateReports() {
 export function AffiliatePostbacks() {
   const { user } = useAuth()
   const { postbacks } = useDemoState()
-  const code = user?.affiliateCode ?? 'AFF-DEMO-001'
+  const code = user?.affiliateCode ?? ''
   const [url, setUrl] = useState('')
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -340,7 +343,7 @@ export function AffiliatePayouts() {
   const [walletSaved, setWalletSaved] = useState(false)
   const [walletError, setWalletError] = useState('')
   const [walletBusy, setWalletBusy] = useState(false)
-  const code = user?.affiliateCode ?? 'AFF-DEMO-001'
+  const code = user?.affiliateCode ?? ''
   const { data: ledger } = useLoad(() => getLedgerEntries(), [] as CommissionLedgerEntry[])
   const { data: offers } = useLoad(() => getOffers(), [] as Offer[])
   // Supabase mode reads live rows; demo mode reads the demo store. There

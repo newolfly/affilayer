@@ -158,6 +158,7 @@ export function Register() {
         {done ? (
           <div className="mt-4">
             <p className="text-sm text-slate-600">Account created. Complete onboarding to submit your application for approval.</p>
+            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">Important: we have emailed you a confirmation link. Click it to confirm your email address — you will not be able to log in until your email is confirmed, even after your application is approved.</p>
             <button onClick={() => navigate('/onboarding')} className={`${btnCls} mt-4`}>Continue to onboarding</button>
           </div>
         ) : (
@@ -308,6 +309,7 @@ export function Onboarding() {
             <p className="mt-1 text-xs text-slate-500">This is a preference, not a promise. The methods available to your account depend on your country and setup, and are confirmed in your dashboard payment profile — the same rule the FAQ states.</p>
           </div>
           <div><label className={labelCls} htmlFor="onb-payment-details">Payment details (optional)</label><input id="onb-payment-details" className={inputCls} placeholder="Account / wallet reference" value={form.paymentDetails} onChange={set('paymentDetails')} /></div>
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">After you submit, your application goes to review. One step is easy to miss: click the confirmation link in the email we sent when you registered. Without a confirmed email you cannot log in, even after approval.</p>
           <button className={btnCls}>Submit application</button>
         </form>
       </div>
@@ -329,7 +331,10 @@ export function Pending() {
           )}
         </p>
         {user?.status === 'pending' && (
-          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">Your application is under review. You will be able to use the app once it is approved.</p>
+          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">Your application is under review. You will be able to use the app once it is approved. While you wait, make sure your email is confirmed: click the confirmation link we emailed you when you registered. You cannot log in until your email is confirmed, even after approval.</p>
+        )}
+        {!user && (
+          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">Just registered and cannot log in? Your email must be confirmed first — check your inbox for the confirmation link we sent, click it, then log in.</p>
         )}
         {user?.status === 'approved' && (
           <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Your account is approved. <Link to="/app" className="font-semibold underline">Go to your dashboard</Link>.</p>

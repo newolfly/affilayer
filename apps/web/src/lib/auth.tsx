@@ -78,13 +78,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!s?.user) return setLoading(false)
       const { data: prof } = await client.from('profiles').select('*').eq('id', s.user.id).maybeSingle()
       const p = prof as Profile | null
+      const raw = prof as { full_name?: string } | null
+      const role = (p?.role ?? 'affiliate') as Role
+      // The affiliate code lives in affiliate_profiles, NOT on the profiles
+      // row — reading it from profiles always came back empty, and the UI
+      // silently fell back to a demo code, breaking every tracking link a
+      // real affiliate generated (user-walk audit 17 Nov 2026, C-1).
+      let affiliateCode: string | undefined = p?.affiliateCode
+      if (role === 'affiliate' && !affiliateCode) {
+        const { data: ap } = await client.from('affiliate_profiles').select('affiliate_code').eq('profile_id', s.user.id).maybeSingle()
+        affiliateCode = (ap as { affiliate_code?: string } | null)?.affiliate_code ?? undefined
+      }
       setUser({
         id: s.user.id,
         email: s.user.email ?? '',
-        role: (p?.role ?? 'affiliate') as Role,
-        fullName: p?.fullName,
+        role,
+        fullName: p?.fullName ?? raw?.full_name,
         status: p?.status ?? 'pending',
-        affiliateCode: p?.affiliateCode,
+        affiliateCode,
       })
       setLoading(false)
     })

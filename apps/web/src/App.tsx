@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { AppLayout, PageLoader } from './components/layout'
@@ -24,6 +24,7 @@ const Partner = lazy(() => import('./pages/public').then((m) => ({ default: m.Pa
 const WhiteLabel = lazy(() => import('./pages/public').then((m) => ({ default: m.WhiteLabel })))
 const Advertise = lazy(() => import('./pages/public').then((m) => ({ default: m.Advertise })))
 const Pricing = lazy(() => import('./pages/public').then((m) => ({ default: m.Pricing })))
+const Trust = lazy(() => import('./pages/trust').then((m) => ({ default: m.Trust })))
 const NotFound = lazy(() => import('./pages/public').then((m) => ({ default: m.NotFound })))
 const Blog = lazy(() => import('./pages/blog').then((m) => ({ default: m.Blog })))
 const BlogPost = lazy(() => import('./pages/blog').then((m) => ({ default: m.BlogPost })))
@@ -134,11 +135,29 @@ function SkipLink() {
   )
 }
 
+function AuthLandingNotice() {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    // Supabase email-confirmation links land on the homepage with
+    // #access_token=…&type=signup in the URL. Until now the user got no
+    // message at all that confirmation had worked (walk audit, H-1).
+    if (window.location.hash.includes('type=signup')) setShow(true)
+  }, [])
+  if (!show) return null
+  return (
+    <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 bg-green-600 px-4 py-2 text-center text-sm font-medium text-white">
+      <span>Your email is confirmed — you're signed in. Welcome to AffiLayer.</span>
+      <button onClick={() => setShow(false)} aria-label="Dismiss" className="rounded bg-white/20 px-2 py-0.5">✕</button>
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <LocaleProvider>
       <SkipLink />
+      <AuthLandingNotice />
       <RouteSeo />
       <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -166,6 +185,7 @@ export default function App() {
           <Route path="/white-label" element={<WhiteLabel />} />
           <Route path="/advertise" element={<Advertise />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/trust" element={<Trust />} />
           <Route path="/geo" element={<GeoIndex />} />
           <Route path="/geo/:code" element={<GeoPage />} />
           {/* Public, Spanish (same components, locale from the URL) */}

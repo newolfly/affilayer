@@ -10,7 +10,7 @@ export const BRAND_BOILERPLATE_SHORT =
   'AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC (New Mexico, USA), connecting advertisers with affiliates through direct offers and one SmartLink, with full-funnel tracking and every commission written to an auditable ledger.'
 
 export const BRAND_BOILERPLATE_MEDIUM =
-  'AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC, a registered company in New Mexico, USA. Advertisers publish offers with a stated payout and conversion action; affiliates promote them and earn commission on attributed conversions. The network opened on 7 November 2026. It is deliberately small: a focused offer catalogue, a tracking engine the team can explain, and applications and conversions reviewed by hand.'
+  'AffiLayer is a global CPA affiliate network operated by MarketSync Global LLC, a registered company in New Mexico, USA. Advertisers publish offers with a stated payout and conversion action; affiliates promote them and earn commission on attributed conversions. The network opened on 7 November 2026. The catalogue is focused by design, the tracking engine is documented end to end, and applications and conversions are reviewed by hand.'
 
 export const BRAND_BOILERPLATE_LONG = `${BRAND_BOILERPLATE_MEDIUM} Its three principles are tracking you can audit, an append-only commission ledger — a ledger that cannot be silently rewritten — and approval on both sides. We do not run traffic ourselves, we do not buy traffic on your behalf, and we do not promise results to either side.`
 
@@ -51,9 +51,9 @@ const EN: BrandStrings = {
   storyH: 'Why we exist',
   story: [
     'Most networks ask you to trust their numbers. We built AffiLayer so you can check them.',
-    'AffiLayer opened on 7 November 2026 as a new CPA affiliate network. This page says exactly what is live — no more, no less.',
-    'We are deliberately small right now: a focused offer catalogue, a tracking engine we can explain, and a team that reviews applications and conversions by hand. We grow offer by offer.',
-    'If you want to work with us early, that is exactly the right time to join.',
+    'AffiLayer opened on 7 November 2026 as a global CPA affiliate network. This page says exactly what is live — no more, no less.',
+    'The catalogue is focused by design: stated payouts, a tracking engine the team documents end to end, and applications and conversions reviewed by hand. The catalogue expands offer by offer, under the same standard.',
+    'Accounts are open for affiliates and advertisers.',
   ],
   principlesH: 'The three principles',
   principles: [
@@ -118,13 +118,13 @@ const ES: BrandStrings = {
   sub: 'AffiLayer conecta anunciantes que necesitan clientes con afiliados que pueden llegar a ellos. Ofertas directas y un solo SmartLink, seguimiento completo y cada comisión en un libro contable que puedes auditar.',
   aboutH: 'Qué somos',
   about:
-    'AffiLayer es una red global de afiliados CPA operada por MarketSync Global LLC, una empresa registrada en Nuevo México, EE. UU. Los anunciantes publican ofertas con un pago y una acción de conversión definidos; los afiliados las promocionan y ganan comisión por las conversiones atribuidas. La red abrió el 7 de noviembre de 2026. Es deliberadamente pequeña: un catálogo de ofertas enfocado, un motor de seguimiento que el equipo puede explicar y solicitudes y conversiones revisadas a mano.',
+    'AffiLayer es una red global de afiliados CPA operada por MarketSync Global LLC, una empresa registrada en Nuevo México, EE. UU. Los anunciantes publican ofertas con un pago y una acción de conversión definidos; los afiliados las promocionan y ganan comisión por las conversiones atribuidas. La red abrió el 7 de noviembre de 2026. El catálogo está enfocado por diseño, el motor de seguimiento está documentado de principio a fin, y las solicitudes y conversiones se revisan a mano.',
   storyH: 'Por qué existimos',
   story: [
     'La mayoría de las redes te piden que confíes en sus números. Creamos AffiLayer para que puedas comprobarlos.',
-    'AffiLayer abrió el 7 de noviembre de 2026 como una nueva red de afiliados CPA. Esta página dice exactamente lo que está en vivo — ni más ni menos.',
-    'Somos deliberadamente pequeños ahora: un catálogo de ofertas enfocado, un motor de seguimiento que podemos explicar y un equipo que revisa solicitudes y conversiones a mano. Crecemos oferta a oferta.',
-    'Si quieres trabajar con nosotros desde el principio, este es exactamente el momento adecuado.',
+    'AffiLayer abrió el 7 de noviembre de 2026 como una red global de afiliados CPA. Esta página dice exactamente lo que está en vivo — ni más ni menos.',
+    'El catálogo está enfocado por diseño: pagos declarados, un motor de seguimiento que el equipo documenta de principio a fin, y solicitudes y conversiones revisadas a mano. El catálogo crece oferta a oferta, bajo el mismo estándar.',
+    'Las cuentas están abiertas para afiliados y anunciantes.',
   ],
   principlesH: 'Los tres principios',
   principles: [
@@ -189,13 +189,13 @@ const PT: BrandStrings = {
   sub: 'A AffiLayer conecta anunciantes que precisam de clientes a afiliados que podem alcançá-los. Ofertas diretas e um único SmartLink, rastreamento completo e cada comissão em um livro-razão que você pode auditar.',
   aboutH: 'O que somos',
   about:
-    'A AffiLayer é uma rede global de afiliados CPA operada pela MarketSync Global LLC, uma empresa registrada no Novo México, EUA. Os anunciantes publicam ofertas com pagamento e ação de conversão definidos; os afiliados as promovem e ganham comissão por conversões atribuídas. A rede abriu em 7 de novembro de 2026. É deliberadamente pequena: um catálogo de ofertas focado, um motor de rastreamento que a equipe pode explicar e inscrições e conversões revisadas à mão.',
+    'A AffiLayer é uma rede global de afiliados CPA operada pela MarketSync Global LLC, uma empresa registrada no Novo México, EUA. Os anunciantes publicam ofertas com pagamento e ação de conversão definidos; os afiliados as promovem e ganham comissão por conversões atribuídas. A rede abriu em 7 de novembro de 2026. O catálogo é focado por design, o motor de rastreamento é documentado de ponta a ponta, e as inscrições e conversões são revisadas à mão.',
   storyH: 'Por que existimos',
   story: [
     'A maioria das redes pede que você confie nos números delas. Criamos a AffiLayer para que você possa conferi-los.',
-    'A AffiLayer abriu em 7 de novembro de 2026 como uma nova rede de afiliados CPA. Esta página diz exatamente o que está no ar — nem mais, nem menos.',
-    'Somos deliberadamente pequenos agora: um catálogo de ofertas focado, um motor de rastreamento que podemos explicar e uma equipe que revisa inscrições e conversões à mão. Crescemos oferta por oferta.',
-    'Se você quer trabalhar conosco desde o início, este é exatamente o momento certo.',
+    'A AffiLayer abriu em 7 de novembro de 2026 como uma rede global de afiliados CPA. Esta página diz exatamente o que está no ar — nem mais, nem menos.',
+    'O catálogo é focado por design: pagamentos declarados, um motor de rastreamento que a equipe documenta de ponta a ponta, e inscrições e conversões revisadas à mão. O catálogo cresce oferta por oferta, sob o mesmo padrão.',
+    'As contas estão abertas para afiliados e anunciantes.',
   ],
   principlesH: 'Os três princípios',
   principles: [

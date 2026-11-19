@@ -39,7 +39,7 @@
 ## Key facts
 
 - Payout models: CPA, CPL, CPS, CPC
-- Verticals: Dating, Finance, Gaming, Sweepstakes, Nutra, iGaming
+- Verticals: Dating, Finance, Sweepstakes, Surveys, VPN, Entertainment
 - Payout schedule: manual and admin-approved, Net30 by default
 - Tracking link format: /c/{affiliate_code}/{offer_id}, up to five sub-parameters
 - Applications reviewed by the team

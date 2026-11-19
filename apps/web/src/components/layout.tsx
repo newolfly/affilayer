@@ -243,12 +243,16 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             <Logo />
             <p className="mt-3">{t('footer.tagline')}</p>
             <Link to="/register" className="pill-btn mt-4">{t('footer.join')}</Link>
+            <div className="mt-3">
+              <a href="/download/affilayer.apk" download className="pill-btn-outline">{t('footer.app')}</a>
+            </div>
           </div>
           <div>
             <p className="font-semibold text-white">{t('footer.company')}</p>
             <ul className="mt-3 space-y-2">
               <li><Link to="/about" className="footer-link">{t('nav.about')}</Link></li>
               <li><Link to="/advantages" className="footer-link">{t('nav.advantages')}</Link></li>
+              <li><Link to="/trust" className="footer-link">{t('nav.trust')}</Link></li>
               <li><Link to="/partner" className="footer-link">{t('nav.partner')}</Link></li>
               <li><Link to="/white-label" className="footer-link">{t('nav.whitelabel')}</Link></li>
               <li><Link to="/advertise" className="footer-link">{t('nav.advertise')}</Link></li>

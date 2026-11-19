@@ -44,6 +44,7 @@ EN = [
     ("/white-label", "monthly", "0.7"),
     ("/advertise", "monthly", "0.7"),
     ("/pricing", "monthly", "0.7"),
+    ("/trust", "monthly", "0.8"),
     ("/terms", "yearly", "0.4"),
     ("/privacy", "yearly", "0.4"),
     ("/geo", "monthly", "0.8"),
