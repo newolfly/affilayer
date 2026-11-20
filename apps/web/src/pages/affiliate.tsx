@@ -4,16 +4,29 @@ import { Link, useParams } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
-import { conversionCommission, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getNpPayouts, getOffers, getPayouts, getStats, isDemoMode, offerCommissionLabel, offerPayoutLabel, requestPayout, savePayoutWallet, sumCommissions } from '../lib/data'
+import { applyToOffer, conversionCommission, createTicket, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getMyOfferApplications, getMyPostbackConfigs, getNpPayouts, getOffers, getPayouts, getStats, getTickets, offerCommissionLabel, offerPayoutLabel, requestPayout, savePostbackConfig, savePayoutWallet, sumCommissions } from '../lib/data'
+import type { OfferApplication, PostbackConfig, ReportFilters } from '../lib/data'
 import { looksLikeTrc20, validatePayoutAddress } from '../lib/payments'
-import type { ReportFilters } from '../lib/data'
-import { demoDailySeries } from '../lib/demo-data'
-import { DEFAULT_SETTINGS, logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
+import { NETWORK_SETTINGS } from '../lib/network-settings'
 import { trackingLink } from '../lib/tracking'
-import type { Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet } from '../lib/types'
+import type { Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, SupportTicket } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
 const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-[#0B1220]'
+
+/** Real per-day counts for the last 7 days (replaces the old hardcoded
+ *  "(demo sample)" series — demo mode was removed on 20 Nov 2026). */
+function last7DaysSeries(rows: { createdAt: string }[]): { label: string; value: number }[] {
+  const days: { label: string; value: number }[] = []
+  const now = new Date()
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now)
+    d.setDate(now.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    days.push({ label: key.slice(5), value: rows.filter((r) => r.createdAt.slice(0, 10) === key).length })
+  }
+  return days
+}
 
 function useLoad<T>(fn: () => Promise<T>, initial: T) {
   const [data, setData] = useState<T>(initial)
@@ -31,16 +44,20 @@ export function AffiliateDashboard() {
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, pending: 0, revenue: 0, epc: 0, cr: 0 })
   const [offers, setOffers] = useState<Offer[]>([])
   const [balance, setBalance] = useState(0)
+  const [chartClicks, setChartClicks] = useState<Click[]>([])
+  const [chartConvs, setChartConvs] = useState<Conversion[]>([])
   useEffect(() => {
     getStats({ affiliateCode: user?.affiliateCode }).then((s) => setStats(s))
     getOffers().then(setOffers)
+    getClicks({ affiliateCode: user?.affiliateCode }).then(setChartClicks)
   }, [user?.affiliateCode])
   useEffect(() => {
     // Approved balance, computed exactly like the Payouts page:
     // ledger commission on my approved conversions only (M-05).
     Promise.all([getConversions(), getLedgerEntries(), getOffers()]).then(([convs, ledger, os]) => {
-      const mine = convs.filter((c) => c.status === 'approved' && (isDemoMode ? c.affiliateCode === user?.affiliateCode : c.affiliateId === user?.id))
+      const mine = convs.filter((c) => c.status === 'approved' && c.affiliateId === user?.id)
       setBalance(sumCommissions(mine, ledger, os))
+      setChartConvs(convs)
     })
   }, [user?.affiliateCode, user?.id])
   return (
@@ -62,8 +79,8 @@ export function AffiliateDashboard() {
         </div>
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card title="Clicks — last 7 days (demo sample)"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
-        <Card title="Conversions — last 7 days (demo sample)"><LineChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.conversions }))} /></Card>
+        <Card title="Clicks — last 7 days"><BarChart data={last7DaysSeries(chartClicks)} /></Card>
+        <Card title="Conversions — last 7 days"><LineChart data={last7DaysSeries(chartConvs)} /></Card>
       </div>
       <Card title="Active offers">
         {offers.filter((o) => o.status === 'active').map((o) => (
@@ -111,18 +128,22 @@ export function AffiliateOffers() {
 
 export function AffiliateOfferDetail() {
   const { id } = useParams()
-  const { user } = useAuth()
-  const { applications } = useDemoState()
   const [offer, setOffer] = useState<Offer | undefined>()
-  const code = user?.affiliateCode ?? ''
+  const [application, setApplication] = useState<OfferApplication | null>(null)
+  const [applyError, setApplyError] = useState('')
+  const [applying, setApplying] = useState(false)
   useEffect(() => { if (id) getOffers().then((os) => setOffer(os.find((o) => o.id === id))) }, [id])
+  useEffect(() => {
+    if (id) getMyOfferApplications().then((apps) => setApplication(apps.find((a) => a.offerId === id) ?? null))
+  }, [id])
   if (!offer) return <Card><Empty text="Offer not found." /></Card>
-  const applied = applications.some((a) => a.offerId === offer.id && a.affiliateCode === code)
-  const apply = () => {
-    updateDemo((s) => {
-      s.applications.push({ id: newId('app'), offerId: offer.id, affiliateCode: code, status: offer.approvalRequired ? 'pending' : 'approved', createdAt: new Date().toISOString() })
-    })
-    logAudit(user?.email ?? code, 'offer.apply', 'offer', offer.id, `${code} applied to "${offer.name}"${offer.approvalRequired ? ' (needs approval)' : ' (auto-approved)'}.`)
+  const apply = async () => {
+    setApplying(true)
+    const r = await applyToOffer(offer)
+    setApplying(false)
+    if (r.error) { setApplyError(r.error); return }
+    const apps = await getMyOfferApplications()
+    setApplication(apps.find((a) => a.offerId === offer.id) ?? null)
   }
   return (
     <Card title={offer.name}>
@@ -140,9 +161,10 @@ export function AffiliateOfferDetail() {
         <div><dt className="text-slate-500">Landing URL</dt><dd className="break-all">{offer.landingUrl}</dd></div>
         <div><dt className="text-slate-500">Status</dt><dd>{offer.status}</dd></div>
       </dl>
-      {applied
-        ? <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Application submitted. You will be notified when the advertiser reviews it.</p>
-        : <button className={`${btnCls} mt-4`} onClick={apply}>{offer.approvalRequired ? 'Apply for this offer' : 'Join this offer'}</button>}
+      {application
+        ? <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{application.status === 'approved' ? 'You are approved to run this offer.' : application.status === 'pending' ? 'Application submitted. You will be notified when the advertiser reviews it.' : `Application status: ${application.status}.`}</p>
+        : <button className={`${btnCls} mt-4`} onClick={apply} disabled={applying}>{applying ? 'Submitting…' : offer.approvalRequired ? 'Apply for this offer' : 'Join this offer'}</button>}
+      {applyError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{applyError}</p>}
       <Link to="/app/affiliate/tracking-links" className="ml-3 text-sm font-semibold text-amber-700">Generate tracking link →</Link>
     </Card>
   )
@@ -153,7 +175,7 @@ export function AffiliateMyCampaigns() {
   const approved = offers.filter((o) => o.status === 'active')
   return (
     <Card title="My campaigns">
-      <p className="mb-3 text-sm text-slate-500">Offers you have joined or been approved for. In demo mode this lists active offers as a sample.</p>
+      <p className="mb-3 text-sm text-slate-500">Active offers available to your account.</p>
       {approved.length === 0 ? <Empty text="No campaigns yet. Browse offers and apply." /> : approved.map((o) => (
         <div key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
           <span>{o.name} — {offerPayoutLabel(o)}</span>
@@ -266,30 +288,29 @@ export function AffiliateReports() {
           </table></div>
         )}
       </Card>
-      <Card title="Clicks"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
+      <Card title="Clicks"><BarChart data={last7DaysSeries(clicks)} /></Card>
     </div>
   )
 }
 
 export function AffiliatePostbacks() {
-  const { user } = useAuth()
-  const { postbacks } = useDemoState()
-  const code = user?.affiliateCode ?? ''
+  const [configs, setConfigs] = useState<PostbackConfig[]>([])
   const [url, setUrl] = useState('')
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
-  const mine = postbacks.filter((p) => p.affiliateCode === code)
-  const submit = (e: FormEvent) => {
+  useEffect(() => { getMyPostbackConfigs().then(setConfigs) }, [])
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!url.trim()) return
     let parsed: URL
     try { parsed = new URL(url.trim()) } catch { setError('Enter a valid URL starting with http:// or https://.'); return }
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') { setError('Postback URL must start with http:// or https://.'); return }
-    updateDemo((s) => { s.postbacks.push({ id: newId('pb'), affiliateCode: code, url: url.trim(), createdAt: new Date().toISOString() }) })
-    logAudit(user?.email ?? code, 'postback.save', 'postback', code, `Postback URL registered for ${code}.`)
+    const r = await savePostbackConfig(url.trim())
+    if (r.error) { setError(r.error); return }
     setUrl('')
     setError('')
     setSaved(true)
+    getMyPostbackConfigs().then(setConfigs)
   }
   return (
     <Card title="Postbacks">
@@ -299,9 +320,8 @@ export function AffiliatePostbacks() {
         <button className={btnCls}>Save</button>
       </form>
       {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {saved && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Postback saved (demo mode: stored in this browser only).</p>}
-      {mine.length === 0 ? <p className="mt-4 text-sm text-slate-500">No postbacks configured.</p> : mine.map((u) => <p key={u.id} className="mt-2 break-all rounded-lg bg-slate-50 px-3 py-2 text-sm font-mono">{u.url}</p>)}
-      <p className="mt-4 text-xs text-slate-400">Demo mode: postbacks are stored locally only and are not sent anywhere.</p>
+      {saved && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Postback saved.</p>}
+      {configs.length === 0 ? <p className="mt-4 text-sm text-slate-500">No postbacks configured.</p> : configs.map((u) => <p key={u.id} className="mt-2 break-all rounded-lg bg-slate-50 px-3 py-2 text-sm font-mono">{u.url}</p>)}
     </Card>
   )
 }
@@ -334,7 +354,6 @@ export function AffiliateEarnings() {
 
 export function AffiliatePayouts() {
   const { user } = useAuth()
-  const demo = useDemoState()
   const [live, setLive] = useState<{ payouts: PayoutRequest[]; conversions: Conversion[]; method: string; wallet?: PayoutWallet; npPayouts: NpPayout[] } | null>(null)
   const [amount, setAmount] = useState('')
   const [requested, setRequested] = useState(false)
@@ -343,55 +362,39 @@ export function AffiliatePayouts() {
   const [walletSaved, setWalletSaved] = useState(false)
   const [walletError, setWalletError] = useState('')
   const [walletBusy, setWalletBusy] = useState(false)
-  const code = user?.affiliateCode ?? ''
   const { data: ledger } = useLoad(() => getLedgerEntries(), [] as CommissionLedgerEntry[])
   const { data: offers } = useLoad(() => getOffers(), [] as Offer[])
-  // Supabase mode reads live rows; demo mode reads the demo store. There
-  // is no network-settings table yet, so Supabase mode uses the defaults.
-  const settings = isDemoMode ? demo.settings : DEFAULT_SETTINGS
+  // There is no network-settings table yet, so the published terms live
+  // in lib/network-settings.ts as constants.
+  const settings = NETWORK_SETTINGS
   useEffect(() => {
-    if (isDemoMode) return
     Promise.all([getPayouts(), getConversions(), getMyAffiliateProfile(), getNpPayouts()]).then(([payouts, conversions, ap, npPayouts]) => {
       setLive({ payouts, conversions, method: ap.paymentMethod ?? 'Bank transfer', wallet: ap.payoutWallet, npPayouts })
       if (ap.payoutWallet?.address) setWalletAddress(ap.payoutWallet.address)
     })
   }, [])
-  const payouts = isDemoMode ? demo.payouts : (live?.payouts ?? [])
-  const conversions = isDemoMode ? demo.conversions : (live?.conversions ?? [])
-  // Real affiliates have no affiliate_code yet — match live rows by owner
-  // id instead of by code.
-  const mine = isDemoMode
-    ? payouts.filter((p) => p.affiliateCode === code)
-    : payouts.filter((p) => p.affiliateId === user?.id)
+  const payouts = live?.payouts ?? []
+  const conversions = live?.conversions ?? []
+  // Match rows by owner id (the affiliate code is a display/tracking
+  // identifier, not the row owner).
+  const mine = payouts.filter((p) => p.affiliateId === user?.id)
   // M-05: the payoutable balance is ledger commission — summing
   // conversion payout would let a CPS affiliate request up to 10x
   // their real balance (sale value instead of commission).
   const approvedBalance = sumCommissions(
-    conversions.filter((c) => (isDemoMode ? c.affiliateCode === code : c.affiliateId === user?.id) && c.status === 'approved'),
+    conversions.filter((c) => c.affiliateId === user?.id && c.status === 'approved'),
     ledger, offers)
-  const method = isDemoMode
-    ? (demo.profiles.find((p) => p.affiliateCode === code)?.paymentMethod ?? 'Bank transfer')
-    : (live?.method ?? 'Bank transfer')
+  const method = live?.method ?? 'Bank transfer'
   const request = async (e: FormEvent) => {
     e.preventDefault()
     const value = Number(amount)
     if (!Number.isFinite(value) || value <= 0) { setError('Enter an amount greater than 0.'); return }
     if (value < settings.minPayout) { setError(`Minimum payout is $${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}.`); return }
     if (value > approvedBalance) { setError(`Amount exceeds your approved balance of $${approvedBalance.toFixed(2)}.`); return }
-    if (isDemoMode) {
-      updateDemo((s) => {
-        s.payouts.unshift({
-          id: newId('pay'), affiliateCode: code, amount: value, currency: settings.defaultCurrency,
-          status: 'requested', method, createdAt: new Date().toISOString(),
-        })
-      })
-      logAudit(user?.email ?? code, 'payout.request', 'payout', code, `Payout requested: $${value.toFixed(2)} ${settings.defaultCurrency}.`)
-    } else {
-      const r = await requestPayout(value, settings.defaultCurrency, method)
-      if (r.error) { setError(r.error); return }
-      const payouts = await getPayouts()
-      setLive((prev) => (prev ? { ...prev, payouts } : prev))
-    }
+    const r = await requestPayout(value, settings.defaultCurrency, method)
+    if (r.error) { setError(r.error); return }
+    const fresh = await getPayouts()
+    setLive((prev) => (prev ? { ...prev, payouts: fresh } : prev))
     setAmount('')
     setError('')
     setRequested(true)
@@ -417,7 +420,7 @@ export function AffiliatePayouts() {
         <Stat label="Approved balance" icon="banknote" value={`$${approvedBalance.toFixed(2)}`} />
         <Stat label="Minimum payout" icon="banknote" value={`$${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}`} />
       </div>
-      {!isDemoMode && (
+      {(
         <Card title="Payout wallet (crypto)">
           <form onSubmit={saveWallet} className="flex gap-2">
             <input className={inputCls} type="text" placeholder="USDT TRC20 address (starts with T)" aria-label="USDT TRC20 address" value={walletAddress} onChange={(e) => setWalletAddress(e.target.value)} />
@@ -435,7 +438,7 @@ export function AffiliatePayouts() {
         </form>
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         {requested && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Payout request submitted for review.</p>}
-        <p className="mt-3 text-xs text-slate-400">Payouts are calculated from approved commissions in the ledger. {isDemoMode ? 'Demo mode: requests are not sent anywhere.' : 'Requests are reviewed by the network admin.'}</p>
+        <p className="mt-3 text-xs text-slate-400">Payouts are calculated from approved commissions in the ledger. Requests are reviewed by the network admin.</p>
       </Card>
       <Card title="Payout history">
         {mine.length === 0 ? <Empty text="No payouts yet." /> : (
@@ -468,23 +471,20 @@ export function AffiliateProfile() {
 }
 
 export function AffiliateTickets() {
-  const { user } = useAuth()
-  const { tickets } = useDemoState()
+  const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [sent, setSent] = useState(false)
-  const submit = (e: FormEvent) => {
+  const [error, setError] = useState('')
+  useEffect(() => { getTickets().then(setTickets) }, [])
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
-    updateDemo((s) => {
-      s.tickets.unshift({
-        id: newId('ticket'), userId: user?.id, subject: subject.trim(), message: message.trim(),
-        status: 'open', createdAt: new Date().toISOString(),
-      })
-    })
-    logAudit(user?.email ?? 'affiliate', 'ticket.create', 'ticket', subject.trim(), `Support ticket opened: "${subject.trim()}".`)
+    const r = await createTicket(subject.trim(), message.trim())
+    if (r.error) { setError(r.error); return }
     setSent(true)
     setSubject('')
     setMessage('')
+    getTickets().then(setTickets)
   }
   return (
     <div className="space-y-4">
@@ -492,9 +492,7 @@ export function AffiliateTickets() {
         <form onSubmit={submit} className="space-y-3">
           <input className={`${inputCls} w-full`} placeholder="Subject" aria-label="Subject" required value={subject} onChange={(e) => setSubject(e.target.value)} />
           <textarea className={`${inputCls} w-full`} rows={4} placeholder="Describe the issue…" aria-label="Describe the issue" required value={message} onChange={(e) => setMessage(e.target.value)} />
-          {isDemoMode && (
-            <p className="text-xs text-amber-700">Demo mode — tickets are saved in this browser only and are not sent to support.</p>
-          )}
+          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <button className={btnCls}>Submit ticket</button>
         </form>
         {sent && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Ticket submitted.</p>}

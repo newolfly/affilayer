@@ -15,8 +15,10 @@ export type PayoutModel = 'CPA' | 'CPL' | 'CPS' | 'CPC';
 export interface Offer {
   id: string;
   name: string;
-  /** Advertiser / campaign owner id (optional in demo data). */
+  /** Advertiser / campaign owner id. */
   advertiserId?: string;
+  /** Organisation that owns the offer (advertiser scoping, H-2). */
+  organizationId?: string;
   campaignId?: string;
   /** Amount paid per conversion in `currency` (for CPS: the sale value). */
   payout: number;
@@ -55,6 +57,8 @@ export interface Campaign {
   id: string;
   name: string;
   advertiserId: string;
+  /** Organisation that owns the campaign (advertiser scoping, H-2). */
+  organizationId?: string;
   status: 'draft' | 'active' | 'paused' | 'ended';
   budget?: number;
   currency: string;

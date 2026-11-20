@@ -3,13 +3,11 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { conversionCommission, getCampaigns, getClicks, getConversions, getLedgerEntries, getMyAdvertiserBalances, getMyDeposits, getOffers, getProfiles, getStats, isDemoMode, offerPayoutLabel, createOffer, sumCommissions } from '../lib/data'
+import { buildDailyClickSeries, computeStats, conversionCommission, getCampaigns, getClicks, getConversions, getLedgerEntries, getMyAdvertiserBalances, getMyDeposits, getOffers, getProfiles, offerPayoutLabel, createOffer, sumCommissions } from '../lib/data'
 import { createDeposit } from '../lib/payments'
-import type { AdvertiserBalance, AdvertiserDeposit, CommissionLedgerEntry } from '../lib/types'
-import { demoDailySeries } from '../lib/demo-data'
-import { logAudit, newId, updateDemo, useDemoState } from '../lib/demo-store'
+import { NETWORK_SETTINGS } from '../lib/network-settings'
 import { useAuth } from '../lib/auth'
-import type { Campaign, Offer, PayoutModel } from '../lib/types'
+import type { AdvertiserBalance, AdvertiserDeposit, Campaign, Click, CommissionLedgerEntry, Offer, PayoutModel } from '../lib/types'
 import { ReportFiltersForm } from './affiliate'
 import type { ReportFilters } from '../lib/data'
 
@@ -17,15 +15,34 @@ const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm 
 const labelCls = 'mb-1 block text-sm font-medium text-slate-700'
 const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-[#0B1220]'
 
+/** H-2 scoping (user-walk audit 17 Nov 2026): an advertiser's pages
+ *  show only their own organisation's offers and the traffic on them.
+ *  RLS already restricts the underlying rows; this filter stops the
+ *  shared catalogue (active offers from every advertiser) being
+ *  presented as the advertiser's own. Own = same organisation, falling
+ *  back to advertiser_id for rows with no organisation. */
+function ownOffers(offers: Offer[], user: { organizationId?: string; id?: string } | null): Offer[] {
+  return offers.filter((o) => (user?.organizationId ? o.organizationId === user.organizationId : o.advertiserId === user?.id))
+}
+
 export function AdvertiserDashboard() {
-  const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, revenue: 0 })
+  const { user } = useAuth()
+  const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, pending: 0, revenue: 0, epc: 0, cr: 0 })
   const [offers, setOffers] = useState<Offer[]>([])
   const [balances, setBalances] = useState<AdvertiserBalance[]>([])
+  const [chartClicks, setChartClicks] = useState<Click[]>([])
   useEffect(() => {
-    getStats().then(setStats)
-    getOffers().then(setOffers)
-    if (!isDemoMode) getMyAdvertiserBalances().then(setBalances)
-  }, [])
+    getMyAdvertiserBalances().then(setBalances)
+    Promise.all([getOffers(), getClicks(), getConversions(), getLedgerEntries()]).then(([os, clicks, convs, ledger]) => {
+      const own = ownOffers(os, user)
+      const ownIds = new Set(own.map((o) => o.id))
+      const ownClicks = clicks.filter((c) => ownIds.has(c.offerId))
+      const ownConvs = convs.filter((c) => ownIds.has(c.offerId))
+      setOffers(own)
+      setChartClicks(ownClicks)
+      setStats(computeStats(ownClicks, ownConvs, ledger, os))
+    })
+  }, [user?.organizationId, user?.id])
   const balanceUsd = balances.find((b) => b.currency === 'USD')?.balance ?? 0
   return (
     <div className="space-y-4">
@@ -36,28 +53,29 @@ export function AdvertiserDashboard() {
         <Stat label="Approved" value={String(stats.approved)} icon="shield" />
         <Stat label="Commission payable" value={`$${stats.revenue.toFixed(2)}`} icon="banknote" />
       </div>
-      {!isDemoMode && (
-        <Card title="Balance">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-600">
-              Available balance <span className="ml-1 text-base font-bold text-slate-900">${balanceUsd.toFixed(2)}</span>
-              <span className="ml-2">Deposits fund your offers — you pay per approved conversion, drawn from this balance.</span>
-            </p>
-            <Link to="/app/advertiser/billing" className={btnCls}>Add funds</Link>
-          </div>
-        </Card>
-      )}
-      <Card title="Clicks — last 7 days (demo sample)"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></Card>
+      <Card title="Balance">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-600">
+            Available balance <span className="ml-1 text-base font-bold text-slate-900">${balanceUsd.toFixed(2)}</span>
+            <span className="ml-2">Deposits fund your offers — you pay per approved conversion, drawn from this balance.</span>
+          </p>
+          <Link to="/app/advertiser/billing" className={btnCls}>Add funds</Link>
+        </div>
+      </Card>
+      <Card title="Clicks — last 7 days"><BarChart data={buildDailyClickSeries(chartClicks)} /></Card>
       <Card title="Your offers">
-        {offers.map((o) => <div key={o.id} className="flex justify-between border-b border-slate-100 py-2 text-sm last:border-0"><span>{o.name}</span><span>{o.status} · {offerPayoutLabel(o)}</span></div>)}
+        {offers.length === 0 ? <Empty text="No offers yet. Create your first offer to start." /> : offers.map((o) => <div key={o.id} className="flex justify-between border-b border-slate-100 py-2 text-sm last:border-0"><span>{o.name}</span><span>{o.status} · {offerPayoutLabel(o)}</span></div>)}
       </Card>
     </div>
   )
 }
 
 export function AdvertiserCampaigns() {
+  const { user } = useAuth()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  useEffect(() => { getCampaigns().then(setCampaigns) }, [])
+  useEffect(() => {
+    getCampaigns().then((cs) => setCampaigns(cs.filter((c) => (user?.organizationId ? c.organizationId === user.organizationId : c.advertiserId === user?.id))))
+  }, [user?.organizationId, user?.id])
   return (
     <Card title="Campaigns">
       {campaigns.length === 0 ? <Empty text="No campaigns yet. Create an offer to start." /> : campaigns.map((c) => (
@@ -71,8 +89,7 @@ export function AdvertiserCampaigns() {
 }
 
 export function AdvertiserCreateOffer() {
-  const { user } = useAuth()
-  const { settings } = useDemoState()
+  const settings = NETWORK_SETTINGS
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -107,26 +124,9 @@ export function AdvertiserCreateOffer() {
     const split = (v: string) => v.split(',').map((x) => x.trim()).filter(Boolean)
     setError('')
     setSaved(false)
-    // Demo mode keeps the exact old behaviour: local store only.
-    if (isDemoMode) {
-      const offer: Offer = {
-        id: newId('offer'), name: form.name.trim(), description: form.description.trim(),
-        vertical: form.vertical.trim(), countries: split(form.countries), devices: split(form.devices),
-        trafficSources: split(form.trafficSources), conversionType: form.conversionType.trim(),
-        payoutModel: form.payoutModel, payout, rateBps, currency: form.currency.trim() || settings.defaultCurrency,
-        capDaily, capTotal,
-        landingUrl: form.landingUrl.trim(), creatives: split(form.creatives),
-        approvalRequired: form.approvalRequired, status: 'active', advertiserId: user?.id,
-        createdAt: new Date().toISOString(),
-      }
-      updateDemo((s) => { s.offers.unshift(offer) })
-      logAudit(user?.email ?? 'advertiser', 'offer.create', 'offer', offer.id, `Offer "${offer.name}" created (${offer.payoutModel} $${offer.payout} ${offer.currency}).`)
-      setSaved(true)
-      return
-    }
-    // Live mode: real insert — the offer only counts as created once
-    // the row exists. Any failure is shown; success is never claimed
-    // on a failed insert.
+    // Real insert — the offer only counts as created once the row
+    // exists. Any failure is shown; success is never claimed on a
+    // failed insert.
     setBusy(true)
     const r = await createOffer({
       name: form.name.trim(), description: form.description.trim(),
@@ -168,7 +168,7 @@ export function AdvertiserCreateOffer() {
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.approvalRequired} onChange={set('approvalRequired')} /> Approval required for affiliates</label>
         <button className={btnCls} disabled={busy}>{busy ? 'Creating…' : 'Create offer'}</button>
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-        {saved && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{isDemoMode ? 'Offer created — demo mode: stored in this browser only.' : 'Offer created — it now appears in the offer marketplace.'}</p>}
+        {saved && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Offer created — it now appears in the offer marketplace.</p>}
       </form>
     </Card>
   )
@@ -190,10 +190,18 @@ export function AdvertiserAffiliates() {
 }
 
 export function AdvertiserConversions() {
+  const { user } = useAuth()
   const [convs, setConvs] = useState<Awaited<ReturnType<typeof getConversions>>>([])
   const [ledger, setLedger] = useState<CommissionLedgerEntry[]>([])
   const [offers, setOffers] = useState<Offer[]>([])
-  useEffect(() => { getConversions().then(setConvs); getLedgerEntries().then(setLedger); getOffers().then(setOffers) }, [])
+  useEffect(() => {
+    Promise.all([getOffers(), getConversions(), getLedgerEntries()]).then(([os, cs, l]) => {
+      const ownIds = new Set(ownOffers(os, user).map((o) => o.id))
+      setOffers(os)
+      setLedger(l)
+      setConvs(cs.filter((c) => ownIds.has(c.offerId)))
+    })
+  }, [user?.organizationId, user?.id])
   return (
     <Card title="Conversions">
       {convs.length === 0 ? <Empty text="No conversions yet." /> : (
@@ -210,12 +218,21 @@ export function AdvertiserConversions() {
 }
 
 export function AdvertiserReports() {
+  const { user } = useAuth()
   const [filters, setFilters] = useState<ReportFilters>({})
   const [clicks, setClicks] = useState<Awaited<ReturnType<typeof getClicks>>>([])
   const [convs, setConvs] = useState<Awaited<ReturnType<typeof getConversions>>>([])
   const [ledger, setLedger] = useState<CommissionLedgerEntry[]>([])
   const [offers, setOffers] = useState<Offer[]>([])
-  useEffect(() => { getClicks(filters).then(setClicks); getConversions(filters).then(setConvs); getLedgerEntries(filters).then(setLedger); getOffers().then(setOffers) }, [filters])
+  useEffect(() => {
+    Promise.all([getOffers(), getClicks(filters), getConversions(filters), getLedgerEntries(filters)]).then(([os, cl, cs, l]) => {
+      const ownIds = new Set(ownOffers(os, user).map((o) => o.id))
+      setOffers(os)
+      setLedger(l)
+      setClicks(cl.filter((c) => ownIds.has(c.offerId)))
+      setConvs(cs.filter((c) => ownIds.has(c.offerId)))
+    })
+  }, [filters, user?.organizationId, user?.id])
   return (
     <Card title="Reports">
       <ReportFiltersForm filters={filters} setFilters={setFilters} />
@@ -225,7 +242,7 @@ export function AdvertiserReports() {
         {/* M-05: approved spend is ledger commission, not sale values. */}
         <Stat label="Approved spend" value={`$${sumCommissions(convs.filter((c) => c.status === 'approved'), ledger, offers).toFixed(2)}`} icon="wallet" />
       </div>
-      <div className="mt-4"><BarChart data={demoDailySeries.map((d) => ({ label: d.label, value: d.clicks }))} /></div>
+      <div className="mt-4"><BarChart data={buildDailyClickSeries(clicks)} /></div>
     </Card>
   )
 }
@@ -238,7 +255,6 @@ export function AdvertiserBilling() {
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   useEffect(() => {
-    if (isDemoMode) return
     getMyDeposits().then(setDeposits)
     getMyAdvertiserBalances().then(setBalances)
     const q = new URLSearchParams(window.location.search)
@@ -268,11 +284,7 @@ export function AdvertiserBilling() {
         <Stat label="Available balance" value={`$${balanceUsd.toFixed(2)}`} sub="Spendable credit from confirmed deposits" icon="banknote" />
         <Stat label="Deposits" value={String(deposits.length)} sub="All time" icon="wallet" />
       </div>
-      {isDemoMode ? (
-        <Card title="Current balance (demo sample)">
-          <Stat label="Payable (approved, unpaid)" value="$102.00" sub="From demo ledger data — not real" icon="banknote" />
-        </Card>
-      ) : (
+      {(
         <>
           <Card title="Add funds">
             <form onSubmit={submit} className="flex gap-2">

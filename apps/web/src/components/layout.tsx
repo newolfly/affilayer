@@ -2,7 +2,6 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAuth } from '../lib/auth'
-import { isDemoMode } from '../lib/data'
 import { Icon } from './icons'
 import type { IconName } from './icons'
 import { useLocale, useT, localizePath, basePath, LOCALES, LOCALIZED_BASE_PATHS } from '../lib/i18n'
@@ -303,15 +302,6 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   )
 }
 
-export function DemoBanner() {
-  if (!isDemoMode) return null
-  return (
-    <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800">
-      Demo data — not real. This page shows sample data because Supabase is not configured.
-    </div>
-  )
-}
-
 export function Card({ title, icon, children, className = '' }: { title?: string; icon?: IconName; children: ReactNode; className?: string }) {
   return (
     <section className={`lift rounded-xl bg-white p-5 shadow-sm ${className}`}>
@@ -373,9 +363,6 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
                 {initial}
               </span>
               <span className="text-slate-300">{user?.email}</span>
-              {isDemoMode && (
-                <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-[#0B1220]" title="Demo mode — sample data, nothing is real">Demo</span>
-              )}
               <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold capitalize text-amber-300">{user?.role.replace('_', ' ')}</span>
             </span>
             <button
@@ -418,7 +405,6 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
         </aside>
         <main id="main-content" className="min-w-0 flex-1">
           <h1 className="mb-4 text-2xl font-bold">{title}</h1>
-          <DemoBanner />
           <PageTransition>
             <Outlet />
           </PageTransition>
@@ -430,9 +416,8 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
 
 /** First-steps checklist for a new affiliate or advertiser.
  *  Step 1 is derived from the account's real approval status; the other
- *  steps are checked off by the user and stored in this browser only.
- *  In demo mode the card says so plainly — progress here is never
- *  presented as network data. */
+ *  steps are checked off by the user and stored in this browser only —
+ *  progress here is never presented as network data. */
 const FIRST_STEPS: Record<'affiliate' | 'advertiser', { label: string; desc: string; to: string }[]> = {
   affiliate: [
     { label: 'Complete onboarding', desc: 'Profile, traffic source and payment details — then we review your application.', to: '/onboarding' },
@@ -471,7 +456,7 @@ export function FirstSteps({ role }: { role: 'affiliate' | 'advertiser' }) {
     <Card title="First steps" icon="compass" className="border-amber-500/30">
       <p className="text-sm text-slate-600">
         {doneCount} of {steps.length} done — your path to your first {role === 'affiliate' ? 'payout' : 'customer'}.
-        {isDemoMode ? ' Demo checklist — progress is stored in this browser only.' : ' Progress is stored in this browser.'}
+        {' Progress is stored in this browser.'}
       </p>
       <ol className="mt-3 space-y-2">
         {steps.map((s, i) => {

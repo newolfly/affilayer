@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
 import { Card, Empty, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { buildDailyClickSeries, conversionCommission, decideConversion, decidePayout, decideProfile, getClicks, getConversions, getLedgerEntries, getNpPayouts, getOffers, getPayouts, getProfiles, getStats, isDemoMode, offerPayoutLabel, releasePayoutReservation } from '../lib/data'
+import { buildDailyClickSeries, conversionCommission, creditDepositManually, decideConversion, decidePayout, decideProfile, getAllDeposits, getAuditLogs, getCampaigns, getClicks, getConversions, getLedgerEntries, getNpPayouts, getOffers, getPayouts, getProfiles, getStats, getTickets, offerPayoutLabel, releasePayoutReservation, updateOfferStatus } from '../lib/data'
+import type { AuditLogEntry } from '../lib/data'
 import { executePayout, getCustodyBalance, refreshPayoutStatus, verifyPayout } from '../lib/payments'
-import { logAudit, newId, resetDemo, updateDemo, useDemoState } from '../lib/demo-store'
-import type { NetworkSettings } from '../lib/demo-store'
+import { NETWORK_SETTINGS } from '../lib/network-settings'
+import { supabase } from '../lib/supabase'
 import { detectFraudSignals, ledgerTransition } from '@affilayer/shared'
 import { useAuth } from '../lib/auth'
-import type { Campaign, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, Profile } from '../lib/types'
+import type { AdvertiserDeposit, Campaign, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, Profile, SupportTicket } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
 const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-3 py-2.5 text-sm font-semibold text-[#0B1220] disabled:opacity-50'
@@ -18,12 +18,13 @@ const dangerCls = 'rounded-lg border border-red-300 px-3 py-2.5 text-sm font-sem
 export function AdminOverview() {
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, pending: 0, revenue: 0 })
   const [dailyClicks, setDailyClicks] = useState(() => buildDailyClickSeries([]))
-  const { profiles } = useDemoState()
+  const [profiles, setProfiles] = useState<Profile[]>([])
   // Chart reads the same click rows the Clicks counter counts
   // (getStats -> getClicks), bucketed per UTC day, zero-filled.
   useEffect(() => {
     getStats().then(setStats)
     getClicks().then((clicks) => setDailyClicks(buildDailyClickSeries(clicks)))
+    getProfiles().then(setProfiles)
   }, [])
   return (
     <div className="space-y-4">
@@ -39,7 +40,8 @@ export function AdminOverview() {
 }
 
 function ProfilesTable({ filter }: { filter?: (p: Profile) => boolean }) {
-  const { profiles } = useDemoState()
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  useEffect(() => { getProfiles().then(setProfiles) }, [])
   const list = filter ? profiles.filter(filter) : profiles
   return (
     <Card title="Users">
@@ -59,17 +61,20 @@ export function AdminAffiliates() { return <ProfilesTable filter={(p) => p.role 
 export function AdminAdvertisers() { return <ProfilesTable filter={(p) => p.role === 'advertiser'} /> }
 
 export function AdminOffers() {
-  const { user } = useAuth()
-  const { offers } = useDemoState()
-  const actor = user?.email ?? 'admin'
-  const toggle = (o: Offer) => {
+  const [offers, setOffers] = useState<Offer[]>([])
+  const [error, setError] = useState('')
+  useEffect(() => { getOffers().then(setOffers) }, [])
+  const toggle = async (o: Offer) => {
     const next = o.status === 'active' ? 'paused' : 'active'
-    updateDemo((s) => { const t = s.offers.find((x) => x.id === o.id); if (t) t.status = next })
-    logAudit(actor, `offer.${next === 'paused' ? 'pause' : 'resume'}`, 'offer', o.id, `${o.name} → ${next}`)
+    const r = await updateOfferStatus(o.id, next)
+    if (r.error) { setError(r.error); return }
+    setError('')
+    getOffers().then(setOffers)
   }
   return (
     <Card title="Offers">
-      {offers.map((o) => (
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {offers.length === 0 ? <Empty text="No offers yet." /> : offers.map((o) => (
         <div key={o.id} className="flex items-center justify-between gap-3 border-b border-slate-100 py-2 text-sm last:border-0">
           <span>{o.name} — {o.vertical}</span>
           <span className="flex items-center gap-2">
@@ -87,74 +92,45 @@ export function AdminOffers() {
 const CAMPAIGN_STATUSES = ['draft', 'active', 'paused', 'ended'] as const
 
 export function AdminCampaigns() {
-  const { user } = useAuth()
-  const { campaigns, profiles } = useDemoState()
-  const actor = user?.email ?? 'admin'
-  const advertisers = profiles.filter((p) => p.role === 'advertiser')
-  const [form, setForm] = useState({ name: '', description: '', advertiserId: '', budget: '', currency: 'USD' })
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [profiles, setProfiles] = useState<Profile[]>([])
   const [editBudget, setEditBudget] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
 
-  const setStatus = (c: Campaign, status: (typeof CAMPAIGN_STATUSES)[number]) => {
-    updateDemo((s) => { const t = s.campaigns.find((x) => x.id === c.id); if (t) t.status = status })
-    logAudit(actor, `campaign.${status}`, 'campaign', c.id, `${c.name} → ${status}`)
+  const load = () => { getCampaigns().then(setCampaigns) }
+  useEffect(() => { load(); getProfiles().then(setProfiles) }, [])
+
+  const setStatus = async (c: Campaign, status: (typeof CAMPAIGN_STATUSES)[number]) => {
+    if (!supabase) return
+    const { error: e } = await supabase.from('campaigns').update({ status }).eq('id', c.id)
+    if (e) { setError(e.message); return }
+    setError('')
     setNotice(`${c.name} is now ${status}.`)
+    load()
   }
 
-  const saveBudget = (c: Campaign) => {
+  const saveBudget = async (c: Campaign) => {
     const raw = editBudget[c.id]
     if (raw === undefined) return
     const budget = Number(raw)
     if (!Number.isFinite(budget) || budget < 0) { setNotice('Budget must be a number of 0 or more.'); return }
-    updateDemo((s) => { const t = s.campaigns.find((x) => x.id === c.id); if (t) t.budget = budget })
-    logAudit(actor, 'campaign.budget', 'campaign', c.id, `${c.name} budget set to $${budget}`)
+    if (!supabase) return
+    const { error: e } = await supabase.from('campaigns').update({ budget }).eq('id', c.id)
+    if (e) { setError(e.message); return }
+    setError('')
     setNotice(`Budget for ${c.name} saved.`)
-    setEditBudget((e) => { const n = { ...e }; delete n[c.id]; return n })
-  }
-
-  const create = (e: FormEvent) => {
-    e.preventDefault()
-    if (!form.name.trim()) { setNotice('Campaign name is required.'); return }
-    if (!form.advertiserId) { setNotice('Choose an advertiser.'); return }
-    const budget = form.budget === '' ? undefined : Number(form.budget)
-    if (budget !== undefined && (!Number.isFinite(budget) || budget < 0)) { setNotice('Budget must be a number of 0 or more.'); return }
-    const campaign: Campaign = {
-      id: newId('camp'), name: form.name.trim(), description: form.description.trim() || undefined,
-      advertiserId: form.advertiserId, status: 'active', budget, currency: form.currency,
-      createdAt: new Date().toISOString(),
-    }
-    updateDemo((s) => { s.campaigns.unshift(campaign) })
-    logAudit(actor, 'campaign.create', 'campaign', campaign.id, `${campaign.name} created for ${campaign.advertiserId} (budget $${budget ?? '—'} ${campaign.currency}).`)
-    setForm({ name: '', description: '', advertiserId: '', budget: '', currency: 'USD' })
-    setNotice(`Campaign "${campaign.name}" created.`)
+    setEditBudget((x) => { const n = { ...x }; delete n[c.id]; return n })
+    load()
   }
 
   const advName = (id: string) => profiles.find((p) => p.id === id)?.email ?? id
   return (
     <div className="space-y-4">
-      <Card title="Create campaign">
-        <form onSubmit={create} className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className="mb-1 block text-sm font-medium" htmlFor="offer-name">Name</label><input id="offer-name" className={`${inputCls} w-full`} required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
-            <div><label className="mb-1 block text-sm font-medium" htmlFor="offer-advertiser">Advertiser</label>
-              <select id="offer-advertiser" className={`${inputCls} w-full`} required value={form.advertiserId} onChange={(e) => setForm((f) => ({ ...f, advertiserId: e.target.value }))}>
-                <option value="">Select…</option>
-                {advertisers.map((a) => <option key={a.id} value={a.id}>{a.fullName ?? a.email}</option>)}
-              </select>
-            </div>
-            <div><label className="mb-1 block text-sm font-medium" htmlFor="offer-budget">Budget</label><input id="offer-budget" className={`${inputCls} w-full`} type="number" min="0" step="0.01" value={form.budget} onChange={(e) => setForm((f) => ({ ...f, budget: e.target.value }))} /></div>
-            <div><label className="mb-1 block text-sm font-medium" htmlFor="offer-currency">Currency</label>
-              <select id="offer-currency" className={`${inputCls} w-full`} value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}>
-                {['USD', 'EUR', 'GBP', 'BDT'].map((c) => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-          <div><label className="mb-1 block text-sm font-medium" htmlFor="offer-description">Description</label><input id="offer-description" className={`${inputCls} w-full`} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
-          <button className={btnCls}>Create campaign</button>
-          {notice && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
-        </form>
-      </Card>
       <Card title="Campaigns">
+        <p className="mb-3 text-sm text-slate-500">Campaigns are created by advertisers in their own accounts. Admins manage status and budgets here.</p>
+        {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {notice && <p className="mb-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
         {campaigns.length === 0 ? <Empty text="No campaigns yet." /> : campaigns.map((c) => (
           <div key={c.id} className="border-b border-slate-100 py-3 text-sm last:border-0">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -180,29 +156,19 @@ export function AdminCampaigns() {
 
 export function AdminConversions() {
   const { user } = useAuth()
-  const { conversions: demoConversions } = useDemoState()
   const [liveConversions, setLiveConversions] = useState<Conversion[] | null>(null)
   const [ledger, setLedger] = useState<CommissionLedgerEntry[]>([])
   const [offers, setOffers] = useState<Offer[]>([])
   const [error, setError] = useState('')
-  const actor = user?.email ?? 'admin'
-  // Supabase mode reads live rows; demo mode reads the demo store.
-  // Ledger + offers load in both modes: demo mode has no ledger, so
-  // the per-offer rate is the fallback for commission display.
   useEffect(() => {
     getLedgerEntries().then(setLedger)
     getOffers().then(setOffers)
-    if (!isDemoMode) getConversions().then(setLiveConversions)
+    getConversions().then(setLiveConversions)
   }, [])
-  const conversions = isDemoMode ? demoConversions : (liveConversions ?? [])
+  const conversions = liveConversions ?? []
   const decide = async (id: string, to: 'approved' | 'rejected') => {
     const conv = conversions.find((c) => c.id === id)
     if (!conv || !ledgerTransition(conv.status, to)) return
-    if (isDemoMode) {
-      updateDemo((s) => { const t = s.conversions.find((x) => x.id === id); if (t) t.status = to })
-      logAudit(actor, `conversion.${to}`, 'conversion', id, `Conversion ${id} ${to} (payout $${conv.payout.toFixed(2)} ${conv.currency}).`)
-      return
-    }
     if (!user) return
     const r = await decideConversion(id, to, user.id)
     if (r.error) { setError(r.error); return }
@@ -253,25 +219,20 @@ export function AdminFraud() {
 }
 
 export function AdminLedger() {
-  const { conversions: demoConversions } = useDemoState()
   const [liveConversions, setLiveConversions] = useState<Conversion[]>([])
   const [ledger, setLedger] = useState<CommissionLedgerEntry[]>([])
   const [offers, setOffers] = useState<Offer[]>([])
-  // Live mode reads the ledger itself (previously this card rendered
-  // conversion payout as if it were the ledger amount — for CPS that
-  // showed the $12 sale value instead of the $1.20 commission). Demo
-  // mode has no ledger rows, so the card derives commissions from the
-  // demo conversions + offer rates, exactly like the stats do.
+  // Reads the ledger itself (previously this card rendered conversion
+  // payout as if it were the ledger amount — for CPS that showed the
+  // $12 sale value instead of the $1.20 commission).
   useEffect(() => {
     getLedgerEntries().then(setLedger)
     getOffers().then(setOffers)
-    if (!isDemoMode) getConversions().then(setLiveConversions)
+    getConversions().then(setLiveConversions)
   }, [])
-  const conversions = isDemoMode ? demoConversions : liveConversions
+  const conversions = liveConversions
   const codeByConversion = new Map(conversions.map((c) => [c.id, c.affiliateCode ?? c.affiliateId ?? '—']))
-  const rows = isDemoMode
-    ? conversions.map((c) => ({ id: c.id, conversionId: c.id, code: c.affiliateCode ?? '—', amount: conversionCommission(c, [], offers), currency: c.currency, status: c.status }))
-    : ledger.map((l) => ({ id: l.id, conversionId: l.conversionId, code: codeByConversion.get(l.conversionId) ?? '—', amount: l.amount, currency: l.currency, status: l.status }))
+  const rows = ledger.map((l) => ({ id: l.id, conversionId: l.conversionId, code: codeByConversion.get(l.conversionId) ?? '—', amount: l.amount, currency: l.currency, status: l.status }))
   return (
     <Card title="Commission ledger">
       <p className="mb-3 text-sm text-slate-500">Append-only ledger (immutable trigger in the database). Entries mirror conversion status: pending → approved → reversed.</p>
@@ -287,7 +248,6 @@ export function AdminLedger() {
 
 export function AdminPayouts() {
   const { user } = useAuth()
-  const { payouts: demoPayouts } = useDemoState()
   const [livePayouts, setLivePayouts] = useState<PayoutRequest[] | null>(null)
   const [npPayouts, setNpPayouts] = useState<NpPayout[]>([])
   const [custody, setCustody] = useState<Record<string, { amount: number }> | null>(null)
@@ -295,17 +255,14 @@ export function AdminPayouts() {
   const [notice, setNotice] = useState('')
   const [payBusy, setPayBusy] = useState('')
   const [verifyCodes, setVerifyCodes] = useState<Record<string, string>>({})
-  const actor = user?.email ?? 'admin'
-  // Supabase mode reads live rows; demo mode reads the demo store.
   useEffect(() => {
-    if (isDemoMode) return
     getPayouts().then(setLivePayouts)
     getNpPayouts().then(setNpPayouts)
     getCustodyBalance().then((r) => {
       if (r.balances && typeof r.balances === 'object') setCustody(r.balances as Record<string, { amount: number }>)
     })
   }, [])
-  const payouts = isDemoMode ? demoPayouts : (livePayouts ?? [])
+  const payouts = livePayouts ?? []
   const payable = payouts.filter((p) => p.status === 'approved').reduce((s, p) => s + p.amount, 0)
   const npByRequest = new Map(npPayouts.map((n) => [n.payoutRequestId, n]))
   const refreshNp = () => { getNpPayouts().then(setNpPayouts); getPayouts().then(setLivePayouts) }
@@ -343,11 +300,6 @@ export function AdminPayouts() {
     refreshNp()
   }
   const setStatus = async (p: PayoutRequest, status: PayoutRequest['status']) => {
-    if (isDemoMode) {
-      updateDemo((s) => { const t = s.payouts.find((x) => x.id === p.id); if (t) t.status = status })
-      logAudit(actor, `payout.${status}`, 'payout', p.id, `Payout $${p.amount.toFixed(2)} ${p.currency} to ${p.affiliateCode} → ${status}.`)
-      return
-    }
     if (!user) return
     // approved = approve (reserves the ledger balance), rejected = reject,
     // paid = complete (records the settlement after money moved outside).
@@ -393,12 +345,11 @@ export function AdminPayouts() {
                       <button className={btnCls} onClick={() => setStatus(p, 'approved')}>Approve</button>
                       <button className={dangerCls} onClick={() => setStatus(p, 'rejected')}>Reject</button>
                     </>)}
-                    {p.status === 'approved' && !isDemoMode && (<>
+                    {p.status === 'approved' && (<>
                       <button className={btnCls} disabled={payBusy === p.id} onClick={() => payViaNowPayments(p)}>{payBusy === p.id ? 'Paying…' : 'Pay via NOWPayments'}</button>
                       <button className={btnCls} onClick={() => setStatus(p, 'paid')}>Mark paid</button>
                       {np && (np.status === 'rejected' || np.status === 'failed') && <button className={ghostCls} onClick={() => release(p)}>Release</button>}
                     </>)}
-                    {p.status === 'approved' && isDemoMode && <button className={btnCls} onClick={() => setStatus(p, 'paid')}>Mark paid</button>}
                   </span>
                 </td>
               </tr>
@@ -412,29 +363,16 @@ export function AdminPayouts() {
 
 export function AdminCompliance() {
   const { user } = useAuth()
-  const { profiles: demoProfiles } = useDemoState()
   const [liveProfiles, setLiveProfiles] = useState<Profile[] | null>(null)
   const [error, setError] = useState('')
-  const actor = user?.email ?? 'admin'
   const [reasons, setReasons] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState('')
-  // Supabase mode reads live rows; demo mode reads the demo store.
-  useEffect(() => { if (!isDemoMode) getProfiles().then(setLiveProfiles) }, [])
-  const profiles = isDemoMode ? demoProfiles : (liveProfiles ?? [])
+  useEffect(() => { getProfiles().then(setLiveProfiles) }, [])
+  const profiles = liveProfiles ?? []
 
   const decide = async (p: Profile, to: 'approved' | 'rejected') => {
     const reason = (reasons[p.id] ?? '').trim()
     if (to === 'rejected' && !reason) { setNotice(`A reason is required to reject ${p.email}.`); return }
-    if (isDemoMode) {
-      updateDemo((s) => {
-        const t = s.profiles.find((x) => x.id === p.id)
-        if (t) { t.status = to; t.reviewNote = reason || undefined }
-      })
-      logAudit(actor, `kyc.${to}`, 'profile', p.id, `${p.email} (${p.role}) ${to}${reason ? ` — ${reason}` : ''}.`)
-      setNotice(`${p.email} ${to}.`)
-      setReasons((r) => { const n = { ...r }; delete n[p.id]; return n })
-      return
-    }
     if (!user) return
     const r = await decideProfile(p.id, to, user.id, `${p.email} (${p.role}) ${to}${reason ? ` — ${reason}` : ''}.`)
     if (r.error) { setError(r.error); return }
@@ -447,16 +385,6 @@ export function AdminCompliance() {
   const suspend = async (p: Profile, to: 'suspended' | 'approved') => {
     const reason = (reasons[p.id] ?? '').trim()
     if (to === 'suspended' && !reason) { setNotice(`A reason is required to suspend ${p.email}.`); return }
-    if (isDemoMode) {
-      updateDemo((s) => {
-        const t = s.profiles.find((x) => x.id === p.id)
-        if (t) { t.status = to; t.reviewNote = reason || undefined }
-      })
-      logAudit(actor, to === 'suspended' ? 'account.suspend' : 'account.unsuspend', 'profile', p.id, `${p.email} → ${to}${reason ? ` — ${reason}` : ''}.`)
-      setNotice(`${p.email} ${to === 'suspended' ? 'suspended' : 'reinstated'}.`)
-      setReasons((r) => { const n = { ...r }; delete n[p.id]; return n })
-      return
-    }
     if (!user) return
     const detail = `${p.email} → ${to}${reason ? ` — ${reason}` : ''}.`
     const r = await decideProfile(p.id, to === 'suspended' ? 'suspended' : 'approved', user.id, detail)
@@ -520,21 +448,22 @@ export function AdminCompliance() {
 }
 
 export function AdminAuditLogs() {
-  const { auditLog } = useDemoState()
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([])
   const [q, setQ] = useState('')
   const [entity, setEntity] = useState('')
   const [action, setAction] = useState('')
-  const entities = [...new Set(auditLog.map((e) => e.entityType))]
+  useEffect(() => { getAuditLogs().then(setAuditLog) }, [])
+  const entities = [...new Set(auditLog.map((e) => e.entityType).filter((t): t is string => !!t))]
   const actions = [...new Set(auditLog.map((e) => e.action))]
   const filtered = auditLog.filter(
     (e) =>
       (!entity || e.entityType === entity) &&
       (!action || e.action === action) &&
-      (!q || `${e.actor} ${e.action} ${e.entityId} ${e.detail}`.toLowerCase().includes(q.toLowerCase())),
+      (!q || `${e.actorId ?? ''} ${e.action} ${e.entityId ?? ''} ${e.details ?? ''}`.toLowerCase().includes(q.toLowerCase())),
   )
   return (
     <Card title={`Audit logs (${filtered.length} of ${auditLog.length})`}>
-      <p className="mb-3 text-sm text-slate-500">Every action taken in this demo session is recorded here — offer and campaign changes, KYC decisions, payout decisions, suspensions. In a live deployment these entries come from the database audit table instead.</p>
+      <p className="mb-3 text-sm text-slate-500">The network's audit trail from the database — KYC decisions, payout decisions, suspensions and other recorded actions.</p>
       <div className="mb-4 flex flex-wrap gap-2">
         <input className={inputCls} placeholder="Search actor, action, detail…" aria-label="Search actor, action, detail" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className={inputCls} aria-label="Filter by entity" value={entity} onChange={(e) => setEntity(e.target.value)}>
@@ -551,10 +480,10 @@ export function AdminAuditLogs() {
           <thead><tr className="text-left text-slate-500"><th className="py-2">Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Detail</th></tr></thead>
           <tbody>{filtered.map((e) => (
             <tr key={e.id} className="border-t border-slate-100">
-              <td className="py-2 whitespace-nowrap">{e.timestamp.slice(0, 19).replace('T', ' ')}</td>
-              <td>{e.actor}</td><td className="font-mono">{e.action}</td>
-              <td>{e.entityType} <span className="font-mono text-slate-500">{e.entityId}</span></td>
-              <td>{e.detail}</td>
+              <td className="py-2 whitespace-nowrap">{e.createdAt.slice(0, 19).replace('T', ' ')}</td>
+              <td className="font-mono text-xs">{e.actorId ? `${e.actorId.slice(0, 8)}…` : '—'}</td><td className="font-mono">{e.action}</td>
+              <td>{e.entityType ?? ''} <span className="font-mono text-slate-500">{e.entityId ?? ''}</span></td>
+              <td>{e.details ?? ''}</td>
             </tr>
           ))}</tbody>
         </table></div>
@@ -564,86 +493,100 @@ export function AdminAuditLogs() {
 }
 
 export function AdminSettings() {
-  const { settings } = useDemoState()
+  const s = NETWORK_SETTINGS
+  const rows: [string, string][] = [
+    ['Network name', s.networkName],
+    ['Support email', s.supportEmail],
+    ['Default currency', s.defaultCurrency],
+    ['Minimum payout', `$${s.minPayout.toFixed(2)}`],
+    ['Payout schedule', s.payoutSchedule],
+    ['New accounts require approval', s.requireApproval ? 'Yes' : 'No'],
+  ]
+  return (
+    <Card title="Network settings">
+      <p className="mb-3 text-sm text-slate-500">These are the network's live terms. They are set in code (lib/network-settings.ts) and match the public pricing page — there is no settings table yet, so nothing here is editable in the browser.</p>
+      <dl className="grid gap-2 text-sm sm:grid-cols-2">
+        {rows.map(([k, v]) => (
+          <div key={k}><dt className="text-slate-500">{k}</dt><dd className="font-medium">{v}</dd></div>
+        ))}
+      </dl>
+    </Card>
+  )
+}
+
+export function AdminDeposits() {
   const { user } = useAuth()
-  const actor = user?.email ?? 'admin'
-  const [form, setForm] = useState<NetworkSettings>(settings)
-  const [errors, setErrors] = useState<string[]>([])
-  const [saved, setSaved] = useState(false)
-
-  // Refresh the form if settings change elsewhere (e.g. after a reset).
-  useEffect(() => { setForm(settings) }, [settings])
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
-    const errs: string[] = []
-    if (!form.networkName.trim()) errs.push('Network name is required.')
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.supportEmail.trim())) errs.push('Support email must be a valid email address.')
-    if (!['USD', 'EUR', 'GBP', 'BDT'].includes(form.defaultCurrency)) errs.push('Default currency must be USD, EUR, GBP or BDT.')
-    if (!Number.isFinite(form.minPayout) || form.minPayout < 0) errs.push('Minimum payout must be 0 or more.')
-    if (!Number.isInteger(form.payoutDay) || form.payoutDay < 1 || form.payoutDay > 28) errs.push('Payout day must be a whole day from 1 to 28.')
-    if (!form.payoutSchedule.trim()) errs.push('Payout schedule is required.')
-    setErrors(errs)
-    if (errs.length > 0) { setSaved(false); return }
-    const next: NetworkSettings = { ...form, networkName: form.networkName.trim(), supportEmail: form.supportEmail.trim(), payoutSchedule: form.payoutSchedule.trim() }
-    updateDemo((s) => { s.settings = next })
-    logAudit(actor, 'settings.update', 'settings', 'network', `Network settings saved (currency ${next.defaultCurrency}, min payout $${next.minPayout}, payout day ${next.payoutDay}).`)
-    setSaved(true)
+  const [deposits, setDeposits] = useState<AdvertiserDeposit[]>([])
+  const [amounts, setAmounts] = useState<Record<string, string>>({})
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const load = () => { getAllDeposits().then(setDeposits) }
+  useEffect(() => { load() }, [])
+  const credit = async (d: AdvertiserDeposit) => {
+    const value = Number(amounts[d.id])
+    if (!Number.isFinite(value) || value <= 0) { setError('Enter the USD amount actually received — read it off the NOWPayments dashboard, never guess.'); return }
+    if (!user) return
+    const r = await creditDepositManually(d.id, value, user.id)
+    if (r.error) { setError(r.error); return }
+    setError('')
+    setNotice(`Deposit credited $${value.toFixed(2)}.`)
+    load()
   }
-
-  const set = <K extends keyof NetworkSettings>(k: K) => (e: { target: { value: string; checked?: boolean } }) =>
-    setForm((f) => ({ ...f, [k]: k === 'requireApproval' ? Boolean(e.target.checked) : e.target.value } as NetworkSettings))
-
   return (
     <div className="space-y-4">
-      <Card title="Network settings">
-        <form onSubmit={submit} className="space-y-3">
-          {errors.length > 0 && (
-            <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errors.map((x) => <p key={x}>{x}</p>)}</div>
-          )}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-network-name">Network name</label><input id="set-network-name" className={`${inputCls} w-full`} value={form.networkName} onChange={set('networkName')} /></div>
-            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-support-email">Support email</label><input id="set-support-email" className={`${inputCls} w-full`} type="email" value={form.supportEmail} onChange={set('supportEmail')} /></div>
-            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-default-currency">Default currency</label>
-              <select id="set-default-currency" className={`${inputCls} w-full`} value={form.defaultCurrency} onChange={set('defaultCurrency')}>
-                {['USD', 'EUR', 'GBP', 'BDT'].map((c) => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-min-payout">Minimum payout (in default currency)</label><input id="set-min-payout" className={`${inputCls} w-full`} type="number" min="0" step="0.01" value={form.minPayout} onChange={(e) => setForm((f) => ({ ...f, minPayout: Number(e.target.value) }))} /></div>
-            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-payout-day">Payout day of month (1–28)</label><input id="set-payout-day" className={`${inputCls} w-full`} type="number" min="1" max="28" step="1" value={form.payoutDay} onChange={(e) => setForm((f) => ({ ...f, payoutDay: Number(e.target.value) }))} /></div>
-            <div><label className="mb-1 block text-sm font-medium" htmlFor="set-payout-schedule">Payout schedule</label><input id="set-payout-schedule" className={`${inputCls} w-full`} value={form.payoutSchedule} onChange={set('payoutSchedule')} /></div>
-          </div>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.requireApproval} onChange={set('requireApproval')} /> New accounts require approval before they can run offers</label>
-          <button className={btnCls}>Save settings</button>
-          {saved && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Settings saved (demo mode: stored in this browser only).</p>}
-          <p className="text-xs text-slate-400">Where these apply in demo mode: the minimum payout is enforced on affiliate payout requests, and the default currency pre-fills new offers. The support email is shown on the contact page in a live deployment.</p>
-        </form>
-      </Card>
-      <Card title="Demo data">
-        <p className="text-sm text-slate-600">Reset all demo changes (offers, campaigns, payouts, tickets, audit log, settings) back to the built-in sample data.</p>
-        <button
-          className={`${dangerCls} mt-3`}
-          onClick={() => { if (window.confirm('Reset all demo data to the built-in sample? This cannot be undone.')) resetDemo() }}
-        >Reset demo data</button>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat label="Deposits" icon="wallet" value={String(deposits.length)} />
+        <Stat label="Waiting / partial" icon="clock" value={String(deposits.filter((d) => d.status === 'waiting' || d.status === 'partially_paid').length)} />
+        <Stat label="Credited (USD)" icon="banknote" value={`$${deposits.filter((d) => d.status === 'finished').reduce((sum, d) => sum + d.amountUsd, 0).toFixed(2)}`} />
+      </div>
+      <Card title="Advertiser deposits">
+        <p className="mb-3 text-sm text-slate-500">Deposits credit automatically when NOWPayments confirms a full payment. A partially-paid deposit can be credited manually here — enter the USD amount actually received, read off the NOWPayments dashboard.</p>
+        {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {notice && <p className="mb-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
+        {deposits.length === 0 ? <Empty text="No deposits yet." /> : (
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Advertiser</th><th>Amount</th><th>Paid in</th><th>Status</th><th>Invoice</th><th /></tr></thead>
+            <tbody>{deposits.map((d) => (
+              <tr key={d.id} className="border-t border-slate-100">
+                <td className="py-2">{d.createdAt.slice(0, 10)}</td>
+                <td className="font-mono text-xs">{d.advertiserId.slice(0, 8)}…</td>
+                <td>${d.amountUsd.toFixed(2)} {d.currency}</td>
+                <td>{d.npPayCurrency ? `${d.npPayAmount ?? ''} ${d.npPayCurrency}` : '—'}</td>
+                <td>{d.status}{d.adminNote ? ` — ${d.adminNote}` : ''}</td>
+                <td className="font-mono text-xs">{d.npInvoiceId ?? '—'}</td>
+                <td className="text-right">
+                  {(d.status === 'waiting' || d.status === 'partially_paid') && (
+                    <span className="flex justify-end gap-2">
+                      <input className={`${inputCls} w-28`} type="number" min="0" step="0.01" placeholder="USD received" aria-label="USD amount received" value={amounts[d.id] ?? ''} onChange={(e) => setAmounts((a) => ({ ...a, [d.id]: e.target.value }))} />
+                      <button className={btnCls} onClick={() => credit(d)}>Credit manually</button>
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}</tbody>
+          </table></div>
+        )}
       </Card>
     </div>
   )
 }
 
 export function AdminTickets() {
-  const { user } = useAuth()
-  const { tickets } = useDemoState()
-  const actor = user?.email ?? 'admin'
-  const advance = (id: string) => {
-    const t = tickets.find((x) => x.id === id)
-    if (!t) return
-    const next = t.status === 'open' ? 'in_progress' : t.status === 'in_progress' ? 'closed' : 'closed'
-    if (t.status === 'closed') return
-    updateDemo((s) => { const x = s.tickets.find((y) => y.id === id); if (x) x.status = next })
-    logAudit(actor, `ticket.${next}`, 'ticket', id, `Ticket "${t.subject}" → ${next}.`)
+  const [tickets, setTickets] = useState<SupportTicket[]>([])
+  const [error, setError] = useState('')
+  const load = () => { getTickets().then(setTickets) }
+  useEffect(() => { load() }, [])
+  const advance = async (t: SupportTicket) => {
+    if (t.status === 'closed' || !supabase) return
+    const next = t.status === 'open' ? 'in_progress' : 'closed'
+    const { error: e } = await supabase.from('support_tickets').update({ status: next }).eq('id', t.id)
+    if (e) { setError(e.message); return }
+    setError('')
+    load()
   }
   return (
     <Card title="Support tickets">
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {tickets.length === 0 ? <Empty text="No tickets yet." /> : tickets.map((t) => (
         <div key={t.id} className="flex items-center justify-between gap-3 border-b border-slate-100 py-2 text-sm last:border-0">
           <div>
@@ -651,7 +594,7 @@ export function AdminTickets() {
             <p className="text-slate-600">{t.message}</p>
           </div>
           {t.status !== 'closed' && (
-            <button className={ghostCls} onClick={() => advance(t.id)}>
+            <button className={ghostCls} onClick={() => advance(t)}>
               {t.status === 'open' ? 'Start handling' : 'Close'}
             </button>
           )}

@@ -9,7 +9,7 @@ import { NetworkActivityStrip } from '../components/network-stats'
 import { FAQ_GROUPS, PAGE_FAQS, PAGE_FAQS_LOCALIZED } from '../lib/faq-data'
 import { useLocale, useT, localizePath } from '../lib/i18n'
 import type { Locale } from '../lib/i18n'
-import { isDemoMode, createTicket } from '../lib/data'
+import { createTicket } from '../lib/data'
 import { useAuth } from '../lib/auth'
 import { COUNTRIES, FEATURED_CODES, REGION_LABELS, REGION_ORDER, countriesByRegion, countryFlag } from '../lib/geo-data'
 import type { Country } from '../lib/geo-data'
@@ -486,22 +486,11 @@ export function ContactForm() {
   // Supabase mode, signed out: the form cannot reach anyone (tickets
   // need a signed-in profile), so don't render a form that pretends
   // otherwise — point at sign-in or email instead. (H-8)
-  const showSignInNote = !isDemoMode && !loading && !user
+  const showSignInNote = !loading && !user
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (isDemoMode) {
-      // Demo: nothing leaves the browser; the note below says so.
-      try {
-        const prev = JSON.parse(localStorage.getItem('affilayer-contact') ?? '[]') as unknown[]
-        localStorage.setItem('affilayer-contact', JSON.stringify([...prev, { ...form, at: new Date().toISOString() }]))
-      } catch {
-        /* localStorage unavailable — the confirmation below still applies */
-      }
-      setSent(true)
-      return
-    }
     if (!user) {
       setError('Sign in to send a message.')
       return
@@ -533,9 +522,6 @@ export function ContactForm() {
           <p className="mt-2 text-sm text-slate-300">
             {t('contact.sent.body', { email: form.email })}
           </p>
-          {isDemoMode && (
-            <p className="mt-2 text-sm text-amber-400">Demo mode — your message was saved in this browser only and was not sent. Email support@affilayer.com to reach us.</p>
-          )}
         </div>
       ) : showSignInNote ? (
         <div className="mx-auto mt-8 max-w-lg rounded-xl border border-slate-700 bg-slate-800/60 p-6 text-center">
@@ -561,9 +547,6 @@ export function ContactForm() {
             <label htmlFor="contact-message" className="mb-1 block text-sm font-semibold text-white">{t('contact.ph.message')}</label>
             <textarea id="contact-message" className="dark-field" placeholder={t('contact.ph.message')} rows={5} required value={form.message} onChange={set('message')} />
           </div>
-          {isDemoMode && (
-            <p className="text-sm text-amber-400">Demo mode — this form saves your message in this browser only. Nothing is sent to us; email support@affilayer.com to reach a real person.</p>
-          )}
           {error && (
             <p className="text-sm text-red-400">{error}</p>
           )}

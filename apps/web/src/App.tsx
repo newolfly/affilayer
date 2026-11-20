@@ -1,9 +1,10 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { AppLayout, PageLoader } from './components/layout'
 import type { DashboardNavItem } from './components/layout'
 import { useAuth, roleHome } from './lib/auth'
+import { supabase } from './lib/supabase'
 import { RouteSeo } from './lib/seo'
 import { LocaleProvider, useT } from './lib/i18n'
 import type { Role } from './lib/types'
@@ -67,6 +68,7 @@ const AdminConversions = lazy(() => import('./pages/admin').then((m) => ({ defau
 const AdminFraud = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminFraud })))
 const AdminLedger = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminLedger })))
 const AdminPayouts = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminPayouts })))
+const AdminDeposits = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminDeposits })))
 const AdminCompliance = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminCompliance })))
 const AdminAuditLogs = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminAuditLogs })))
 const AdminSettings = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminSettings })))
@@ -122,6 +124,7 @@ const adminNav: DashboardNavItem[] = [
   { to: '/app/admin/fraud', label: 'Fraud', icon: 'shield' },
   { to: '/app/admin/ledger', label: 'Ledger', icon: 'file' },
   { to: '/app/admin/payouts', label: 'Payouts', icon: 'banknote' },
+  { to: '/app/admin/deposits', label: 'Deposits', icon: 'wallet' },
   { to: '/app/admin/compliance', label: 'Compliance', icon: 'lock' },
   { to: '/app/admin/audit-logs', label: 'Audit logs', icon: 'eye' },
   { to: '/app/admin/settings', label: 'Settings', icon: 'settings' },
@@ -152,12 +155,41 @@ function AuthLandingNotice() {
   )
 }
 
+function RecoveryRedirect() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  useEffect(() => {
+    // H-3 (user-walk audit 17 Nov 2026): a password-recovery link whose
+    // redirect lands on the homepage (or anywhere that is not
+    // /reset-password) leaves the user signed in with no way to set a
+    // password — the reset page exists, but nothing routed the user to
+    // it. Catch every recovery landing — the implicit-flow hash
+    // (#…&type=recovery) and the PASSWORD_RECOVERY auth event (which
+    // also covers the PKCE ?code= flow) — and route it to the form,
+    // preserving the URL parts the reset page's session check needs.
+    if (location.pathname === '/reset-password') return
+    if ((location.hash + location.search).includes('type=recovery')) {
+      navigate(`/reset-password${location.search}${location.hash}`, { replace: true })
+      return
+    }
+    if (!supabase) return
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/reset-password', { replace: true })
+      }
+    })
+    return () => sub.subscription.unsubscribe()
+  }, [location.pathname, location.search, location.hash, navigate])
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <LocaleProvider>
       <SkipLink />
       <AuthLandingNotice />
+      <RecoveryRedirect />
       <RouteSeo />
       <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -247,6 +279,7 @@ export default function App() {
             <Route path="fraud" element={<AdminFraud />} />
             <Route path="ledger" element={<AdminLedger />} />
             <Route path="payouts" element={<AdminPayouts />} />
+            <Route path="deposits" element={<AdminDeposits />} />
             <Route path="compliance" element={<AdminCompliance />} />
             <Route path="audit-logs" element={<AdminAuditLogs />} />
             <Route path="settings" element={<AdminSettings />} />

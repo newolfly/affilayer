@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { DEMO_CREDENTIALS, DEMO_PASSWORD, isDemoUsername } from '@affilayer/shared'
 import { PublicLayout } from '../components/layout'
 import { Icon } from '../components/icons'
-import { roleHome, useAuth } from '../lib/auth'
-import { isDemoMode } from '../lib/data'
+import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
-import { demoProfiles } from '../lib/demo-data'
 import type { Role } from '../lib/types'
 
 const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
@@ -15,7 +12,7 @@ const labelCls = 'mb-1 block text-sm font-medium text-slate-700'
 const btnCls = 'w-full rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-3 text-sm font-semibold text-[#0B1220]'
 
 export function Login() {
-  const { signIn, signInDemo, signInDemoCredentials } = useAuth()
+  const { signIn } = useAuth()
   const navigate = useNavigate()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
@@ -24,15 +21,6 @@ export function Login() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    // Public demo login: demo-publisher / demo-advertiser + 1234 signs into
-    // the localStorage demo store only — never Supabase auth (the guardrail
-    // lives in signInDemoCredentials). Anything else is a normal sign-in.
-    if (isDemoUsername(identifier)) {
-      const r = signInDemoCredentials(identifier, password)
-      if (r.error) setError(r.error)
-      else navigate(roleHome(r.role ?? 'affiliate'))
-      return
-    }
     const r = await signIn(identifier, password)
     if (r.error) setError(r.error)
     else navigate('/app')
@@ -62,52 +50,19 @@ export function Login() {
         </p>
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         <form onSubmit={submit} className="mt-4 space-y-3">
-          <div><label className={labelCls} htmlFor="login-identifier">{isDemoMode ? 'Email or demo username' : 'Email'}</label><input id="login-identifier" className={inputCls} type="text" autoComplete="username" placeholder={isDemoMode ? 'you@example.com or demo-publisher' : 'you@example.com'} required value={identifier} onChange={(e) => setIdentifier(e.target.value)} /></div>
+          <div><label className={labelCls} htmlFor="login-identifier">Email</label><input id="login-identifier" className={inputCls} type="text" autoComplete="username" placeholder="you@example.com" required value={identifier} onChange={(e) => setIdentifier(e.target.value)} /></div>
           <div><label className={labelCls} htmlFor="login-password">Password</label><input id="login-password" className={inputCls} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
           <button className={btnCls}>Log in</button>
         </form>
-        {!isDemoMode && (
-          <p className="mt-3 text-sm text-slate-500"><Link to="/forgot-password" className="text-amber-700 font-semibold">Forgot password?</Link></p>
-        )}
+        <p className="mt-3 text-sm text-slate-500"><Link to="/forgot-password" className="text-amber-700 font-semibold">Forgot password?</Link></p>
         <p className="mt-3 text-sm text-slate-500">No account yet? <Link to="/register" className="text-amber-700 font-semibold">Register</Link></p>
-        {isDemoMode && (
-          <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4">
-            <p className="text-sm font-semibold text-amber-800">Demo mode — sample data, nothing is real</p>
-            <p className="mt-1 text-xs text-amber-700">
-              Open to everyone — no approval, no email. Log in with a public demo account:
-            </p>
-            <ul className="mt-2 space-y-1 text-sm text-slate-700">
-              {DEMO_CREDENTIALS.map((c) => (
-                <li key={c.username}>
-                  <code className="rounded bg-white px-1.5 py-0.5 font-mono text-[13px] font-semibold text-slate-900">{c.username}</code>
-                  {' / '}
-                  <code className="rounded bg-white px-1.5 py-0.5 font-mono text-[13px] font-semibold text-slate-900">{DEMO_PASSWORD}</code>
-                  {' — '}
-                  {c.role === 'affiliate' ? 'Affiliate dashboard' : 'Advertiser dashboard'}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-xs text-slate-500">Or pick a role below for one-click demo sign-in (no password).</p>
-            <div className="mt-3 space-y-2">
-              {demoProfiles.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => { signInDemo(p.id); navigate('/app') }}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left text-sm hover:bg-slate-50"
-                >
-                  {p.fullName} — {p.role} ({p.status})
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </PublicLayout>
   )
 }
 
 export function Register() {
-  const { signUp, signInDemo } = useAuth()
+  const { signUp } = useAuth()
   const navigate = useNavigate()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -152,9 +107,6 @@ export function Register() {
             ? 'Advertiser registration is shorter — we ask for your company and website so we can verify you.'
             : 'Affiliate registration — tell us who you are and how you run traffic.'}
         </p>
-        {isDemoMode && (
-          <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">Demo mode: Supabase is not configured, so registration is simulated and no account is created. Try the public demo instead: log in with <span className="font-semibold">demo-publisher</span> or <span className="font-semibold">demo-advertiser</span>, password <span className="font-semibold">1234</span>, on the <Link to="/login" className="text-amber-700">login page</Link>. Sample data only, nothing is real.</p>
-        )}
         {done ? (
           <div className="mt-4">
             <p className="text-sm text-slate-600">Account created. Complete onboarding to submit your application for approval.</p>
@@ -227,9 +179,6 @@ export function Register() {
               <div><label className={labelCls} htmlFor="reg-messenger-id">Messenger ID (optional)</label><input id="reg-messenger-id" className={inputCls} placeholder="@username" value={messengerId} onChange={(e) => setMessengerId(e.target.value)} /></div>
             </div>
             <button className={btnCls}>Create account</button>
-            {isDemoMode && (
-              <button type="button" onClick={() => { signInDemo('demo-aff-1'); navigate('/onboarding') }} className="w-full py-2 text-sm text-amber-700 underline">Demo: continue as Demo Affiliate</button>
-            )}
           </form>
         )}
       </div>
@@ -364,11 +313,7 @@ export function ForgotPassword() {
     <PublicLayout>
       <div className="mx-auto max-w-md rounded-xl bg-white p-6 text-slate-900">
         <h1 className="text-xl font-bold">Forgot password</h1>
-        {isDemoMode ? (
-          <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            Password reset is not available in demo mode. Use the public demo login on the <Link to="/login" className="font-semibold underline">login page</Link>.
-          </p>
-        ) : sent ? (
+        {sent ? (
           <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">
             If an account exists for that email, a reset link has been sent. Check your inbox (and spam folder) — the link expires after a short time.
           </p>
@@ -450,11 +395,7 @@ export function ResetPassword() {
     <PublicLayout>
       <div className="mx-auto max-w-md rounded-xl bg-white p-6 text-slate-900">
         <h1 className="text-xl font-bold">Set a new password</h1>
-        {isDemoMode ? (
-          <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            Password reset is not available in demo mode. Use the public demo login on the <Link to="/login" className="font-semibold underline">login page</Link>.
-          </p>
-        ) : checking ? (
+        {checking ? (
           <p className="mt-3 text-sm text-slate-500">Checking your reset link…</p>
         ) : done ? (
           <>

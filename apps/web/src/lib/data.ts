@@ -1,18 +1,15 @@
-// Data layer — Supabase when configured, DEMO MODE otherwise (CONTRACT.md).
-// In Supabase mode we only SELECT user-visible tables with the anon key;
-// clicks / conversions / commission_ledger writes are service-role only
-// (see 002_rls.sql) and never happen from this browser code.
-// In demo mode reads come from the local demo store (lib/demo-store.ts),
-// so demo writes (offer create, payout requests, admin actions) show up
-// everywhere immediately. Database rows are snake_case; the mappers below
-// convert them to the shared camelCase domain types.
+// Data layer — Supabase only. There is no demo mode (removed entirely
+// on 20 Nov 2026 under the production-grade rule): every read hits the
+// real database and RLS scopes rows to the caller. We only SELECT
+// user-visible tables with the anon key; clicks / conversions /
+// commission_ledger writes are service-role only (see 002_rls.sql) and
+// never happen from this browser code. Database rows are snake_case;
+// the mappers below convert them to the shared camelCase domain types.
 import { supabase, isSupabaseConfigured } from './supabase'
-import { getDemoState } from './demo-store'
 import { computeCommission } from '@affilayer/shared'
 import type { AdvertiserBalance, AdvertiserDeposit, Campaign, Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, Profile, Stats, SupportTicket } from './types'
 
 export { isSupabaseConfigured }
-export const isDemoMode = !isSupabaseConfigured
 
 export interface ReportFilters {
   from?: string
@@ -38,6 +35,7 @@ const arr = (r: Row, k: string): string[] | undefined => (Array.isArray(r[k]) ? 
 export function mapOffer(r: Row): Offer {
   return {
     id: String(r.id), name: String(r.name ?? ''), advertiserId: str(r, 'advertiser_id'),
+    organizationId: str(r, 'organization_id'),
     campaignId: str(r, 'campaign_id'), payout: num(r, 'payout') ?? 0, currency: String(r.currency ?? 'USD'),
     payoutModel: (r.payout_model as Offer['payoutModel']) ?? 'CPA', status: (r.status as Offer['status']) ?? 'active',
     // M-05: rate_bps was dropped here, so the UI showed a CPS offer's
@@ -55,6 +53,7 @@ export function mapOffer(r: Row): Offer {
 export function mapCampaign(r: Row): Campaign {
   return {
     id: String(r.id), name: String(r.name ?? ''), advertiserId: String(r.advertiser_id ?? ''),
+    organizationId: str(r, 'organization_id'),
     status: (r.status as Campaign['status']) ?? 'draft', budget: num(r, 'budget'),
     currency: String(r.currency ?? 'USD'), description: str(r, 'description'),
     startDate: str(r, 'start_date'), endDate: str(r, 'end_date'), createdAt: str(r, 'created_at'),
@@ -105,14 +104,17 @@ export function mapPayout(r: Row): PayoutRequest {
 
 export function mapTicket(r: Row): SupportTicket {
   return {
-    id: String(r.id), userId: str(r, 'user_id'), subject: String(r.subject ?? ''),
-    message: String(r.message ?? ''), status: (r.status as SupportTicket['status']) ?? 'open',
+    // support_tickets stores the body in `description` and the owner in
+    // `profile_id` (verified against the live schema 20 Nov 2026) —
+    // mapping `message`/`user_id` rendered every ticket body blank.
+    id: String(r.id), userId: str(r, 'profile_id'), subject: String(r.subject ?? ''),
+    message: str(r, 'description') ?? str(r, 'message') ?? '', status: (r.status as SupportTicket['status']) ?? 'open',
     createdAt: String(r.created_at ?? ''),
   }
 }
 
 export async function getOffers(): Promise<Offer[]> {
-  if (!isSupabaseConfigured || !supabase) return getDemoState().offers
+  if (!isSupabaseConfigured || !supabase) return []
   const { data, error } = await supabase.from('offers').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
   return (data as Row[]).map(mapOffer)
@@ -157,8 +159,7 @@ export interface CreateOfferInput {
  *  account is approved may list an offer, so a pending account cannot
  *  put a live offer in the marketplace (same lesson as H-03).
  *  Returns the inserted offer mapped to the domain type, or an error
- *  the caller must show instead of claiming success. Demo mode never
- *  reaches this function — the caller keeps the demo-store path. */
+ *  the caller must show instead of claiming success. */
 export async function createOffer(input: CreateOfferInput): Promise<{ offer?: Offer; error?: string }> {
   if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
   const { data: { user } } = await supabase.auth.getUser()
@@ -212,24 +213,14 @@ export async function createOffer(input: CreateOfferInput): Promise<{ offer?: Of
 }
 
 export async function getCampaigns(): Promise<Campaign[]> {
-  if (!isSupabaseConfigured || !supabase) return getDemoState().campaigns
+  if (!isSupabaseConfigured || !supabase) return []
   const { data, error } = await supabase.from('campaigns').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
   return (data as Row[]).map(mapCampaign)
 }
 
 export async function getClicks(filters: ReportFilters = {}): Promise<Click[]> {
-  if (!isSupabaseConfigured || !supabase) {
-    return getDemoState().clicks.filter(
-      (c) =>
-        inRange(c.createdAt, filters) &&
-        (!filters.offerId || c.offerId === filters.offerId) &&
-        (!filters.country || c.country === filters.country) &&
-        (!filters.device || c.device === filters.device) &&
-        (!filters.source || c.source === filters.source) &&
-        (!filters.affiliateCode || c.affiliateCode === filters.affiliateCode),
-    )
-  }
+  if (!isSupabaseConfigured || !supabase) return []
   let q = supabase.from('clicks').select('*').order('created_at', { ascending: false }).limit(500)
   if (filters.offerId) q = q.eq('offer_id', filters.offerId)
   if (filters.country) q = q.eq('country', filters.country)
@@ -240,14 +231,7 @@ export async function getClicks(filters: ReportFilters = {}): Promise<Click[]> {
 }
 
 export async function getConversions(filters: ReportFilters = {}): Promise<Conversion[]> {
-  if (!isSupabaseConfigured || !supabase) {
-    return getDemoState().conversions.filter(
-      (c) =>
-        inRange(c.createdAt, filters) &&
-        (!filters.offerId || c.offerId === filters.offerId) &&
-        (!filters.affiliateCode || c.affiliateCode === filters.affiliateCode),
-    )
-  }
+  if (!isSupabaseConfigured || !supabase) return []
   let q = supabase.from('conversions').select('*').order('created_at', { ascending: false }).limit(500)
   if (filters.offerId) q = q.eq('offer_id', filters.offerId)
   const { data, error } = await q
@@ -268,10 +252,9 @@ export function mapLedgerEntry(r: Row): CommissionLedgerEntry {
   }
 }
 
-/** Commission ledger rows (Supabase mode only — demo mode has no ledger;
- *  callers fall back to per-offer rates there). RLS scopes the rows to
- *  the caller's own / org / admin rows; a select error yields [] and the
- *  caller falls back, so stats never break on a ledger read failure. */
+/** Commission ledger rows. RLS scopes the rows to the caller's own /
+ *  org / admin rows; a select error yields [] and the caller falls
+ *  back, so stats never break on a ledger read failure. */
 export async function getLedgerEntries(filters: ReportFilters = {}): Promise<CommissionLedgerEntry[]> {
   if (!isSupabaseConfigured || !supabase) return []
   let q = supabase.from('commission_ledger').select('*').order('created_at', { ascending: false }).limit(500)
@@ -282,14 +265,14 @@ export async function getLedgerEntries(filters: ReportFilters = {}): Promise<Com
 }
 
 export async function getProfiles(): Promise<Profile[]> {
-  if (!isSupabaseConfigured || !supabase) return getDemoState().profiles
+  if (!isSupabaseConfigured || !supabase) return []
   const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
   return (data as Row[]).map(mapProfile)
 }
 
 export async function getPayouts(): Promise<PayoutRequest[]> {
-  if (!isSupabaseConfigured || !supabase) return getDemoState().payouts
+  if (!isSupabaseConfigured || !supabase) return []
   const { data, error } = await supabase.from('payout_requests').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
   // payout_requests carries only affiliate_id — resolve a display name for
@@ -305,10 +288,9 @@ export async function getPayouts(): Promise<PayoutRequest[]> {
   return rows
 }
 
-/** Admin financial actions (H-5). In Supabase mode these call the
- *  SECURITY DEFINER RPCs (003 approve/reject_conversion, 008 payout
- *  RPCs), which enforce the admin gate and the ledger state machine.
- *  Demo mode keeps the old local behaviour — the callers branch. */
+/** Admin financial actions (H-5). These call the SECURITY DEFINER
+ *  RPCs (003 approve/reject_conversion, 008 payout RPCs), which enforce
+ *  the admin gate and the ledger state machine. */
 
 export async function decideConversion(id: string, to: 'approved' | 'rejected', actorId: string): Promise<{ error?: string }> {
   if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
@@ -326,8 +308,7 @@ export async function decideConversion(id: string, to: 'approved' | 'rejected', 
  *  affiliate / pending / not_started — so a non-admin calling this can
  *  never escalate or change anyone's status. The decision is also
  *  recorded in `audit_logs` via the `log_audit` RPC (admin JWT); a
- *  logging failure never blocks the decision itself. Demo mode keeps the
- *  old local behaviour — the callers branch. */
+ *  logging failure never blocks the decision itself. */
 export async function decideProfile(
   id: string,
   to: 'approved' | 'rejected' | 'suspended',
@@ -481,18 +462,18 @@ export async function getNpPayouts(): Promise<NpPayout[]> {
 }
 
 export async function getTickets(): Promise<SupportTicket[]> {
-  if (!isSupabaseConfigured || !supabase) return getDemoState().tickets
+  if (!isSupabaseConfigured || !supabase) return []
   const { data, error } = await supabase.from('support_tickets').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
   return (data as Row[]).map(mapTicket)
 }
 
-/** File a support ticket for the signed-in user (Supabase mode only).
+/** File a support ticket for the signed-in user.
  *  The public contact form uses this — a message must reach the team,
  *  never just localStorage. RLS allows the insert when profile_id is
  *  the caller's own id. */
 export async function createTicket(subject: string, description: string): Promise<{ error?: string }> {
-  if (!isSupabaseConfigured || !supabase) return { error: 'Tickets are not available in demo mode.' }
+  if (!isSupabaseConfigured || !supabase) return { error: 'Tickets are not available right now.' }
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Sign in to send a message.' }
   const { error } = await supabase.from('support_tickets').insert({
@@ -523,7 +504,7 @@ export function offerCommission(offer: Offer): number | null {
 
 /** How an offer pays, as shown in lists and tables. M-05: for CPS this
  *  is the percentage of the sale plus the dollar commission — never the
- *  bare sale amount. E.g. demo-offer-2: "CPS — 10% of sale ($1.20)". */
+ *  bare sale amount. E.g. a 10% CPS offer: "CPS — 10% of sale ($1.20)". */
 export function offerPayoutLabel(offer: Offer): string {
   if (offer.payoutModel === 'CPS') {
     if (offer.rateBps == null) return 'CPS — rate missing'
@@ -546,7 +527,7 @@ export function offerCommissionLabel(offer: Offer): string {
  *  truth — when a ledger row exists for the conversion, its live rows
  *  win (reversed / rejected rows pay $0, and a fully-reversed
  *  conversion is $0 rather than the offer rate resurrected by the
- *  fallback). Only with NO ledger row at all (demo mode, legacy rows)
+ *  fallback). Only with NO ledger row at all (legacy rows)
  *  do we compute from the offer's rate — so a CPS conversion counts
  *  its commission ($1.20), never its sale value ($12). A rateless CPS
  *  offer yields 0 here (unknowable, never the sale value); the offer
@@ -637,4 +618,114 @@ export async function getStats(filters: ReportFilters = {}): Promise<Stats> {
   // for conversions in this result set so the affiliateCode filter holds.
   const convIds = new Set(conversions.map((c) => c.id))
   return computeStats(clicks, conversions, ledger.filter((l) => convIds.has(l.conversionId)), offers)
+}
+
+// ---------------------------------------------------------------------
+// Offer applications + postback configs (real tables; these replaced
+// the demo store's local-only copies when demo mode was removed).
+
+export interface OfferApplication {
+  id: string
+  offerId: string
+  status: string
+  createdAt: string
+}
+
+export async function getMyOfferApplications(): Promise<OfferApplication[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data, error } = await supabase.from('offer_applications').select('*').eq('affiliate_id', user.id).order('created_at', { ascending: false })
+  if (error || !data) return []
+  return (data as Row[]).map((r) => ({
+    id: String(r.id), offerId: String(r.offer_id ?? ''), status: String(r.status ?? 'pending'), createdAt: String(r.created_at ?? ''),
+  }))
+}
+
+/** Apply to (or join) an offer. Approval-required offers land as
+ *  'pending' for the advertiser to review; open offers are recorded as
+ *  'approved' immediately. RLS restricts inserts to the caller's own
+ *  affiliate id. */
+export async function applyToOffer(offer: Offer): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Applications are not available right now.' }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You are not signed in.' }
+  const { error } = await supabase.from('offer_applications').insert({
+    offer_id: offer.id,
+    affiliate_id: user.id,
+    status: offer.approvalRequired ? 'pending' : 'approved',
+  })
+  return error ? { error: error.message } : {}
+}
+
+export interface PostbackConfig {
+  id: string
+  url: string
+  createdAt: string
+}
+
+export async function getMyPostbackConfigs(): Promise<PostbackConfig[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data, error } = await supabase.from('postback_configs').select('*').eq('affiliate_id', user.id).order('created_at', { ascending: false })
+  if (error || !data) return []
+  return (data as Row[]).map((r) => ({
+    id: String(r.id), url: String(r.url ?? ''), createdAt: String(r.created_at ?? ''),
+  }))
+}
+
+export async function savePostbackConfig(url: string): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Postbacks are not available right now.' }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You are not signed in.' }
+  const { error } = await supabase.from('postback_configs').insert({
+    affiliate_id: user.id, url, events: ['conversion'], is_active: true,
+  })
+  return error ? { error: error.message } : {}
+}
+
+// ---------------------------------------------------------------------
+// Admin reads (RLS admits admins; non-admins get empty results).
+
+export interface AuditLogEntry {
+  id: string
+  actorId?: string
+  action: string
+  entityType?: string
+  entityId?: string
+  details?: string
+  createdAt: string
+}
+
+/** The real audit trail (audit_logs table; admin-only by RLS). */
+export async function getAuditLogs(): Promise<AuditLogEntry[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(200)
+  if (error || !data) return []
+  return (data as Row[]).map((r) => ({
+    id: String(r.id),
+    actorId: str(r, 'actor_id'),
+    action: String(r.action ?? ''),
+    entityType: str(r, 'entity_type'),
+    entityId: str(r, 'entity_id'),
+    details: r.details == null ? undefined : (typeof r.details === 'string' ? r.details : JSON.stringify(r.details)),
+    createdAt: String(r.created_at ?? ''),
+  }))
+}
+
+/** All advertiser deposits (admin view; RLS admits admins). */
+export async function getAllDeposits(): Promise<AdvertiserDeposit[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data, error } = await supabase.from('advertiser_deposits').select('*').order('created_at', { ascending: false }).limit(200)
+  if (error || !data) return []
+  return (data as Row[]).map(mapDeposit)
+}
+
+/** Admin: pause / resume / expire a real offer. The offers UPDATE
+ *  policy admits org members and admins. */
+export async function updateOfferStatus(id: string, status: 'active' | 'paused' | 'expired'): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { error } = await supabase.from('offers').update({ status }).eq('id', id)
+  return error ? { error: error.message } : {}
 }
