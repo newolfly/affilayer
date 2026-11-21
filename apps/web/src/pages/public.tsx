@@ -6,7 +6,7 @@ import { PageArt, PageHighlights } from '../components/illustrations'
 import { Icon } from '../components/icons'
 import type { IconName } from '../components/icons'
 import { NetworkActivityStrip } from '../components/network-stats'
-import { FAQ_GROUPS, PAGE_FAQS, PAGE_FAQS_LOCALIZED } from '../lib/faq-data'
+import { FAQ_GROUPS, HOME_FAQS, PAGE_FAQS, PAGE_FAQS_LOCALIZED, PRICING_FAQS } from '../lib/faq-data'
 import { useLocale, useT, localizePath } from '../lib/i18n'
 import type { Locale } from '../lib/i18n'
 import { createTicket } from '../lib/data'
@@ -210,6 +210,25 @@ function PageFaqs({ which }: { which: 'advertisers' | 'affiliates' | 'how' }) {
   return (
     <section className="mt-10">
       <h2 className="text-xl font-bold text-white">{FAQ_HEADING[locale]}</h2>
+      <div className="mt-4 space-y-3">
+        {items.map((item) => (
+          <details key={item.q} className="lift rounded-xl bg-white p-5 text-slate-900">
+            <summary className="cursor-pointer font-semibold">{item.q}</summary>
+            <p className="mt-2 text-sm text-slate-600">{item.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/** Visible FAQ section from a fixed English list (homepage, pricing).
+ *  Same markup as PageFaqs; the list feeds the page's FAQPage JSON-LD
+ *  in seo.ts, so markup and text cannot drift. */
+function StaticFaqs({ items }: { items: { q: string; a: string }[] }) {
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-bold text-white">Frequently asked questions</h2>
       <div className="mt-4 space-y-3">
         {items.map((item) => (
           <details key={item.q} className="lift rounded-xl bg-white p-5 text-slate-900">
@@ -687,6 +706,7 @@ export function About() {
       <p className="mt-6">
         <Link to="/brand" className="font-semibold text-amber-400 hover:text-amber-300">Our brand, logos and press kit →</Link>
       </p>
+      <StaticFaqs items={HOME_FAQS} />
     </PublicLayout>
   )
 }
@@ -1313,6 +1333,7 @@ export function Pricing() {
         <Link to="/contact" className="pill-btn-outline">Ask about pricing</Link>
       </div>
       <MoneyLinks current="/pricing" />
+      <StaticFaqs items={PRICING_FAQS} />
     </PublicLayout>
   )
 }

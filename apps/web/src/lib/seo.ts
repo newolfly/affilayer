@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { FAQ_GROUPS, PAGE_FAQS, PAGE_FAQS_LOCALIZED } from './faq-data'
+import { FAQ_GROUPS, HOME_FAQS, PAGE_FAQS, PAGE_FAQS_LOCALIZED, PRICING_FAQS } from './faq-data'
 import { publishedPosts } from './blog-data'
 import { COUNTRIES } from './geo-data'
 import { DICT } from './i18n-dict'
@@ -192,7 +192,7 @@ const PAGES: Record<string, SeoMeta> = {
     title: 'AffiLayer — Global CPA Affiliate Network',
     description:
       'AffiLayer is a global CPA network. Direct offers and SmartLink routing, full-funnel tracking, and an auditable commission ledger.',
-    jsonLd: [ORGANIZATION, WEBSITE],
+    jsonLd: [ORGANIZATION, WEBSITE, faqLd(HOME_FAQS)],
   },
   '/about': {
     title: 'About AffiLayer | Global CPA Affiliate Network',
@@ -294,7 +294,7 @@ const PAGES: Record<string, SeoMeta> = {
     title: 'Pricing | AffiLayer — Free to Join, Pay for Reviewed Conversions',
     description:
       'AffiLayer pricing: free to join for affiliates and advertisers, no monthly fee — advertisers pay only for conversions they have reviewed. White-label pricing agreed per setup.',
-    jsonLd: webPage('/pricing', 'AffiLayer pricing', 'AffiLayer pricing: free to join, no monthly fee, advertisers pay only for conversions they have reviewed.'),
+    jsonLd: [webPage('/pricing', 'AffiLayer pricing', 'AffiLayer pricing: free to join, no monthly fee, advertisers pay only for conversions they have reviewed.'), faqLd(PRICING_FAQS)],
   },
   '/trust': {
     title: 'Trust & Audits | AffiLayer — The CPA Network You Can Audit',

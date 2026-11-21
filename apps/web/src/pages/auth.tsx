@@ -107,6 +107,10 @@ export function Register() {
             ? 'Advertiser registration is shorter — we ask for your company and website so we can verify you.'
             : 'Affiliate registration — tell us who you are and how you run traffic.'}
         </p>
+        <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          Free to join. Every application is reviewed by a person — complete profiles are usually decided the same day.
+          {role === 'affiliate' && ' Affiliates: $50 minimum payout, paid in USDT, Net-30. No website needed — a traffic source we can verify is enough.'}
+        </p>
         {done ? (
           <div className="mt-4">
             <p className="text-sm text-slate-600">Account created. Complete onboarding to submit your application for approval.</p>

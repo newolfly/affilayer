@@ -227,3 +227,26 @@ export const PAGE_FAQS_LOCALIZED: Record<'es' | 'pt', typeof PAGE_FAQS> = {
     ],
   },
 }
+
+/** Homepage + pricing FAQs (English). Written 21 Nov 2026 from the search-
+ *  behaviour research: these are the questions beginners actually ask
+ *  Google and AI chat — approval, website, minimum, method, legitimacy.
+ *  Facts must stay identical everywhere they appear: $50 minimum, USDT
+ *  (TRC20), Net-30, manual approval, live offer rates. The same lists feed
+ *  the visible sections (public.tsx) and the FAQPage JSON-LD (seo.ts). */
+export const HOME_FAQS: { q: string; a: string }[] = [
+  { q: 'What is AffiLayer?', a: 'A CPA affiliate network operated by MarketSync Global LLC. Advertisers publish offers; affiliates promote them and earn commission on approved conversions. Tracking is server-to-server and every commission is recorded in an append-only ledger. Joining is free.' },
+  { q: 'Do I need a website to join as an affiliate?', a: 'No. You need a traffic source you can describe and we can verify — a website, a YouTube or TikTok channel, a social page or a community. What is not accepted anywhere on the network: bots, incentivised clicks, forced clicks and misleading creatives.' },
+  { q: 'How does approval work?', a: 'Every application is reviewed by a person. A complete profile with a verifiable traffic source is usually decided the same day. The decision arrives by email and on your approval page; if you are declined, the reason is stated and you can fix your profile and re-apply.' },
+  { q: 'What is the minimum payout?', a: '$50. Payouts are made in USDT (TRC20) and become payable Net-30 — 30 days after the end of the month in which the commissions were approved. You request a payout from your dashboard once your payable balance passes $50.' },
+  { q: 'Which offers are live?', a: 'NordVPN and Surfshark at 30% of the sale, NordPass at 22.5% of the sale, a per-sale Sucuri offer, a NOWPayments offer and a dating SmartLink. The rate on every offer is shown on the offer before you promote it.' },
+  { q: 'Is AffiLayer legit — does it actually pay?', a: 'Check the record before you trust the claim: the payout terms are published, the network stats page is public, and every click, conversion and payout decision is written to a ledger you can inspect. That is the standard we hold ourselves to — and the standard to hold any network to.' },
+]
+
+export const PRICING_FAQS: { q: string; a: string }[] = [
+  { q: 'Is AffiLayer free to join?', a: 'Yes — for affiliates and advertisers. There is no monthly fee, no setup fee and no tier to buy.' },
+  { q: 'What does an affiliate pay?', a: 'Nothing. Affiliates pay no fees, and the rate shown on an offer is the rate paid on approved conversions.' },
+  { q: 'What is the minimum payout for affiliates?', a: '$50, paid in USDT (TRC20). Approved commissions become payable Net-30 — 30 days after the end of the month in which they were approved — and payouts are requested from the dashboard.' },
+  { q: 'What does an advertiser pay?', a: 'Only for conversions they have reviewed and approved. Advertisers fund their account first (crypto deposit, $10 minimum) and approved commissions are drawn from that balance. A conversion rejected on review is not charged.' },
+  { q: 'Are there any hidden fees?', a: 'No. The only money that moves is advertiser funding in and affiliate payouts out — both on the record in the commission ledger.' },
+]
