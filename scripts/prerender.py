@@ -117,9 +117,9 @@ def parse_geo():
     the FEATURED_CODES list in the same file.
     Markers are the page H1 + first FAQ question, both templated from
     the same data the page renders — a new country needs no edit here.
-    Prerender scope: ALL English country pages + es/pt pages for the
-    31 featured countries. Non-featured es/pt country URLs exist as
-    routes and are in the sitemap, but are SPA-rendered, not prerendered.
+    Prerender scope (since 21 Nov 2026): only the 12 SEO_GEO_CODES
+    countries, in en + es + pt. All other country pages exist in the
+    app but are neither prerendered nor in the sitemap.
     """
     import re
 
@@ -140,14 +140,22 @@ def parse_geo():
 
 
 def geo_routes():
+    # Only SEO_GEO_CODES countries are prerendered (and sitemapped); the
+    # rest exist in the app but are not offered to search engines — see
+    # the note on SEO_GEO_CODES in geo-data.ts (21 Nov 2026).
+    import re as _re
+
+    _text = (ROOT / "apps" / "web" / "src" / "lib" / "geo-data.ts").read_text()
+    _m = _re.search(r"SEO_GEO_CODES: string\[\] = \[(.*?)\]", _text, _re.S)
+    seo_codes = set(_re.findall(r"'([a-z]{2})'", _m.group(1))) if _m else set()
     routes = {}
     for code, (en, es, pt, feat) in parse_geo().items():
+        if code not in seo_codes:
+            continue
         routes[f"/geo/{code}"] = [
             f"CPA affiliate network in {en}",
             f"Can I join AffiLayer from {en}?",
         ]
-        if not feat:
-            continue
         # Spanish Finance pages (es/mx/ar) show the SEO FAQ, not the
         # generic Q&A — the marker is the Finance FAQ question.
         if code in ("es", "mx", "ar"):

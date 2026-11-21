@@ -59,7 +59,15 @@ GEO_CODES = sorted(
     | set(re.findall(r"\n  \{ code: '([a-z]{2})',", GEO_DATA.read_text()))
 )
 assert len(GEO_CODES) == 195, f"geo-data.ts must hold 195 country codes, found {len(GEO_CODES)}"
-LOCALISED = ["", "/affiliates", "/advertisers", "/how-it-works", "/geo", "/brand", "/blog"] + [f"/geo/{c}" for c in GEO_CODES]
+# Only the SEO_GEO_CODES countries are offered to search engines (sitemap
+# + prerender); the other countries' pages exist in the app but stay out
+# of the sitemap — 195 thin templated pages were dragging crawl quality
+# (see the note on SEO_GEO_CODES in geo-data.ts, 21 Nov 2026).
+_seo_m = re.search(r"SEO_GEO_CODES: string\[\] = \[(.*?)\]", GEO_DATA.read_text(), re.S)
+SEO_GEO_CODES = sorted(set(re.findall(r"'([a-z]{2})'", _seo_m.group(1)))) if _seo_m else []
+assert len(SEO_GEO_CODES) == 12, f"SEO_GEO_CODES must hold 12 codes, found {len(SEO_GEO_CODES)}"
+assert set(SEO_GEO_CODES) <= set(GEO_CODES), "SEO_GEO_CODES must be a subset of GEO_CODES"
+LOCALISED = ["", "/affiliates", "/advertisers", "/how-it-works", "/geo", "/brand", "/blog"] + [f"/geo/{c}" for c in SEO_GEO_CODES]
 CATEGORY_SLUGS = ["launch-notes", "adtech-insights", "guides", "news"]
 
 
@@ -84,7 +92,7 @@ def parse_posts(text: str):
 
 
 URLS = list(EN)
-URLS += [(f"/geo/{c}", "monthly", "0.7") for c in GEO_CODES]
+URLS += [(f"/geo/{c}", "monthly", "0.7") for c in SEO_GEO_CODES]
 URLS += [(f"/blog/category/{c}", "monthly", "0.6") for c in CATEGORY_SLUGS]
 posts = parse_posts(BLOG_DATA.read_text())
 listed = 0

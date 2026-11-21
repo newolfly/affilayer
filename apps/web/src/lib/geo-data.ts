@@ -57,6 +57,20 @@ export const FEATURED_CODES: string[] = [
   'kr', 'tw', 'za', 'eg', 'ke', 'tr', 'sa', 'ae', 'nl', 'pl',
 ]
 
+/** The 12 countries with full SEO treatment (sitemap + prerender in all
+ *  locales), chosen 21 Nov 2026 from Search Console evidence and the
+ *  search-behaviour research: NG IN PK BD ID PH KE EG MA ZA are where
+ *  affiliates actually ask "does it work in my country"; IN and AR had
+ *  already earned clicks and UK earns impressions in GSC. Every other
+ *  country's page still exists in the app and on /geo — it is simply
+ *  not offered to search engines, because 195 thin templated pages
+ *  were dragging the whole domain's crawl quality down (GSC: 329
+ *  pages "discovered, not indexed"). Parsed by generate-sitemap.py
+ *  and prerender.py — keep the format a plain string list. */
+export const SEO_GEO_CODES: string[] = [
+  'ng', 'in', 'pk', 'bd', 'id', 'ph', 'ke', 'eg', 'ma', 'za', 'ar', 'uk',
+]
+
 export const COUNTRIES: Country[] = [
   {
     code: 'us',
