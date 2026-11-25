@@ -274,6 +274,7 @@ const en = {
 
   'nav.partner': 'Partner',
   'nav.pricing': 'Pricing',
+  'nav.offers': 'Offers',
   'nav.trust': 'Trust & audits',
   'nav.whitelabel': 'White label',
   'nav.advertise': 'Advertise',
@@ -563,6 +564,7 @@ const es: Record<DictKey, string> = {
 
   'nav.partner': 'Socios',
   'nav.pricing': 'Precios',
+  'nav.offers': 'Ofertas',
   'nav.trust': 'Confianza y auditorías',
   'nav.whitelabel': 'Marca blanca',
   'nav.advertise': 'Anunciarse',
@@ -850,6 +852,7 @@ const pt: Record<DictKey, string> = {
 
   'nav.partner': 'Parceiros',
   'nav.pricing': 'Preços',
+  'nav.offers': 'Ofertas',
   'nav.trust': 'Confiança e auditorias',
   'nav.whitelabel': 'Marca branca',
   'nav.advertise': 'Anuncie',

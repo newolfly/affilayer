@@ -180,6 +180,7 @@ function MoneyLinks({ current }: { current: string }) {
   const links = [
     { to: '/affiliates', label: 'nav.affiliates' as const },
     { to: '/advertisers', label: 'nav.advertisers' as const },
+    { to: '/offers', label: 'nav.offers' as const },
     { to: '/how-it-works', label: 'nav.how' as const },
     { to: '/advantages', label: 'nav.advantages' as const },
     { to: '/pricing', label: 'nav.pricing' as const },
@@ -801,7 +802,7 @@ export function AffiliatesPage() {
         steps={[
           { n: '1', t: t('aff.funnel.1.t'), d: t('aff.funnel.1.d'), to: '/register', cta: t('aff.funnel.1.cta'), icon: 'user' },
           { n: '2', t: t('aff.funnel.2.t'), d: t('aff.funnel.2.d'), to: '/onboarding', cta: t('aff.funnel.2.cta'), icon: 'shield' },
-          { n: '3', t: t('aff.funnel.3.t'), d: t('aff.funnel.3.d'), to: '/app/affiliate/offers', cta: t('aff.funnel.3.cta'), icon: 'tag' },
+          { n: '3', t: t('aff.funnel.3.t'), d: t('aff.funnel.3.d'), to: '/offers', cta: t('aff.funnel.3.cta'), icon: 'tag' },
           { n: '4', t: t('aff.funnel.4.t'), d: t('aff.funnel.4.d'), to: '/app/affiliate/tracking-links', cta: t('aff.funnel.4.cta'), icon: 'link' },
           { n: '5', t: t('aff.funnel.5.t'), d: t('aff.funnel.5.d'), to: '/app/affiliate/earnings', cta: t('aff.funnel.5.cta'), icon: 'wallet' },
         ]}
@@ -1256,6 +1257,129 @@ export function Advertise() {
  *  per setup. No tiers, prices, minimums or payout figures are
  *  invented here; if there is little to say, the model in words is
  *  the whole page. */
+/** Public offer catalogue — the rates below are the affiliate rates
+ *  recorded in the production database (offers table, status 'active'),
+ *  verified 25 November 2026: NordVPN CPS 30%, Surfshark CPS 30%,
+ *  NordPass CPS 22.5%, Sucuri CPA $42.94, NOWPayments CPS 18.75% of
+ *  fees collected, LosPollos Dating Smartlink CPL variable at 75% of
+ *  the reported conversion value. All six need approval before they
+ *  can be run (approval_required is true on every row); none carries
+ *  a daily or monthly cap. When an offer changes in the database,
+ *  this page must change with it — never edit a rate here alone. */
+const PUBLIC_OFFERS: {
+  name: string
+  vertical: string
+  model: 'CPA' | 'CPL' | 'CPS'
+  rate: string
+  conversion: string
+  note: string
+}[] = [
+  {
+    name: 'NordVPN',
+    vertical: 'VPN & Security',
+    model: 'CPS',
+    rate: '30% of sale',
+    conversion: 'per new subscription sale',
+    note: 'VPN subscriptions. You earn 30% of each new subscription sale.',
+  },
+  {
+    name: 'Surfshark',
+    vertical: 'VPN & Security',
+    model: 'CPS',
+    rate: '30% of sale',
+    conversion: 'per website purchase',
+    note: 'VPN subscriptions. You earn 30% of each website purchase.',
+  },
+  {
+    name: 'NordPass',
+    vertical: 'VPN & Security',
+    model: 'CPS',
+    rate: '22.5% of sale',
+    conversion: 'per new subscription sale',
+    note: 'Password manager subscriptions. You earn 22.5% of each new subscription sale.',
+  },
+  {
+    name: 'Sucuri',
+    vertical: 'Web Security',
+    model: 'CPA',
+    rate: '$42.94 per sale',
+    conversion: 'per sale',
+    note: 'Website security plans. $42.94 per sale on the Basic plan; higher plans pay more and reconcile from the programme report.',
+  },
+  {
+    name: 'NOWPayments',
+    vertical: 'Crypto Payments',
+    model: 'CPS',
+    rate: '18.75% of fees collected',
+    conversion: 'per referred merchant',
+    note: 'Crypto payment processing for businesses. You earn 18.75% of the fees we collect from merchants you refer. Earnings are reconciled monthly from the NOWPayments dashboard — this programme has no per-affiliate tracking ID.',
+  },
+  {
+    name: 'LosPollos Dating Smartlink',
+    vertical: 'Dating',
+    model: 'CPL',
+    rate: 'Variable — 75% of the reported value',
+    conversion: 'per registration',
+    note: 'One smartlink for all countries and devices; LosPollos picks the dating offer per visitor. You earn 75% of the amount LosPollos reports for each registration.',
+  },
+]
+
+export function Offers() {
+  return (
+    <PublicLayout>
+      <h1 className="text-3xl font-bold text-white md:text-4xl">
+        Browse live <span className="grad-text">CPA offers</span>
+      </h1>
+      <Slogan className="mt-4">Real rates, shown before you sign up.</Slogan>
+      <p className="mt-4 max-w-3xl text-slate-300">
+        Six live offers, with the real rate on each one — no login needed
+        to see them. Payouts are in USDT, $50 minimum, Net-30 on approved
+        balance. Joining is free, and every application is reviewed by a
+        person — complete profiles are usually decided the same day.
+      </p>
+      <PageHighlights
+        items={[
+          { icon: 'tag', text: 'The rate you see is the rate you get — every offer below shows its real affiliate payout before you sign up.' },
+          { icon: 'wallet', text: 'Payouts in USDT, $50 minimum, Net-30 on approved balance.' },
+          { icon: 'check', text: 'Every offer needs approval before you can run it — apply after you register and we review your application.' },
+        ]}
+      />
+      <div className="mt-6 space-y-4">
+        {PUBLIC_OFFERS.map((o) => (
+          <Reveal key={o.name}>
+            <div className="lift rounded-xl bg-white p-5 text-slate-900">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="text-lg font-semibold">{o.name}</h2>
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-800">
+                  {o.model} · {o.rate}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-slate-600">
+                {o.vertical} · {o.conversion} · Worldwide · Approval required
+              </p>
+              <p className="mt-2 text-sm text-slate-600">{o.note}</p>
+              <Link to="/register" className="mt-3 inline-flex items-center gap-1.5 font-semibold text-amber-700 hover:text-amber-600">
+                Run this offer →
+              </Link>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+      <p className="mt-6 max-w-3xl text-sm text-slate-400">
+        Rates are the affiliate rates recorded in the network today. If a
+        rate changes, this catalogue changes with it. Six offers live
+        today — the catalogue grows as new programmes are verified.
+      </p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link to="/register" className="pill-btn">Create an account</Link>
+        <Link to="/advertisers" className="pill-btn-outline">Advertise with AffiLayer</Link>
+        <Link to="/pricing" className="pill-btn-outline">How payouts work</Link>
+      </div>
+      <MoneyLinks current="/offers" />
+    </PublicLayout>
+  )
+}
+
 export function Pricing() {
   const t = useT()
   return (

@@ -25,6 +25,7 @@ const Partner = lazy(() => import('./pages/public').then((m) => ({ default: m.Pa
 const WhiteLabel = lazy(() => import('./pages/public').then((m) => ({ default: m.WhiteLabel })))
 const Advertise = lazy(() => import('./pages/public').then((m) => ({ default: m.Advertise })))
 const Pricing = lazy(() => import('./pages/public').then((m) => ({ default: m.Pricing })))
+const Offers = lazy(() => import('./pages/public').then((m) => ({ default: m.Offers })))
 const Trust = lazy(() => import('./pages/trust').then((m) => ({ default: m.Trust })))
 const NotFound = lazy(() => import('./pages/public').then((m) => ({ default: m.NotFound })))
 const Blog = lazy(() => import('./pages/blog').then((m) => ({ default: m.Blog })))
@@ -217,6 +218,7 @@ export default function App() {
           <Route path="/white-label" element={<WhiteLabel />} />
           <Route path="/advertise" element={<Advertise />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/offers" element={<Offers />} />
           <Route path="/trust" element={<Trust />} />
           <Route path="/geo" element={<GeoIndex />} />
           <Route path="/geo/:code" element={<GeoPage />} />

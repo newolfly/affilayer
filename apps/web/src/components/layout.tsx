@@ -138,6 +138,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     { to: navPath('/advantages'), label: t('nav.advantages') },
     { to: localizePath('/advertisers', locale), label: t('nav.advertisers') },
     { to: localizePath('/affiliates', locale), label: t('nav.affiliates') },
+    { to: navPath('/offers'), label: t('nav.offers') },
     { to: localizePath('/how-it-works', locale), label: t('nav.how') },
     { to: localizePath('/geo', locale), label: t('nav.countries') },
     { to: navPath('/blog'), label: t('nav.blog') },
@@ -256,6 +257,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               <li><Link to="/white-label" className="footer-link">{t('nav.whitelabel')}</Link></li>
               <li><Link to="/advertise" className="footer-link">{t('nav.advertise')}</Link></li>
               <li><Link to="/pricing" className="footer-link">{t('nav.pricing')}</Link></li>
+              <li><Link to="/offers" className="footer-link">{t('nav.offers')}</Link></li>
               <li><Link to="/faq" className="footer-link">{t('nav.faq')}</Link></li>
               <li><Link to="/blog" className="footer-link">{t('nav.blog')}</Link></li>
               <li><Link to={localizePath('/brand', locale)} className="footer-link">{t('nav.brand')}</Link></li>

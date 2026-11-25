@@ -296,6 +296,12 @@ const PAGES: Record<string, SeoMeta> = {
       'AffiLayer pricing: free to join for affiliates and advertisers, no monthly fee — advertisers pay only for conversions they have reviewed. White-label pricing agreed per setup.',
     jsonLd: [webPage('/pricing', 'AffiLayer pricing', 'AffiLayer pricing: free to join, no monthly fee, advertisers pay only for conversions they have reviewed.'), faqLd(PRICING_FAQS)],
   },
+  '/offers': {
+    title: 'Live CPA Offers | AffiLayer — Real Rates, No Login Needed',
+    description:
+      'AffiLayer’s live offer catalogue: NordVPN, Surfshark, NordPass, Sucuri, NOWPayments and a dating smartlink, with the real affiliate rate on each. USDT payouts, $50 minimum, Net-30.',
+    jsonLd: webPage('/offers', 'AffiLayer live offers', 'AffiLayer’s live offer catalogue with the real affiliate rate on every offer.'),
+  },
   '/trust': {
     title: 'Trust & Audits | AffiLayer — The CPA Network You Can Audit',
     description:

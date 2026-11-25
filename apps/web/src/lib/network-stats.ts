@@ -25,7 +25,7 @@
  *     asserts exactly 195). Offers = status 'active' in the DB.
  *     Guides = published posts in blog-data.ts (== RSS item count).
  */
-export const STATS_PULLED_AT = '18 November 2026'
+export const STATS_PULLED_AT = '25 November 2026'
 
 export interface NetworkStat {
   value: string
@@ -37,8 +37,8 @@ export interface NetworkStat {
 export const NETWORK_STATS: NetworkStat[] = [
   { value: '195', label: 'Countries live', sub: 'a country page with local join terms for each', icon: 'compass' },
   { value: '6', label: 'Offers live', sub: 'in the public catalogue right now', icon: 'tag' },
-  { value: '23', label: 'Guides published', sub: 'launch notes, guides and announcements', icon: 'file' },
-  { value: '72', label: 'Clicks tracked', sub: 'written to the ledger since launch', icon: 'chart' },
+  { value: '25', label: 'Guides published', sub: 'launch notes, guides and announcements', icon: 'file' },
+  { value: '77', label: 'Clicks tracked', sub: 'written to the ledger since launch', icon: 'chart' },
   { value: '23', label: 'Conversions recorded', sub: 'each one a ledger row — never edited, never deleted', icon: 'check' },
 ]
 

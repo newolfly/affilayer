@@ -65,6 +65,9 @@ ROUTES = {
     "/white-label": ["White label AffiLayer", "Your brand on the front"],
     "/advertise": ["Advertise with AffiLayer", "Pay for conversions you have reviewed"],
     "/pricing": ["AffiLayer pricing", "free to join", "White label"],
+    # "Browse live CPA offers" is the H1 but a grad-text <span> splits it
+    # in the serialised HTML, so the marker must be contiguous text instead.
+    "/offers": ["Real rates, shown before you sign up.", "NordVPN", "LosPollos Dating Smartlink"],
     "/trust": ["The CPA network you can", "0 Critical", "$12.02"],
     "/terms": ["Terms of Service"],
     "/privacy": ["Privacy Policy"],

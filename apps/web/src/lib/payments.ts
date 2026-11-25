@@ -2,7 +2,7 @@
 // The browser never holds the NOWPayments API key: every call goes to
 // go.affilayer.com with the user's Supabase JWT, and the Worker enforces
 // ownership / admin rights before touching NOWPayments or the database.
-// In demo mode (no Supabase) every call fails closed with a plain error.
+// Without a configured backend every call fails closed with a plain error.
 import { supabase, isSupabaseConfigured } from './supabase'
 import { TRACKING_URL } from './tracking'
 
@@ -17,7 +17,7 @@ async function workerCall(
   opts: { method?: string; body?: unknown } = {},
 ): Promise<WorkerResult> {
   if (!isSupabaseConfigured || !supabase) {
-    return { error: 'Payments are not available in demo mode.' };
+    return { error: 'Payments are not available right now.' };
   }
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) return { error: 'You are not signed in.' };
