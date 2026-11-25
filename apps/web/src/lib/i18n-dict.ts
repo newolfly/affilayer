@@ -49,7 +49,7 @@ const en = {
   'home.ctaAdvertiser': 'Join as an advertiser',
   'home.note': 'Free to join. Applications are reviewed by our team.',
   'home.campaign.kicker': 'Launch campaign — live now',
-  'home.campaign.title': '9 live CPA offers. One launch campaign.',
+  'home.campaign.title': '6 live CPA offers. One launch campaign.',
   'home.campaign.body': 'The launch campaign is open until 12 December 2026. Every offer shows its payout, countries and cap up front — and joining is free.',
   'home.campaign.cta': "See what's live",
   'home.cardOffers.kicker': 'CPA offers',

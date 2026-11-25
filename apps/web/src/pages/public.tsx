@@ -273,7 +273,7 @@ function Hero() {
 }
 
 /** Launch campaign banner — a slim card directly under the hero linking to
- *  the launch announcement post. Facts only: 9 live offers, the campaign
+ *  the launch announcement post. Facts only: 6 live offers, the campaign
  *  window to 12 December 2026, free to join. */
 function LaunchCampaignBanner() {
   const t = useT()
