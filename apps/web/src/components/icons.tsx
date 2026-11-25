@@ -179,6 +179,10 @@ const PATHS: Record<string, (p: IconProps) => JSX.Element> = {
     <polygon points="22 2 11 13" />
     <polygon points="22 2 15 22 11 13 2 9 22 2" />
   </>, p),
+  play: (p) => base(<>
+    <rect x="2" y="5" width="20" height="14" rx="4" />
+    <polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none" />
+  </>, p),
 }
 
 export type IconName = keyof typeof PATHS

@@ -582,13 +582,61 @@ export function Home() {
   return (
     <PublicLayout>
       <Hero />
+      <PromoVideo />
       <LaunchCampaignBanner />
       <NetworkActivityStrip />
       <ProductCards />
       <BenefitsSection />
       <BrowseByCountry />
       <ContactForm />
+      <FollowAffiLayer />
     </PublicLayout>
+  )
+}
+
+/** Homepage promo video — the AffiLayer YouTube promo
+ *  (video ID cAVqulSQk9g), embedded as a plain 16:9 iframe so it is
+ *  present in the prerendered HTML. No length is claimed: it is not
+ *  verified from the page. */
+function PromoVideo() {
+  const t = useT()
+  return (
+    <section className="mt-10">
+      <Reveal>
+        <h2 className="text-center text-2xl font-bold text-white">{t('home.video.title')}</h2>
+        <div className="mx-auto mt-5 aspect-video max-w-3xl overflow-hidden rounded-2xl border border-slate-800">
+          <iframe
+            src="https://www.youtube.com/embed/cAVqulSQk9g"
+            title="AffiLayer | Connect Globally. Promote Smarter. Earn Together"
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        </div>
+      </Reveal>
+    </section>
+  )
+}
+
+/** Follow AffiLayer — the only confirmed social handle is YouTube
+ *  (@affilayer). No other network is listed: no handle on record. */
+function FollowAffiLayer() {
+  const t = useT()
+  return (
+    <section className="mt-10 text-center">
+      <Reveal>
+        <h2 className="text-2xl font-bold text-white">{t('home.follow.title')}</h2>
+        <a
+          href="https://www.youtube.com/@affilayer"
+          target="_blank"
+          rel="noreferrer"
+          className="pill-btn-outline mt-5 inline-flex items-center gap-2"
+        >
+          <Icon name="play" className="h-4 w-4" />
+          YouTube — @affilayer
+        </a>
+      </Reveal>
+    </section>
   )
 }
 

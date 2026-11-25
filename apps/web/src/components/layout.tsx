@@ -246,6 +246,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             <div className="mt-3">
               <a href="/download/affilayer.apk" download className="pill-btn-outline">{t('footer.app')}</a>
             </div>
+            <p className="mt-3 text-sm">
+              <span className="text-[#8A97A8]">{t('home.follow.title')}: </span>
+              <a href="https://www.youtube.com/@affilayer" target="_blank" rel="noreferrer" className="font-semibold text-amber-400 hover:text-amber-300">YouTube — @affilayer</a>
+            </p>
           </div>
           <div>
             <p className="font-semibold text-white">{t('footer.company')}</p>
