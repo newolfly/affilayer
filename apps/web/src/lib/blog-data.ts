@@ -104,7 +104,7 @@ export const POSTS: Post[] = [
     heroImage: '/promo/campaign-hero.webp',
     title: 'AffiLayer is fully operational: audited, hardened, and open for business',
     description:
-      'AffiLayer has completed its fourth full forensic audit and is fully operational: six live CPA offers, an append-only commission ledger, published terms, and balances that work the classical way — advertisers deposit, affiliates withdraw.',
+      'AffiLayer has completed its fourth full forensic audit and is fully operational: five live CPA offers, an append-only commission ledger, published terms, and balances that work the classical way — advertisers deposit, affiliates withdraw.',
     date: '2026-11-13',
     author: DEFAULT_AUTHOR,
     category: 'Launch Notes',
@@ -117,8 +117,8 @@ export const POSTS: Post[] = [
       { kind: 'p', text: 'This week we ran our fourth forensic audit of the network — every component, from the tracking Worker to the database row-level security policies — fixed the findings, and re-verified the fixes live. This post is the operational launch announcement: what is running, how it is built, and how the money side works.' },
       { kind: 'h2', text: 'What is live' },
       { kind: 'list', items: [
-        'Six live CPA offers — sweeps, surveys, VPN trials, finance, dating and entertainment — paying up to $2.93 per conversion, with payouts, countries, devices and caps shown before you promote.',
-        'A launch campaign running until 12 December 2026, with all six offers open for the whole window.',
+        'Five live CPA offers — VPN and security, and crypto payments — paying up to $2.93 per conversion, with payouts, countries, devices and caps shown before you promote.',
+        'A launch campaign running until 12 December 2026, with all five offers open for the whole window.',
         'Country pages for 195 countries, so affiliates anywhere can see exactly what promoting from their country looks like.',
         'Joining is free for affiliates and advertisers.',
       ] },
@@ -373,7 +373,7 @@ export const POSTS: Post[] = [
         'Minimum payout: $50.',
         'Schedule: Net-30, stated in the terms, not in a chat message.',
         'Method: USDT (TRC20). No PayPal, no bank transfer — one rail, stated plainly.',
-        'Offers: a small, real catalogue — VPN and security offers (NordVPN, NordPass, Surfshark, Sucuri), a crypto-payments offer and a dating SmartLink. Every rate is shown before you run it.',
+        'Offers: a small, real catalogue — VPN and security offers (NordVPN, NordPass, Surfshark, Sucuri) and a crypto-payments offer. Every rate is shown before you run it.',
         'Proof: public stats page, and an append-only commission ledger you can audit — every click, conversion and state change on the record.',
       ] },
       { kind: 'h3', text: 'MyLead — huge catalogue, two very different minimums' },

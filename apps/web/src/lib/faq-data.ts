@@ -9,7 +9,7 @@ export const FAQ_GROUPS: { group: string; items: { q: string; a: string }[] }[] 
       },
       {
         q: 'Which verticals do you work with?',
-        a: 'Our catalogue covers Dating, Finance, Sweepstakes, Surveys, VPN and Entertainment. The exact offers available depend on the advertisers currently on the network — the marketplace in your dashboard always shows the live list.',
+        a: 'Our public catalogue covers VPN, Web Security and Crypto Payments. The exact offers available depend on the advertisers currently on the network — the marketplace in your dashboard always shows the live list.',
       },
       {
         q: 'What is SmartLink?',
@@ -239,7 +239,7 @@ export const HOME_FAQS: { q: string; a: string }[] = [
   { q: 'Do I need a website to join as an affiliate?', a: 'No. You need a traffic source you can describe and we can verify — a website, a YouTube or TikTok channel, a social page or a community. What is not accepted anywhere on the network: bots, incentivised clicks, forced clicks and misleading creatives.' },
   { q: 'How does approval work?', a: 'Every application is reviewed by a person. A complete profile with a verifiable traffic source is usually decided the same day. The decision arrives by email and on your approval page; if you are declined, the reason is stated and you can fix your profile and re-apply.' },
   { q: 'What is the minimum payout?', a: '$50. Payouts are made in USDT (TRC20) and become payable Net-30 — 30 days after the end of the month in which the commissions were approved. You request a payout from your dashboard once your payable balance passes $50.' },
-  { q: 'Which offers are live?', a: 'NordVPN and Surfshark at 30% of the sale, NordPass at 22.5% of the sale, a per-sale Sucuri offer, a NOWPayments offer and a dating SmartLink. The rate on every offer is shown on the offer before you promote it.' },
+  { q: 'Which offers are live?', a: 'NordVPN and Surfshark at 30% of the sale, NordPass at 22.5% of the sale, a per-sale Sucuri offer and a NOWPayments offer. The rate on every offer is shown on the offer before you promote it.' },
   { q: 'Is AffiLayer legit — does it actually pay?', a: 'Check the record before you trust the claim: the payout terms are published, the network stats page is public, and every click, conversion and payout decision is written to a ledger you can inspect. That is the standard we hold ourselves to — and the standard to hold any network to.' },
 ]
 

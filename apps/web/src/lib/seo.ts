@@ -299,7 +299,7 @@ const PAGES: Record<string, SeoMeta> = {
   '/offers': {
     title: 'Live CPA Offers | AffiLayer — Real Rates, No Login Needed',
     description:
-      'AffiLayer’s live offer catalogue: NordVPN, Surfshark, NordPass, Sucuri, NOWPayments and a dating smartlink, with the real affiliate rate on each. USDT payouts, $50 minimum, Net-30.',
+      'AffiLayer’s live offer catalogue: NordVPN, Surfshark, NordPass, Sucuri and NOWPayments, with the real affiliate rate on each. USDT payouts, $50 minimum, Net-30.',
     jsonLd: webPage('/offers', 'AffiLayer live offers', 'AffiLayer’s live offer catalogue with the real affiliate rate on every offer.'),
   },
   '/trust': {

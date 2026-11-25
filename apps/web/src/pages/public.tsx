@@ -273,8 +273,9 @@ function Hero() {
 }
 
 /** Launch campaign banner — a slim card directly under the hero linking to
- *  the launch announcement post. Facts only: 6 live offers, the campaign
- *  window to 12 December 2026, free to join. */
+ *  the launch announcement post. Facts only: 5 live offers in the
+ *  public catalogue, the campaign window to 12 December 2026, free
+ *  to join. */
 function LaunchCampaignBanner() {
   const t = useT()
   const locale = useLocale()
@@ -1261,11 +1262,13 @@ export function Advertise() {
  *  recorded in the production database (offers table, status 'active'),
  *  verified 25 November 2026: NordVPN CPS 30%, Surfshark CPS 30%,
  *  NordPass CPS 22.5%, Sucuri CPA $42.94, NOWPayments CPS 18.75% of
- *  fees collected, LosPollos Dating Smartlink CPL variable at 75% of
- *  the reported conversion value. All six need approval before they
- *  can be run (approval_required is true on every row); none carries
- *  a daily or monthly cap. When an offer changes in the database,
- *  this page must change with it — never edit a rate here alone. */
+ *  fees collected. The LosPollos Dating Smartlink stays active in the
+ *  database for signed-in, approved affiliates, but it is NOT shown
+ *  in this public catalogue — dating is kept off the public face of
+ *  the network. All five need approval before they can be run
+ *  (approval_required is true on every row); none carries a daily or
+ *  monthly cap. When an offer changes in the database, this page must
+ *  change with it — never edit a rate here alone. */
 const PUBLIC_OFFERS: {
   name: string
   vertical: string
@@ -1314,14 +1317,6 @@ const PUBLIC_OFFERS: {
     conversion: 'per referred merchant',
     note: 'Crypto payment processing for businesses. You earn 18.75% of the fees we collect from merchants you refer. Earnings are reconciled monthly from the NOWPayments dashboard — this programme has no per-affiliate tracking ID.',
   },
-  {
-    name: 'LosPollos Dating Smartlink',
-    vertical: 'Dating',
-    model: 'CPL',
-    rate: 'Variable — 75% of the reported value',
-    conversion: 'per registration',
-    note: 'One smartlink for all countries and devices; LosPollos picks the dating offer per visitor. You earn 75% of the amount LosPollos reports for each registration.',
-  },
 ]
 
 export function Offers() {
@@ -1332,7 +1327,7 @@ export function Offers() {
       </h1>
       <Slogan className="mt-4">Real rates, shown before you sign up.</Slogan>
       <p className="mt-4 max-w-3xl text-slate-300">
-        Six live offers, with the real rate on each one — no login needed
+        Five live offers, with the real rate on each one — no login needed
         to see them. Payouts are in USDT, $50 minimum, Net-30 on approved
         balance. Joining is free, and every application is reviewed by a
         person — complete profiles are usually decided the same day.
@@ -1367,7 +1362,7 @@ export function Offers() {
       </div>
       <p className="mt-6 max-w-3xl text-sm text-slate-400">
         Rates are the affiliate rates recorded in the network today. If a
-        rate changes, this catalogue changes with it. Six offers live
+        rate changes, this catalogue changes with it. Five offers live
         today — the catalogue grows as new programmes are verified.
       </p>
       <div className="mt-6 flex flex-wrap gap-3">
