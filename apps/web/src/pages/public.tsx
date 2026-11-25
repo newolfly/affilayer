@@ -1379,12 +1379,11 @@ const PUBLIC_OFFERS: {
  *  Rates are the affiliate rates at 100% of gross under the
  *  zero-profit launch offer (until 25 Feb 2027), as quoted by the
  *  programmes: GearUP and Velocity Outdoor are CJ programmes already
- *  in the database as paused; AmericanQuotesClub ($2.80) and Aegis VPN
- *  ($1.50) are the USD rates Olessya Vorontsova quoted by email
- *  (Mobidea 37880 / 38340, still pending approval — no DB rows yet);
- *  Finance Survey pays RevShare and the share is unconfirmed, so NO
- *  percentage is shown for it. Dating and adult offers never appear
- *  here. When one of these goes live, move it into PUBLIC_OFFERS and
+ *  in the database as paused; Finance Survey pays RevShare and the
+ *  share is unconfirmed, so NO percentage is shown for it. REMOVED
+ *  25 Nov 2026: AmericanQuotesClub (Mobidea 37880) and Aegis VPN
+ *  (Mobidea 38340) were REJECTED by Mobidea — do not re-add them.
+ *  Dating and adult offers never appear here. When one of these goes live, move it into PUBLIC_OFFERS and
  *  update the live counts — never edit a rate here alone. */
 const COMING_SOON_OFFERS: {
   name: string
@@ -1412,24 +1411,6 @@ const COMING_SOON_OFFERS: {
     conversion: 'per sale',
     geo: 'Worldwide',
     note: 'Ravin crossbows and outdoor equipment. You earn 5% of each sale — the full programme rate. Joining the catalogue once the programme confirms promotion through AffiLayer.',
-  },
-  {
-    name: 'AmericanQuotesClub',
-    vertical: 'Sweepstakes',
-    model: 'CPL',
-    rate: '$2.80 per lead',
-    conversion: 'per email submit',
-    geo: 'US only',
-    note: 'Sweepstakes — $1,000 Amazon Gift Card. $2.80 per email submit. Joining once approval and tracking checks are complete.',
-  },
-  {
-    name: 'Aegis VPN',
-    vertical: 'VPN & Security',
-    model: 'CPI',
-    rate: '$1.50 per install',
-    conversion: 'per iOS install',
-    geo: 'US · iOS only',
-    note: 'VPN app for iOS. $1.50 per install. Joining once approval and tracking checks are complete.',
   },
   {
     name: 'Finance Survey',
