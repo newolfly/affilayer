@@ -596,8 +596,10 @@ export function Home() {
 
 /** Homepage promo video — the AffiLayer YouTube promo
  *  (video ID cAVqulSQk9g), embedded as a plain 16:9 iframe so it is
- *  present in the prerendered HTML. No length is claimed: it is not
- *  verified from the page. */
+ *  present in the prerendered HTML. Privacy-enhanced (no-cookie) embed:
+ *  the standard youtube.com embed showed a broken grey box on Sojib's
+ *  screen (25 Nov 2026); he chose the nocookie variant instead.
+ *  No length is claimed: it is not verified from the page. */
 function PromoVideo() {
   const t = useT()
   return (
@@ -606,7 +608,7 @@ function PromoVideo() {
         <h2 className="text-center text-2xl font-bold text-white">{t('home.video.title')}</h2>
         <div className="mx-auto mt-5 aspect-video max-w-3xl overflow-hidden rounded-2xl border border-slate-800">
           <iframe
-            src="https://www.youtube.com/embed/cAVqulSQk9g"
+            src="https://www.youtube-nocookie.com/embed/cAVqulSQk9g"
             title="AffiLayer | Connect Globally. Promote Smarter. Earn Together"
             className="h-full w-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
