@@ -1260,12 +1260,14 @@ export function Advertise() {
  *  the whole page. */
 /** Public offer catalogue — the rates below are the affiliate rates
  *  recorded in the production database (offers table, status 'active'),
- *  verified 25 November 2026: NordVPN CPS 30%, Surfshark CPS 30%,
- *  NordPass CPS 22.5%, Sucuri CPA $42.94, NOWPayments CPS 18.75% of
- *  fees collected. The LosPollos Dating Smartlink stays active in the
- *  database for signed-in, approved affiliates, but it is NOT shown
- *  in this public catalogue — dating is kept off the public face of
- *  the network. All five need approval before they can be run
+ *  verified 25 November 2026 under the zero-profit launch offer:
+ *  NordVPN CPS 40%, Surfshark CPS 40%, NordPass CPS 30%, Sucuri CPA
+ *  $57.25, NOWPayments CPS 25% of fees collected — 100% of each
+ *  programme's gross payout, AffiLayer keeping 0% until 25 Feb 2027.
+ *  The LosPollos Dating Smartlink stays active in the database for
+ *  signed-in, approved affiliates, but it is NOT shown in this public
+ *  catalogue — dating is kept off the public face of the network.
+ *  All five need approval before they can be run
  *  (approval_required is true on every row); none carries a daily or
  *  monthly cap. When an offer changes in the database, this page must
  *  change with it — never edit a rate here alone. */
@@ -1281,41 +1283,41 @@ const PUBLIC_OFFERS: {
     name: 'NordVPN',
     vertical: 'VPN & Security',
     model: 'CPS',
-    rate: '30% of sale',
+    rate: '40% of sale',
     conversion: 'per new subscription sale',
-    note: 'VPN subscriptions. You earn 30% of each new subscription sale.',
+    note: 'VPN subscriptions. You earn 40% of each new subscription sale — the full programme rate.',
   },
   {
     name: 'Surfshark',
     vertical: 'VPN & Security',
     model: 'CPS',
-    rate: '30% of sale',
+    rate: '40% of sale',
     conversion: 'per website purchase',
-    note: 'VPN subscriptions. You earn 30% of each website purchase.',
+    note: 'VPN subscriptions. You earn 40% of each website purchase — the full programme rate.',
   },
   {
     name: 'NordPass',
     vertical: 'VPN & Security',
     model: 'CPS',
-    rate: '22.5% of sale',
+    rate: '30% of sale',
     conversion: 'per new subscription sale',
-    note: 'Password manager subscriptions. You earn 22.5% of each new subscription sale.',
+    note: 'Password manager subscriptions. You earn 30% of each new subscription sale — the full programme rate.',
   },
   {
     name: 'Sucuri',
     vertical: 'Web Security',
     model: 'CPA',
-    rate: '$42.94 per sale',
+    rate: '$57.25 per sale',
     conversion: 'per sale',
-    note: 'Website security plans. $42.94 per sale on the Basic plan; higher plans pay more and reconcile from the programme report.',
+    note: 'Website security plans. $57.25 per sale on the Basic plan — the full programme rate; higher plans pay more and reconcile from the programme report.',
   },
   {
     name: 'NOWPayments',
     vertical: 'Crypto Payments',
     model: 'CPS',
-    rate: '18.75% of fees collected',
+    rate: '25% of fees collected',
     conversion: 'per referred merchant',
-    note: 'Crypto payment processing for businesses. You earn 18.75% of the fees we collect from merchants you refer. Earnings are reconciled monthly from the NOWPayments dashboard — this programme has no per-affiliate tracking ID.',
+    note: 'Crypto payment processing for businesses. You earn 25% of the fees we collect from merchants you refer — the full programme rate. Earnings are reconciled monthly from the NOWPayments dashboard — this programme has no per-affiliate tracking ID.',
   },
 ]
 
@@ -1331,6 +1333,11 @@ export function Offers() {
         to see them. Payouts are in USDT, $50 minimum, Net-30 on approved
         balance. Joining is free, and every application is reviewed by a
         person — complete profiles are usually decided the same day.
+      </p>
+      <p className="mt-4 max-w-3xl font-semibold text-amber-300">
+        Launch offer: 100% of the programme payout goes to you until
+        25 February 2027. AffiLayer keeps 0% during the launch. After that
+        date our standard network share applies.
       </p>
       <PageHighlights
         items={[
@@ -1361,9 +1368,11 @@ export function Offers() {
         ))}
       </div>
       <p className="mt-6 max-w-3xl text-sm text-slate-400">
-        Rates are the affiliate rates recorded in the network today. If a
-        rate changes, this catalogue changes with it. Five offers live
-        today — the catalogue grows as new programmes are verified.
+        Rates are the affiliate rates recorded in the network today — during
+        the launch offer they are 100% of each programme's payout, until
+        25 February 2027. If a rate changes, this catalogue changes with
+        it. Five offers live today — the catalogue grows as new programmes
+        are verified.
       </p>
       <div className="mt-6 flex flex-wrap gap-3">
         <Link to="/register" className="pill-btn">Create an account</Link>
@@ -1403,6 +1412,21 @@ export function Pricing() {
         ]}
       />
       <div className="mt-6 space-y-4">
+        <Reveal>
+          <div className="lift rounded-xl bg-amber-50 p-5 text-slate-900">
+            <h2 className="font-semibold">Launch offer — 100% of the programme payout, until 25 February 2027</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              For the first three months AffiLayer keeps 0%. Every commission
+              on every offer goes to the affiliate in full — 100% of what the
+              programme pays us, for example 40% of the sale on NordVPN and
+              Surfshark, 30% on NordPass, $57.25 per Sucuri sale, 25% of the
+              fees on NOWPayments. After 25 February 2027 our standard
+              network share applies, and the rates on the offers page will
+              show the new figures. Payouts stay in USDT, $50 minimum,
+              Net-30 on approved balance.
+            </p>
+          </div>
+        </Reveal>
         <Reveal>
           <div className="lift rounded-xl bg-white p-5 text-slate-900">
             <h2 className="font-semibold">For affiliates — free</h2>

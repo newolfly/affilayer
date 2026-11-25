@@ -808,10 +808,13 @@ async function handleCpaleadPostback(request: Request, env: Env, url: URL): Prom
 }
 
 /** Affiliate share of a variable smartlink payout, applied at record
- *  time in handleLospollosPostback: 75% to the affiliate at the
- *  PROPOSED 25% network keep (same proposed split as the CJ, CPAlead,
- *  NOWPayments and Systeme imports — proposed, not locked). */
-const LOSPOLLOS_AFFILIATE_SHARE = 0.75;
+ *  time in handleLospollosPostback.
+ *  ZERO-PROFIT LAUNCH PROMO (25 Nov 2026): share is 1.0 — 100% of the
+ *  reported value goes to the affiliate until 25 Feb 2027. On
+ *  26 Feb 2027 revert to 0.75 (the proposed 25% network keep) unless
+ *  Sojib extends the promo. History recorded before the promo keeps
+ *  its 75% amounts; only conversions from the promo window record 100%. */
+const LOSPOLLOS_AFFILIATE_SHARE = 1.0;
 
 /**
  * GET /api/postbacks/lospollos — LosPollos S2S postback receiver.
