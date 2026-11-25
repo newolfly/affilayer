@@ -1321,6 +1321,77 @@ const PUBLIC_OFFERS: {
   },
 ]
 
+/** Coming-soon catalogue — offers that are joining the public page
+ *  soon but are NOT live yet. These are NOT in PUBLIC_OFFERS and must
+ *  never be counted as live offers anywhere (homepage banner, /trust
+ *  stats, FAQs). Each one is still waiting on programme permission
+ *  and/or tracking checks; none can be run or applied for today.
+ *  Rates are the affiliate rates at 100% of gross under the
+ *  zero-profit launch offer (until 25 Feb 2027), as quoted by the
+ *  programmes: GearUP and Velocity Outdoor are CJ programmes already
+ *  in the database as paused; AmericanQuotesClub ($2.80) and Aegis VPN
+ *  ($1.50) are the USD rates Olessya Vorontsova quoted by email
+ *  (Mobidea 37880 / 38340, still pending approval — no DB rows yet);
+ *  Finance Survey pays RevShare and the share is unconfirmed, so NO
+ *  percentage is shown for it. Dating and adult offers never appear
+ *  here. When one of these goes live, move it into PUBLIC_OFFERS and
+ *  update the live counts — never edit a rate here alone. */
+const COMING_SOON_OFFERS: {
+  name: string
+  vertical: string
+  model: 'CPA' | 'CPL' | 'CPS' | 'CPI' | 'RevShare'
+  rate: string
+  conversion: string
+  geo: string
+  note: string
+}[] = [
+  {
+    name: 'GearUP',
+    vertical: 'Gaming & Software',
+    model: 'CPS',
+    rate: '70% of sale',
+    conversion: 'per sale',
+    geo: 'Worldwide',
+    note: 'Game booster for PC gamers. You earn 70% of each sale — the full programme rate. Joining the catalogue once the programme confirms promotion through AffiLayer.',
+  },
+  {
+    name: 'Velocity Outdoor',
+    vertical: 'Equipment',
+    model: 'CPS',
+    rate: '5% of sale',
+    conversion: 'per sale',
+    geo: 'Worldwide',
+    note: 'Ravin crossbows and outdoor equipment. You earn 5% of each sale — the full programme rate. Joining the catalogue once the programme confirms promotion through AffiLayer.',
+  },
+  {
+    name: 'AmericanQuotesClub',
+    vertical: 'Sweepstakes',
+    model: 'CPL',
+    rate: '$2.80 per lead',
+    conversion: 'per email submit',
+    geo: 'US only',
+    note: 'Sweepstakes — $1,000 Amazon Gift Card. $2.80 per email submit. Joining once approval and tracking checks are complete.',
+  },
+  {
+    name: 'Aegis VPN',
+    vertical: 'VPN & Security',
+    model: 'CPI',
+    rate: '$1.50 per install',
+    conversion: 'per iOS install',
+    geo: 'US · iOS only',
+    note: 'VPN app for iOS. $1.50 per install. Joining once approval and tracking checks are complete.',
+  },
+  {
+    name: 'Finance Survey',
+    vertical: 'Finance',
+    model: 'RevShare',
+    rate: 'Revenue share',
+    conversion: 'per completed survey',
+    geo: 'Worldwide · Mobile only',
+    note: 'Finance surveys. Revenue-share payout — the exact share is confirmed with the programme before this offer goes live, so no rate figure is shown until then.',
+  },
+]
+
 export function Offers() {
   return (
     <PublicLayout>
@@ -1363,6 +1434,35 @@ export function Offers() {
               <Link to="/register" className="mt-3 inline-flex items-center gap-1.5 font-semibold text-amber-700 hover:text-amber-600">
                 Run this offer →
               </Link>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+      <h2 className="mt-10 text-2xl font-bold text-white">Coming soon</h2>
+      <p className="mt-2 max-w-3xl text-slate-300">
+        Five more offers are joining the catalogue soon. Permission from
+        each programme and the tracking checks are still in progress —
+        these are not live yet and cannot be run or applied for today.
+      </p>
+      <div className="mt-6 space-y-4">
+        {COMING_SOON_OFFERS.map((o) => (
+          <Reveal key={o.name}>
+            <div className="lift rounded-xl bg-white p-5 text-slate-900">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h3 className="text-lg font-semibold">{o.name}</h3>
+                <span className="flex flex-wrap gap-2">
+                  <span className="rounded-full bg-slate-200 px-3 py-1 text-sm font-bold text-slate-700">
+                    Coming soon
+                  </span>
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-800">
+                    {o.model} · {o.rate}
+                  </span>
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-slate-600">
+                {o.vertical} · {o.conversion} · {o.geo}
+              </p>
+              <p className="mt-2 text-sm text-slate-600">{o.note}</p>
             </div>
           </Reveal>
         ))}
