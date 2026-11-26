@@ -1378,11 +1378,13 @@ const PUBLIC_OFFERS: {
  *  and/or tracking checks; none can be run or applied for today.
  *  Rates are the affiliate rates at 100% of gross under the
  *  zero-profit launch offer (until 25 Feb 2027), as quoted by the
- *  programmes: GearUP and Velocity Outdoor are CJ programmes already
- *  in the database as paused; Finance Survey pays RevShare and the
- *  share is unconfirmed, so NO percentage is shown for it. REMOVED
- *  25 Nov 2026: AmericanQuotesClub (Mobidea 37880) and Aegis VPN
- *  (Mobidea 38340) were REJECTED by Mobidea — do not re-add them.
+ *  programmes: GearUP is a CJ programme already in the database as
+ *  paused; Finance Survey pays RevShare and the share is unconfirmed,
+ *  so NO percentage is shown for it. REMOVED 25 Nov 2026:
+ *  AmericanQuotesClub (Mobidea 37880) and Aegis VPN (Mobidea 38340)
+ *  were REJECTED by Mobidea — do not re-add them. REMOVED 26 Nov 2026:
+ *  Velocity Outdoor (CJ 6038648) was DEACTIVATED by CJ — do not re-add
+ *  it unless CJ reactivates the programme.
  *  Dating and adult offers never appear here. When one of these goes live, move it into PUBLIC_OFFERS and
  *  update the live counts — never edit a rate here alone. */
 const COMING_SOON_OFFERS: {
@@ -1402,15 +1404,6 @@ const COMING_SOON_OFFERS: {
     conversion: 'per sale',
     geo: 'Worldwide',
     note: 'Game booster for PC gamers. You earn 70% of each sale — the full programme rate. Joining the catalogue once the programme confirms promotion through AffiLayer.',
-  },
-  {
-    name: 'Velocity Outdoor',
-    vertical: 'Equipment',
-    model: 'CPS',
-    rate: '5% of sale',
-    conversion: 'per sale',
-    geo: 'Worldwide',
-    note: 'Ravin crossbows and outdoor equipment. You earn 5% of each sale — the full programme rate. Joining the catalogue once the programme confirms promotion through AffiLayer.',
   },
   {
     name: 'Finance Survey',
