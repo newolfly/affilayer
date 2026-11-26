@@ -394,6 +394,41 @@ export async function saveMyFullName(fullName: string): Promise<{ error?: string
   return error ? { error: error.message } : {}
 }
 
+/** First-steps checklist progress, saved on the affiliate's own account
+ *  (affiliate_profiles.payment_details jsonb, key "first_steps_<role>")
+ *  so it follows the affiliate to any device. payment_details is
+ *  otherwise unused by the app (onboarding keeps its payment-details
+ *  copy in local state only), and the read-merge-write below never
+ *  drops other keys. Local storage stays as the fallback when the
+ *  account save cannot land (no row yet, RLS, or offline). */
+export async function getFirstSteps(role: 'affiliate' | 'advertiser'): Promise<Record<number, boolean>> {
+  if (!isSupabaseConfigured || !supabase) return {}
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return {}
+  const { data } = await supabase.from('affiliate_profiles').select('payment_details').eq('profile_id', user.id).maybeSingle()
+  const details = (data as Row | null)?.payment_details
+  if (!details || typeof details !== 'object') return {}
+  const steps = (details as Record<string, unknown>)[`first_steps_${role}`]
+  if (!steps || typeof steps !== 'object') return {}
+  return steps as Record<number, boolean>
+}
+
+export async function saveFirstSteps(role: 'affiliate' | 'advertiser', checked: Record<number, boolean>): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You are not signed in.' }
+  const key = `first_steps_${role}`
+  const { data: row } = await supabase.from('affiliate_profiles').select('payment_details').eq('profile_id', user.id).maybeSingle()
+  const current = ((row as Row | null)?.payment_details ?? {}) as Record<string, unknown>
+  const next = { ...current, [key]: checked }
+  if (row) {
+    const { error } = await supabase.from('affiliate_profiles').update({ payment_details: next }).eq('profile_id', user.id)
+    return error ? { error: error.message } : {}
+  }
+  const { error } = await supabase.from('affiliate_profiles').insert({ profile_id: user.id, payment_details: next })
+  return error ? { error: error.message } : {}
+}
+
 /** The affiliate's saved payment method (affiliate_profiles), if any. */
 export async function getMyAffiliateProfile(): Promise<{ paymentMethod?: string; payoutWallet?: PayoutWallet }> {
   if (!isSupabaseConfigured || !supabase) return {}
@@ -537,6 +572,35 @@ export function offerCommissionLabel(offer: Offer): string {
   return offer.payoutModel === 'CPS'
     ? `$${commission.toFixed(2)} per sale (${ratePct(offer.rateBps ?? 0)}% of $${offer.payout.toFixed(2)} order)`
     : `$${commission.toFixed(2)} per conversion`
+}
+
+/** Plain words for a conversion type: what the visitor does that earns money. */
+export function resultNoun(conversionType?: string): string {
+  switch ((conversionType ?? '').toLowerCase()) {
+    case 'sale':
+    case 'purchase':
+      return 'sale'
+    case 'lead':
+      return 'sign-up'
+    case 'registration':
+      return 'registration'
+    case 'ftd':
+      return 'first deposit'
+    default:
+      return 'result'
+  }
+}
+
+/** What the affiliate earns, in plain words: "You earn $57.25 for each
+ *  sale" / "You earn 10% of each sale ($1.20 on a $12.00 order)". */
+export function offerPayoutPlain(offer: Offer): string {
+  const commission = offerCommission(offer)
+  if (offer.payoutModel === 'CPS') {
+    if (offer.rateBps == null || commission == null) return 'You earn a share of each sale — rate missing'
+    return `You earn ${ratePct(offer.rateBps)}% of each sale ($${commission.toFixed(2)} on a $${offer.payout.toFixed(2)} order)`
+  }
+  if (commission == null) return 'You earn a commission for each result'
+  return `You earn $${commission.toFixed(2)} for each ${resultNoun(offer.conversionType)}`
 }
 
 /** Commission owed for one conversion. M-05: the ledger is the money

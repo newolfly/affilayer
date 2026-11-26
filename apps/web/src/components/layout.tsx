@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAuth } from '../lib/auth'
+import { getFirstSteps, saveFirstSteps } from '../lib/data'
 import { Icon } from './icons'
 import type { IconName } from './icons'
 import { useLocale, useT, localizePath, basePath, LOCALES, LOCALIZED_BASE_PATHS } from '../lib/i18n'
@@ -427,9 +428,9 @@ export function AppLayout({ nav, title }: { nav: DashboardNavItem[]; title: stri
 const FIRST_STEPS: Record<'affiliate' | 'advertiser', { label: string; desc: string; to: string }[]> = {
   affiliate: [
     { label: 'Complete onboarding', desc: 'Profile, traffic source and payment details — then we review your application.', to: '/onboarding' },
-    { label: 'Browse offers', desc: 'Filter by vertical, country, device and payout model.', to: '/app/affiliate/offers' },
-    { label: 'Generate your first tracking link', desc: 'Pick an offer and build a link with your sub-parameters.', to: '/app/affiliate/tracking-links' },
-    { label: 'Share it and watch reports', desc: 'Clicks and conversions show up in Reports, linked by click ID.', to: '/app/affiliate/reports' },
+    { label: 'Browse offers', desc: 'Filter by category, country, device and how it pays.', to: '/app/affiliate/offers' },
+    { label: 'Generate your first tracking link', desc: 'Pick an offer and build your own link. Tags are optional.', to: '/app/affiliate/tracking-links' },
+    { label: 'Share it and watch reports', desc: 'Clicks and results show up in Reports.', to: '/app/affiliate/reports' },
   ],
   advertiser: [
     { label: 'Complete onboarding', desc: 'Company and website details — then we verify your account.', to: '/onboarding' },
@@ -454,15 +455,29 @@ export function FirstSteps({ role }: { role: 'affiliate' | 'advertiser' }) {
     setChecked((prev) => {
       const next = { ...prev, [i]: !prev[i] }
       try { localStorage.setItem(storageKey, JSON.stringify(next)) } catch { /* storage unavailable */ }
+      // Save to the account too, so progress follows the affiliate to
+      // any device. A failed save is silent — local storage still holds it.
+      saveFirstSteps(role, next).catch(() => undefined)
       return next
     })
   }
+  // Load the account-saved progress on mount (it wins over this
+  // browser's copy when both exist); local storage stays the fallback.
+  useEffect(() => {
+    if (!user) return
+    getFirstSteps(role).then((server) => {
+      if (Object.keys(server).length === 0) return
+      setChecked(server)
+      try { localStorage.setItem(storageKey, JSON.stringify(server)) } catch { /* storage unavailable */ }
+    }).catch(() => undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, role])
   const doneCount = steps.filter((_, i) => i === 0 ? user?.status === 'approved' : !!checked[i]).length
   return (
     <Card title="First steps" icon="compass" className="border-amber-500/30">
       <p className="text-sm text-slate-600">
         {doneCount} of {steps.length} done — your path to your first {role === 'affiliate' ? 'payout' : 'customer'}.
-        {' Progress is stored in this browser.'}
+        {' Progress is saved to your account — it follows you to any device.'}
       </p>
       <ol className="mt-3 space-y-2">
         {steps.map((s, i) => {

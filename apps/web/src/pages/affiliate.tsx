@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
-import { applyToOffer, conversionCommission, createTicket, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getMyOfferApplications, getMyPostbackConfigs, getNpPayouts, getOffers, getPayouts, getStats, getTickets, offerCommissionLabel, offerPayoutLabel, requestPayout, savePostbackConfig, savePayoutWallet, sumCommissions } from '../lib/data'
+import { applyToOffer, conversionCommission, createTicket, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getMyOfferApplications, getMyPostbackConfigs, getNpPayouts, getOffers, getPayouts, getStats, getTickets, offerCommissionLabel, offerPayoutLabel, offerPayoutPlain, requestPayout, resultNoun, savePostbackConfig, savePayoutWallet, sumCommissions } from '../lib/data'
 import type { OfferApplication, PostbackConfig, ReportFilters } from '../lib/data'
 import { looksLikeTrc20, validatePayoutAddress } from '../lib/payments'
 import { NETWORK_SETTINGS } from '../lib/network-settings'
@@ -46,6 +46,19 @@ export function AffiliateDashboard() {
   const [balance, setBalance] = useState(0)
   const [chartClicks, setChartClicks] = useState<Click[]>([])
   const [chartConvs, setChartConvs] = useState<Conversion[]>([])
+  const [hasWallet, setHasWallet] = useState(false)
+  useEffect(() => {
+    getMyAffiliateProfile().then((ap) => setHasWallet(!!ap.payoutWallet?.address))
+  }, [])
+  // The ONE next action, in plain words, from the affiliate's real state.
+  const nextStep = (() => {
+    if (user?.status === 'rejected') return { text: 'Your application was not approved. Message the team and we will tell you why.', to: '/app/affiliate/tickets', link: 'Message the team' }
+    if (user?.status !== 'approved') return { text: 'Your next step: confirm your email, then wait for approval. Click the confirmation link we emailed you — you cannot log in until your email is confirmed.', to: '/pending', link: 'Check approval status' }
+    if (!hasWallet) return { text: 'Your next step: add your USDT wallet so you can get paid.', to: '/app/affiliate/payouts', link: 'Add your wallet' }
+    if (stats.clicks === 0) return { text: 'Your next step: make your first tracking link and share it.', to: '/app/affiliate/tracking-links', link: 'Make a tracking link' }
+    if (stats.conversions === 0) return { text: 'You have clicks — now share your link in more places and watch Reports.', to: '/app/affiliate/reports', link: 'See your reports' }
+    return { text: 'You have results — check your earnings. At $50 approved balance you can request a payout.', to: '/app/affiliate/earnings', link: 'See your earnings' }
+  })()
   useEffect(() => {
     getStats({ affiliateCode: user?.affiliateCode }).then((s) => setStats(s))
     getOffers().then(setOffers)
@@ -63,11 +76,16 @@ export function AffiliateDashboard() {
   return (
     <div className="space-y-4">
       <FirstSteps role="affiliate" />
+      <div className="rounded-xl border border-amber-500/40 bg-amber-50 px-4 py-3">
+        <p className="text-sm font-semibold text-slate-900">Your next step</p>
+        <p className="mt-0.5 text-sm text-slate-700">{nextStep.text}</p>
+        <Link to={nextStep.to} className="mt-2 inline-block text-sm font-semibold text-amber-700">{nextStep.link} →</Link>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Clicks" value={String(stats.clicks)} icon="chart" />
-        <Stat label="Conversions" value={String(stats.conversions)} icon="check" />
-        <Stat label="Approved" value={String(stats.approved)} icon="shield" />
-        <Stat label="Revenue" value={`$${stats.revenue.toFixed(2)}`} sub={`EPC $${stats.epc.toFixed(2)} · CR ${(stats.cr * 100).toFixed(1)}%`} icon="wallet" />
+        <Stat label="Clicks" value={String(stats.clicks)} sub="People who clicked your links" icon="chart" />
+        <Stat label="Results" value={String(stats.conversions)} sub="Clicks that turned into a sale, sign-up or install" icon="check" />
+        <Stat label="Approved results" value={String(stats.approved)} sub="Confirmed — these earn you money" icon="shield" />
+        <Stat label="Revenue" value={`$${stats.revenue.toFixed(2)}`} sub={stats.clicks === 0 ? 'No clicks yet — share your tracking link to start earning.' : `About $${stats.epc.toFixed(2)} earned per click · ${(stats.cr * 100).toFixed(1)}% of clicks become a result`} icon="wallet" />
       </div>
       <Card title="Your balance">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -80,12 +98,12 @@ export function AffiliateDashboard() {
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Clicks — last 7 days"><BarChart data={last7DaysSeries(chartClicks)} /></Card>
-        <Card title="Conversions — last 7 days"><LineChart data={last7DaysSeries(chartConvs)} /></Card>
+        <Card title="Results — last 7 days"><LineChart data={last7DaysSeries(chartConvs)} /></Card>
       </div>
       <Card title="Active offers">
-        {offers.filter((o) => o.status === 'active').map((o) => (
+        {offers.filter((o) => o.status === 'active').length === 0 ? <Empty text="No open offers right now — check back soon." /> : offers.filter((o) => o.status === 'active').map((o) => (
           <div key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
-            <span>{o.name} — {offerPayoutLabel(o)}</span>
+            <span>{o.name} — {offerPayoutPlain(o)}</span>
             <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View →</Link>
           </div>
         ))}
@@ -104,18 +122,18 @@ export function AffiliateOffers() {
       <div className="mb-4 flex gap-2">
         <input className={inputCls} placeholder="Search offers…" aria-label="Search offers" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className={inputCls} value={vertical} onChange={(e) => setVertical(e.target.value)}>
-          <option value="">All verticals</option>
+          <option value="">All categories</option>
           {[...new Set(offers.map((o) => o.vertical))].map((v) => <option key={v}>{v}</option>)}
         </select>
       </div>
-      {filtered.length === 0 ? <Empty text="No offers match your filters." /> : (
+      {filtered.length === 0 ? <Empty text="No offers match your filters. Clear the search or pick a different category." /> : (
         <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
-          <thead><tr className="text-left text-slate-500"><th className="py-2">Offer</th><th>Vertical</th><th>Payout</th><th>GEO</th><th>Status</th><th /></tr></thead>
+          <thead><tr className="text-left text-slate-500"><th className="py-2">Offer</th><th>Category</th><th>You earn</th><th>Countries</th><th>Status</th><th /></tr></thead>
           <tbody>
             {filtered.map((o) => (
               <tr key={o.id} className="border-t border-slate-100">
-                <td className="py-2 font-medium">{o.name}</td><td>{o.vertical}</td>
-                <td>{offerPayoutLabel(o)}</td><td>{(o.countries ?? []).join(', ')}</td><td>{o.status}</td>
+                <td className="py-2 font-medium">{o.name}</td><td>{o.vertical ?? '—'}</td>
+                <td>{offerPayoutPlain(o)}</td><td>{!o.countries || o.countries.length === 0 || o.countries.includes('ALL') ? 'All countries' : o.countries.join(', ')}</td><td>{o.status === 'active' ? 'Open' : o.status === 'paused' ? 'Paused' : o.status}</td>
                 <td><Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View</Link></td>
               </tr>
             ))}
@@ -148,19 +166,20 @@ export function AffiliateOfferDetail() {
   return (
     <Card title={offer.name}>
       <p className="text-sm text-slate-600">{offer.description}</p>
+      <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-slate-900">{offerPayoutPlain(offer)}</p>
       <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-        <div><dt className="text-slate-500">Vertical</dt><dd>{offer.vertical}</dd></div>
-        <div><dt className="text-slate-500">Conversion</dt><dd>{offer.conversionType}</dd></div>
-        <div><dt className="text-slate-500">Payout</dt><dd>{offerPayoutLabel(offer)}</dd></div>
-        <div><dt className="text-slate-500">Commission</dt><dd>{offerCommissionLabel(offer)}</dd></div>
-        <div><dt className="text-slate-500">Countries</dt><dd>{(offer.countries ?? []).join(', ')}</dd></div>
-        <div><dt className="text-slate-500">Devices</dt><dd>{(offer.devices ?? []).join(', ')}</dd></div>
-        <div><dt className="text-slate-500">Traffic sources</dt><dd>{(offer.trafficSources ?? []).join(', ')}</dd></div>
-        <div><dt className="text-slate-500">Caps</dt><dd>Daily {offer.capDaily ?? '—'} · Total {offer.capTotal ?? '—'}</dd></div>
-        <div><dt className="text-slate-500">Approval required</dt><dd>{offer.approvalRequired ? 'Yes' : 'No'}</dd></div>
-        <div><dt className="text-slate-500">Landing URL</dt><dd className="break-all">{offer.landingUrl}</dd></div>
-        <div><dt className="text-slate-500">Status</dt><dd>{offer.status}</dd></div>
+        <div><dt className="text-slate-500">Category</dt><dd>{offer.vertical ?? '—'}</dd></div>
+        <div><dt className="text-slate-500">What earns you money</dt><dd>{resultNoun(offer.conversionType) === 'result' ? 'A completed action' : `A ${resultNoun(offer.conversionType)}`}</dd></div>
+        <div><dt className="text-slate-500">How it pays</dt><dd>{offerCommissionLabel(offer)}</dd></div>
+        <div><dt className="text-slate-500">Countries</dt><dd>{!offer.countries || offer.countries.length === 0 || offer.countries.includes('ALL') ? 'All countries' : offer.countries.join(', ')}</dd></div>
+        <div><dt className="text-slate-500">Devices</dt><dd>{(offer.devices ?? []).join(', ') || 'All devices'}</dd></div>
+        <div><dt className="text-slate-500">Where you can promote it</dt><dd>{(offer.trafficSources ?? []).join(', ') || 'Anywhere — ask the team if unsure'}</dd></div>
+        <div><dt className="text-slate-500">Limits</dt><dd>At most {offer.capDaily ?? 'no daily limit'} results a day{offer.capTotal != null ? `, ${offer.capTotal} in total` : ''}.</dd></div>
+        <div><dt className="text-slate-500">Do you need approval first?</dt><dd>{offer.approvalRequired ? 'Yes — apply below and the advertiser reviews it.' : 'No — you can start right away.'}</dd></div>
+        <div><dt className="text-slate-500">Where your visitors go</dt><dd className="break-all">{offer.landingUrl}</dd></div>
+        <div><dt className="text-slate-500">Status</dt><dd>{offer.status === 'active' ? 'Open' : offer.status === 'paused' ? 'Paused' : offer.status}</dd></div>
       </dl>
+      <p className="mt-3 text-xs text-slate-500">The page above is the advertiser's page. Your tracking link sends people there — and counts them as yours.</p>
       {application
         ? <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{application.status === 'approved' ? 'You are approved to run this offer.' : application.status === 'pending' ? 'Application submitted. You will be notified when the advertiser reviews it.' : `Application status: ${application.status}.`}</p>
         : <button className={`${btnCls} mt-4`} onClick={apply} disabled={applying}>{applying ? 'Submitting…' : offer.approvalRequired ? 'Apply for this offer' : 'Join this offer'}</button>}
@@ -172,16 +191,20 @@ export function AffiliateOfferDetail() {
 
 export function AffiliateMyCampaigns() {
   const { data: offers } = useLoad(getOffers, [] as Offer[])
-  const approved = offers.filter((o) => o.status === 'active')
+  const { data: applications } = useLoad(getMyOfferApplications, [] as OfferApplication[])
+  // Only offers this affiliate actually joined or applied for — listing
+  // every active offer here told a new affiliate these were theirs.
+  const mine = applications.map((a) => ({ app: a, offer: offers.find((o) => o.id === a.offerId) })).filter((x): x is { app: OfferApplication; offer: Offer } => !!x.offer)
   return (
     <Card title="My campaigns">
-      <p className="mb-3 text-sm text-slate-500">Active offers available to your account.</p>
-      {approved.length === 0 ? <Empty text="No campaigns yet. Browse offers and apply." /> : approved.map((o) => (
-        <div key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
-          <span>{o.name} — {offerPayoutLabel(o)}</span>
-          <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View</Link>
+      <p className="mb-3 text-sm text-slate-500">Offers you have joined or applied for — and where each application stands.</p>
+      {mine.length === 0 ? <Empty text="You haven't joined any offer yet." /> : mine.map(({ app, offer }) => (
+        <div key={offer.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
+          <span>{offer.name} — {offerPayoutPlain(offer)} <span className="text-slate-500">· {app.status === 'approved' ? 'Approved — you can run it' : app.status === 'pending' ? 'Waiting for review' : `Application: ${app.status}`}</span></span>
+          <Link to={`/app/affiliate/offers/${offer.id}`} className="font-semibold text-amber-700">View</Link>
         </div>
       ))}
+      {mine.length === 0 && <p className="mt-2 text-center text-sm"><Link to="/app/affiliate/offers" className="font-semibold text-amber-700">Browse offers →</Link></p>}
     </Card>
   )
 }
@@ -199,7 +222,7 @@ export function AffiliateTrackingLinks() {
   const [copied, setCopied] = useState(false)
   return (
     <Card title="Tracking link generator">
-      <p className="mb-4 text-sm text-slate-500">Links use the tracking service: <code>{'{TRACKING_URL}'}/c/{'{affiliate_code}'}/{'{offer_id}'}</code> with optional sub1–sub5 parameters.</p>
+      <p className="mb-4 text-sm text-slate-500">Your tracking link is your own web address for one offer. Anyone who clicks it is counted as yours — if they buy or sign up, you earn the commission.</p>
       <div className="space-y-3">
         <div><label className="mb-1 block text-sm font-medium" htmlFor="tlg-offer">Offer</label>
           <select id="tlg-offer" className={`${inputCls} w-full`} value={offerId} onChange={(e) => setOfferId(e.target.value)}>
@@ -207,10 +230,15 @@ export function AffiliateTrackingLinks() {
             {offers.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
         </div>
-        <div className="grid gap-2 sm:grid-cols-5">
-          {(Object.keys(subs) as (keyof typeof subs)[]).map((k) => (
-            <input key={k} className={inputCls} placeholder={k} aria-label={k} value={subs[k]} onChange={(e) => setSubs((s) => ({ ...s, [k]: e.target.value }))} />
-          ))}
+        {!offerId && <p className="text-sm text-slate-500">Pick an offer above to make your link.</p>}
+        <div>
+          <p className="mb-1 text-sm font-medium">Tags (optional)</p>
+          <p className="mb-2 text-xs text-slate-500">Tags let you tell clicks apart — for example, Tag 1 could be the post or ad where you shared the link. Leave them empty if you do not need them.</p>
+          <div className="grid gap-2 sm:grid-cols-5">
+            {(Object.keys(subs) as (keyof typeof subs)[]).map((k, i) => (
+              <input key={k} className={inputCls} placeholder={`Tag ${i + 1}`} aria-label={`Tag ${i + 1} (optional)`} value={subs[k]} onChange={(e) => setSubs((s) => ({ ...s, [k]: e.target.value }))} />
+            ))}
+          </div>
         </div>
         {offerId && !code && (
           <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Your affiliate code is not available on this account yet, so a working link cannot be generated. Please contact support@affilayer.com.</p>
@@ -219,6 +247,7 @@ export function AffiliateTrackingLinks() {
           <div className="rounded-lg bg-slate-50 p-3">
             <p className="break-all text-sm font-mono">{url}</p>
             <button className={`${btnCls} mt-3`} onClick={() => { navigator.clipboard?.writeText(url).catch(() => undefined); setCopied(true) }}>{copied ? 'Copied' : 'Copy link'}</button>
+            <p className="mt-3 text-xs text-slate-500">Share this link anywhere you promote the offer. Clicks and results appear in Reports.</p>
           </div>
         )}
       </div>
@@ -243,7 +272,7 @@ export function ReportFiltersForm({ filters, setFilters }: { filters: ReportFilt
         <option value="">All devices</option>{['desktop', 'mobile', 'tablet'].map((d) => <option key={d}>{d}</option>)}
       </select>
       <select className={inputCls} aria-label="Filter by source" value={filters.source ?? ''} onChange={(e) => setFilters({ ...filters, source: e.target.value || undefined })}>
-        <option value="">All sources</option>{['SEO', 'Social', 'Email', 'PPC', 'Content'].map((s) => <option key={s}>{s}</option>)}
+        <option value="">All sources</option>{([['SEO', 'Search'], ['Social', 'Social media'], ['Email', 'Email'], ['PPC', 'Paid ads'], ['Content', 'Content']] as const).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
       </select>
     </div>
   )
@@ -273,17 +302,17 @@ export function AffiliateReports() {
       <Card title="Reports">
         <ReportFiltersForm filters={filters} setFilters={setFilters} />
         <div className="grid gap-4 sm:grid-cols-3">
-          <Stat label="Clicks" value={String(clicks.length)} icon="chart" />
-          <Stat label="Conversions" value={String(convs.length)} icon="check" />
+          <Stat label="Clicks" value={String(clicks.length)} sub="People who clicked your links" icon="chart" />
+          <Stat label="Results" value={String(convs.length)} sub="Clicks that turned into a sale, sign-up or install" icon="check" />
           {/* M-05: approved revenue is ledger commission, not the sum of
               conversion payouts — for CPS the payout is the sale value. */}
-          <Stat label="Approved revenue" value={`$${sumCommissions(convs.filter((c) => c.status === 'approved'), ledger, offers).toFixed(2)}`} icon="wallet" />
+          <Stat label="Approved revenue" value={`$${sumCommissions(convs.filter((c) => c.status === 'approved'), ledger, offers).toFixed(2)}`} sub="Only approved results count — waiting ones pay nothing yet" icon="wallet" />
         </div>
       </Card>
       <Card title="By offer">
-        {byOffer.length === 0 ? <Empty text="No data for the selected filters." /> : (
+        {byOffer.length === 0 ? <><Empty text="No clicks or results yet for these filters." /><p className="text-center text-sm"><Link to="/app/affiliate/tracking-links" className="font-semibold text-amber-700">Make your first tracking link →</Link></p></> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
-            <thead><tr className="text-left text-slate-500"><th className="py-2">Offer</th><th>Clicks</th><th>Conversions</th></tr></thead>
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Offer</th><th>Clicks</th><th>Results</th></tr></thead>
             {/* Walk audit 20 Nov 2026: show the offer name, not the bare UUID. */}
             <tbody>{byOffer.map(([id, v]) => <tr key={id} className="border-t border-slate-100"><td className="py-2">{offers.find((o) => o.id === id)?.name ?? id}</td><td>{v.clicks}</td><td>{v.convs}</td></tr>)}</tbody>
           </table></div>
@@ -315,14 +344,15 @@ export function AffiliatePostbacks() {
   }
   return (
     <Card title="Postbacks">
-      <p className="mb-3 text-sm text-slate-500">Register a postback URL. Supported macros: {'{click_id}'} {'{conversion_id}'} {'{payout}'} {'{currency}'} {'{status}'} {'{sub1}'}. The tracking service calls it when a conversion is recorded.</p>
+      <p className="mb-3 text-sm text-slate-500">A postback is an automatic message our system sends to your own website or tracker the moment you earn a commission. Most affiliates never need this — only set it up if you run your own tracking.</p>
+      <p className="mb-3 text-sm text-slate-500">Your postback address can include these placeholders, which we fill in for each result: {'{click_id}'} is the click that earned, {'{conversion_id}'} is the result itself, {'{payout}'} is the commission in dollars, {'{currency}'} is the currency, {'{status}'} is approved or pending, and {'{sub1}'} is your Tag 1 from the tracking link.</p>
       <form onSubmit={submit} className="flex gap-2">
         <input className={`${inputCls} flex-1`} type="url" required placeholder="https://example.com/postback?click_id={click_id}&payout={payout}" aria-label="Postback URL" value={url} onChange={(e) => setUrl(e.target.value)} />
         <button className={btnCls}>Save</button>
       </form>
       {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {saved && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Postback saved.</p>}
-      {configs.length === 0 ? <p className="mt-4 text-sm text-slate-500">No postbacks configured.</p> : configs.map((u) => <p key={u.id} className="mt-2 break-all rounded-lg bg-slate-50 px-3 py-2 text-sm font-mono">{u.url}</p>)}
+      {configs.length === 0 ? <p className="mt-4 text-sm text-slate-500">No postbacks set up. That is fine — this is optional, and everything works without one.</p> : configs.map((u) => <p key={u.id} className="mt-2 break-all rounded-lg bg-slate-50 px-3 py-2 text-sm font-mono">{u.url}</p>)}
     </Card>
   )
 }
@@ -337,15 +367,16 @@ export function AffiliateEarnings() {
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
         {/* M-05: earnings are ledger commission, not conversion payout sums. */}
-        <Stat label="Approved earnings" icon="wallet" value={`$${sumCommissions(approved, ledger, offers).toFixed(2)}`} />
-        <Stat label="Pending" value={`$${sumCommissions(pending, ledger, offers).toFixed(2)}`} icon="clock" />
-        <Stat label="Rejected / reversed" value={String(convs.filter((c) => c.status === 'rejected' || c.status === 'reversed').length)} icon="alert" />
+        <Stat label="Approved earnings" icon="wallet" value={`$${sumCommissions(approved, ledger, offers).toFixed(2)}`} sub="Money from approved results — this is what you can withdraw" />
+        <Stat label="Waiting for approval" value={`$${sumCommissions(pending, ledger, offers).toFixed(2)}`} sub="Results not confirmed yet — they pay nothing until approved" icon="clock" />
+        <Stat label="Not paid" value={String(convs.filter((c) => c.status === 'rejected' || c.status === 'reversed').length)} sub="Results the advertiser did not approve" icon="alert" />
       </div>
-      <Card title="Conversions">
-        {convs.length === 0 ? <Empty text="No conversions yet." /> : (
+      <Card title="Results">
+        {convs.length === 0 ? <><Empty text="No results yet." /><p className="text-center text-sm"><Link to="/app/affiliate/tracking-links" className="font-semibold text-amber-700">Make a tracking link for an offer, share it, and your sales and sign-ups will show up here →</Link></p></> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Offer</th><th>Commission</th><th>Status</th></tr></thead>
-            <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.createdAt.slice(0, 10)}</td><td>{c.offerId}</td><td>${conversionCommission(c, ledger, offers).toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
+            {/* Walk audit 26 Nov 2026: show the offer name, not the bare UUID. */}
+            <tbody>{convs.map((c) => <tr key={c.id} className="border-t border-slate-100"><td className="py-2">{c.createdAt.slice(0, 10)}</td><td>{offers.find((o) => o.id === c.offerId)?.name ?? 'Unknown offer'}</td><td>${conversionCommission(c, ledger, offers).toFixed(2)} {c.currency}</td><td>{c.status}</td></tr>)}</tbody>
           </table></div>
         )}
       </Card>
@@ -417,9 +448,10 @@ export function AffiliatePayouts() {
   const npByRequest = new Map((live?.npPayouts ?? []).map((n) => [n.payoutRequestId, n]))
   return (
     <div className="space-y-4">
+      <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">How you get paid: in USDT on TRON (TRC20), to the wallet below. Minimum payout ${settings.minPayout.toFixed(2)}. Approved money becomes payable 30 days after the end of the month it was approved.</p>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Stat label="Approved balance" icon="banknote" value={`$${approvedBalance.toFixed(2)}`} />
-        <Stat label="Minimum payout" icon="banknote" value={`$${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}`} />
+        <Stat label="Approved balance" icon="banknote" value={`$${approvedBalance.toFixed(2)}`} sub="Money from approved results — this is what you can withdraw" />
+        <Stat label="Minimum payout" icon="banknote" value={`$${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}`} sub="You can withdraw once your approved balance reaches this" />
       </div>
       {(
         <Card title="Payout wallet (crypto)">
@@ -442,9 +474,9 @@ export function AffiliatePayouts() {
         <p className="mt-3 text-xs text-slate-400">Payouts are calculated from approved commissions in the ledger and paid in USDT (TRC20). Approved commissions become payable Net-30 — 30 days after the end of the month in which they were approved. Requests are reviewed by the network admin.</p>
       </Card>
       <Card title="Payout history">
-        {mine.length === 0 ? <Empty text="No payouts yet." /> : (
+        {mine.length === 0 ? <><Empty text="No payouts yet." /><p className="text-center text-sm text-slate-500">Once your approved balance reaches ${settings.minPayout.toFixed(2)} and your wallet above is saved, you can request your first payout.</p></> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
-            <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Amount</th><th>Method</th><th>Status</th><th>NOWPayments</th></tr></thead>
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Payment status</th></tr></thead>
             <tbody>{mine.map((p) => { const np = npByRequest.get(p.id); return (
               <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.createdAt.slice(0, 10)}</td><td>${p.amount.toFixed(2)} {p.currency}</td><td>{p.method ?? '—'}</td><td>{p.status}</td><td>{np ? `${np.currency} · ${np.status}` : '—'}</td></tr>
             ) })}</tbody>
@@ -457,15 +489,17 @@ export function AffiliatePayouts() {
 
 export function AffiliateProfile() {
   const { user } = useAuth()
+  const statusPlain = user?.status === 'approved' ? 'Approved' : user?.status === 'pending' ? 'Waiting for review' : user?.status === 'rejected' ? 'Not approved' : user?.status ?? '—'
   return (
     <Card title="Profile">
       <dl className="grid gap-2 text-sm sm:grid-cols-2">
         <div><dt className="text-slate-500">Name</dt><dd>{user?.fullName ?? '—'}</dd></div>
         <div><dt className="text-slate-500">Email</dt><dd>{user?.email}</dd></div>
-        <div><dt className="text-slate-500">Role</dt><dd>{user?.role}</dd></div>
-        <div><dt className="text-slate-500">Status</dt><dd>{user?.status}</dd></div>
-        <div><dt className="text-slate-500">Affiliate code</dt><dd className="font-mono">{user?.affiliateCode ?? '—'}</dd></div>
+        <div><dt className="text-slate-500">Account type</dt><dd>{user?.role === 'affiliate' ? 'Affiliate' : user?.role === 'advertiser' ? 'Advertiser' : user?.role ?? '—'}</dd></div>
+        <div><dt className="text-slate-500">Approval status</dt><dd>{statusPlain}</dd></div>
+        <div><dt className="text-slate-500">Your affiliate code</dt><dd className="font-mono">{user?.affiliateCode ?? '—'}</dd></div>
       </dl>
+      <p className="mt-3 text-xs text-slate-500">This code is inside every tracking link you make — it is how clicks and results are counted as yours.</p>
       <Link to="/onboarding" className="mt-4 inline-block font-semibold text-amber-700 text-sm">Edit onboarding details →</Link>
     </Card>
   )
@@ -489,7 +523,7 @@ export function AffiliateTickets() {
   }
   return (
     <div className="space-y-4">
-      <Card title="New ticket">
+      <Card title="Message the team">
         <form onSubmit={submit} className="space-y-3">
           <input className={`${inputCls} w-full`} placeholder="Subject" aria-label="Subject" required value={subject} onChange={(e) => setSubject(e.target.value)} />
           <textarea className={`${inputCls} w-full`} rows={4} placeholder="Describe the issue…" aria-label="Describe the issue" required value={message} onChange={(e) => setMessage(e.target.value)} />
@@ -499,7 +533,7 @@ export function AffiliateTickets() {
         {sent && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Ticket submitted.</p>}
       </Card>
       <Card title="My tickets">
-        {tickets.length === 0 ? <Empty text="No tickets yet." /> : tickets.map((t) => (
+        {tickets.length === 0 ? <Empty text="No messages yet. If something is unclear or broken, send us a message — we reply by email." /> : tickets.map((t) => (
           <div key={t.id} className="border-b border-slate-100 py-2 text-sm last:border-0">
             <p className="font-medium">{t.subject} <span className="ml-2 text-slate-500">· {t.status}</span></p>
             <p className="text-slate-600">{t.message}</p>

@@ -266,10 +266,10 @@ export function Onboarding() {
           </div>
           <div><label className={labelCls} htmlFor="onb-company">Company (optional)</label><input id="onb-company" className={inputCls} value={form.company} onChange={set('company')} /></div>
           <div><label className={labelCls} htmlFor="onb-traffic-source">Traffic source<span className="text-red-500"> *</span></label><input id="onb-traffic-source" className={inputCls} required placeholder="e.g. SEO, PPC, Social, Email, Content" value={form.trafficSource} onChange={set('trafficSource')} /></div>
-          <div><label className={labelCls} htmlFor="onb-vertical">Vertical<span className="text-red-500"> *</span></label><input id="onb-vertical" className={inputCls} required placeholder="e.g. Finance, E-commerce, SaaS" value={form.vertical} onChange={set('vertical')} /></div>
-          <div><label className={labelCls} htmlFor="onb-geo">GEO (countries)<span className="text-red-500"> *</span></label><input id="onb-geo" className={inputCls} required placeholder="e.g. US, GB, CA" value={form.geo} onChange={set('geo')} /></div>
+          <div><label className={labelCls} htmlFor="onb-vertical">Category<span className="text-red-500"> *</span></label><input id="onb-vertical" className={inputCls} required placeholder="e.g. Finance, E-commerce, SaaS" value={form.vertical} onChange={set('vertical')} /></div>
+          <div><label className={labelCls} htmlFor="onb-geo">Countries you promote in<span className="text-red-500"> *</span></label><input id="onb-geo" className={inputCls} required placeholder="e.g. US, GB, CA" value={form.geo} onChange={set('geo')} /></div>
           <div>
-            <label className={labelCls} htmlFor="onb-volume">Monthly volume (optional)</label>
+            <label className={labelCls} htmlFor="onb-volume">How many clicks per month (optional)</label>
             <select id="onb-volume" className={inputCls} value={form.volume} onChange={set('volume')}>
               <option value="">Select…</option>
               <option>Under 1,000 clicks/mo</option>
@@ -281,7 +281,7 @@ export function Onboarding() {
           <div>
             <p className="text-sm text-slate-700"><span className="font-medium">Payout method: USDT (TRC20).</span> AffiLayer pays affiliates in USDT on TRON (TRC20) only — there is no bank transfer, PayPal or wire option. Minimum payout $50, Net-30 on approved balance.</p>
           </div>
-          <div><label className={labelCls} htmlFor="onb-payment-details">Payment details (optional)</label><input id="onb-payment-details" className={inputCls} placeholder="USDT TRC20 wallet address (starts with T)" value={form.paymentDetails} onChange={set('paymentDetails')} /></div>
+          <div><label className={labelCls} htmlFor="onb-payment-details">Your USDT wallet address (optional)</label><input id="onb-payment-details" className={inputCls} placeholder="USDT TRC20 wallet address (starts with T)" value={form.paymentDetails} onChange={set('paymentDetails')} /><p className="mt-1 text-xs text-slate-500">You can add or change this later on the Payouts page.</p></div>
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">After you submit, your application goes to review. One step is easy to miss: click the confirmation link in the email we sent when you registered. Without a confirmed email you cannot log in, even after approval.</p>
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <button className={btnCls}>Submit application</button>
