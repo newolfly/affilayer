@@ -53,6 +53,7 @@ const AffiliatePayouts = lazy(() => import('./pages/affiliate').then((m) => ({ d
 const AffiliateProfile = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliateProfile })))
 const AffiliateTickets = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliateTickets })))
 const AffiliateTeam = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliateTeam })))
+const AffiliateGuide = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliateGuide })))
 const AdvertiserDashboard = lazy(() => import('./pages/advertiser').then((m) => ({ default: m.AdvertiserDashboard })))
 const AdvertiserCampaigns = lazy(() => import('./pages/advertiser').then((m) => ({ default: m.AdvertiserCampaigns })))
 const AdvertiserCreateOffer = lazy(() => import('./pages/advertiser').then((m) => ({ default: m.AdvertiserCreateOffer })))
@@ -98,6 +99,7 @@ function AppHome() {
 
 const affiliateNav: DashboardNavItem[] = [
   { to: '/app/affiliate', label: 'Dashboard', icon: 'grid' },
+  { to: '/app/affiliate/guide', label: 'Getting started', icon: 'compass' },
   { to: '/app/affiliate/offers', label: 'Offers', icon: 'tag' },
   { to: '/app/affiliate/my-campaigns', label: 'My campaigns', icon: 'megaphone' },
   { to: '/app/affiliate/team', label: 'Team', icon: 'users' },
@@ -265,6 +267,7 @@ export default function App() {
           {/* Affiliate */}
           <Route path="/app/affiliate" element={<RequireAuth roles={['affiliate']}><AffiliateLayout /></RequireAuth>}>
             <Route index element={<AffiliateDashboard />} />
+            <Route path="guide" element={<AffiliateGuide />} />
             <Route path="offers" element={<AffiliateOffers />} />
             <Route path="offers/:id" element={<AffiliateOfferDetail />} />
             <Route path="my-campaigns" element={<AffiliateMyCampaigns />} />

@@ -122,6 +122,7 @@ export function AffiliateDashboard() {
         <p className="text-sm font-semibold text-slate-900">Your next step</p>
         <p className="mt-0.5 text-sm text-slate-700">{nextStep.text}</p>
         <Link to={nextStep.to} className="mt-2 inline-block text-sm font-semibold text-amber-700">{nextStep.link} →</Link>
+        <Link to="/app/affiliate/guide" className="ml-4 mt-2 inline-block text-sm font-semibold text-amber-700">Getting-started guide →</Link>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Clicks" value={String(stats.clicks)} sub="People who clicked your links" icon="chart" />
@@ -151,6 +152,75 @@ export function AffiliateDashboard() {
             <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View →</Link>
           </div>
         ))}
+      </Card>
+    </div>
+  )
+}
+
+export function AffiliateGuide() {
+  const { user } = useAuth()
+  const isMember = !!user?.teamContext
+  const steps = [
+    {
+      title: 'Confirm your email',
+      text: 'We emailed you a confirmation link when you signed up. Click it — you cannot log in until your email is confirmed. After that, a person reviews your application; most complete applications are decided the same day.',
+      to: '/pending',
+      link: 'Check approval status',
+    },
+    {
+      title: 'Complete your profile',
+      text: 'Tell us who you are and where your traffic comes from — a website, a social account, a channel, or anywhere else you share links. You do not need a website to join.',
+      to: '/onboarding',
+      link: 'Complete onboarding',
+    },
+    {
+      title: 'Add your USDT wallet',
+      text: 'Payouts go to your USDT wallet on the TRON network (TRC20). Paste your wallet address on the Payouts page. Make sure it is a TRC20 address — an address from another network will not work.',
+      to: '/app/affiliate/payouts',
+      link: 'Add your wallet',
+    },
+    {
+      title: 'Pick an offer',
+      text: 'Browse the Offers page. Each offer shows what it pays, which countries it accepts, and what the visitor has to do — buy, sign up, or install. Start with one offer your audience already wants.',
+      to: '/app/affiliate/offers',
+      link: 'Browse offers',
+    },
+    {
+      title: 'Make your first tracking link',
+      text: 'Open the Tracking links page, pick your offer, and copy the link it makes. That link is yours — anyone who clicks it is counted as yours, and if they buy or sign up, you earn the commission. The tags are optional labels so you can tell clicks apart.',
+      to: '/app/affiliate/tracking-links',
+      link: 'Make a tracking link',
+    },
+    {
+      title: 'Share the link',
+      text: 'Share it where your audience already is — a post, a video description, a message, a website. Clicks and results show up in Reports, so you can see what is working.',
+      to: '/app/affiliate/reports',
+      link: 'See your reports',
+    },
+    {
+      title: 'Get paid',
+      text: 'When your approved balance reaches $50, request a payout on the Payouts page. We pay in USDT (TRC20). Approved money becomes payable 30 days after the end of the month it was approved in — that is what Net-30 means. Until 25 February 2027, you keep 100% of the payout.',
+      to: '/app/affiliate/payouts',
+      link: 'Request a payout',
+    },
+  ]
+  return (
+    <div className="space-y-4">
+      <Card title="Getting started">
+        <p className="text-sm text-slate-600">Seven steps from a new account to your first payout. Each step links to the page that does it — nothing here is a demo, and every number is the real term.</p>
+        {isMember && (
+          <p className="mt-3 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">You are on a team — your team head handles approval and payouts. Your steps start at step 4: pick an offer and make a link with the team's code.</p>
+        )}
+      </Card>
+      {steps.map((s, i) => (
+        <Card key={s.title} title={`${i + 1}. ${s.title}`}>
+          <p className="text-sm text-slate-600">{s.text}</p>
+          <Link to={s.to} className="mt-3 inline-block text-sm font-semibold text-amber-700">{s.link} →</Link>
+        </Card>
+      ))}
+      <Card title="Stuck on a step?">
+        <p className="text-sm text-slate-600">Open a ticket and a person will answer — describe what you tried and what you saw.</p>
+        <Link to="/app/affiliate/tickets" className="mt-3 inline-block text-sm font-semibold text-amber-700">Open a ticket →</Link>
       </Card>
     </div>
   )

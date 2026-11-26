@@ -1414,6 +1414,33 @@ const COMING_SOON_OFFERS: {
     geo: 'Worldwide · Mobile only',
     note: 'Finance surveys. Revenue-share payout — the exact share is confirmed with the programme before this offer goes live, so no rate figure is shown until then.',
   },
+  {
+    name: 'Virgin Mobile UAE',
+    vertical: 'Telecom',
+    model: 'CPA',
+    rate: '$20.00 per order',
+    conversion: 'per order',
+    geo: 'United Arab Emirates',
+    note: 'Mobile telecom in the UAE. $20.00 per order — the full programme rate. Joining the catalogue once the programme confirms promotion through AffiLayer.',
+  },
+  {
+    name: 'AliExpress – Global',
+    vertical: 'E-commerce',
+    model: 'CPS',
+    rate: '1%–8% of order',
+    conversion: 'per order',
+    geo: 'Worldwide',
+    note: 'Global marketplace. 1% headline, up to 8% by category, capped at $45 commission per order. Joining the catalogue once the programme confirms promotion through AffiLayer.',
+  },
+  {
+    name: 'Canada Pet Care',
+    vertical: 'Pets',
+    model: 'CPS',
+    rate: '10% of order',
+    conversion: 'per order',
+    geo: 'Canada',
+    note: 'Pet care products in Canada. 10% of each order — the full programme rate. Joining the catalogue once the programme confirms promotion through AffiLayer.',
+  },
 ]
 
 export function Offers() {
