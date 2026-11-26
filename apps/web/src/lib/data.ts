@@ -378,6 +378,22 @@ export async function requestPayout(amount: number, currency: string, method: st
   return error ? { error: error.message } : {}
 }
 
+/** Persist the signed-in user's full name on their profiles row.
+ *  Walk audit 20 Nov 2026: the name was collected at registration
+ *  and at onboarding and saved nowhere. Registration now stores it
+ *  via the signup trigger; this is the backstop for accounts that
+ *  registered before that fix (and for the onboarding form, which
+ *  doubles as the profile editor). Ordinary self-edits of full_name
+ *  pass through RLS, and the 024 trigger clamps role/status/kyc
+ *  back to the row's values, so an approved user stays approved. */
+export async function saveMyFullName(fullName: string): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You are not signed in.' }
+  const { error } = await supabase.from('profiles').update({ full_name: fullName }).eq('id', user.id)
+  return error ? { error: error.message } : {}
+}
+
 /** The affiliate's saved payment method (affiliate_profiles), if any. */
 export async function getMyAffiliateProfile(): Promise<{ paymentMethod?: string; payoutWallet?: PayoutWallet }> {
   if (!isSupabaseConfigured || !supabase) return {}

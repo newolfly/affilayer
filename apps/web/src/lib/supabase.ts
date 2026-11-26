@@ -4,7 +4,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
-/** True only when both Supabase env vars are set. Otherwise the app runs in DEMO MODE. */
+/** True only when both Supabase env vars are set. Otherwise Supabase
+ *  calls return empty results or "not available" errors — there is no
+ *  demo mode (removed 20 Nov 2026). */
 export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY)
 
 /**

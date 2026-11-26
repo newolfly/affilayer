@@ -284,7 +284,8 @@ export function AffiliateReports() {
         {byOffer.length === 0 ? <Empty text="No data for the selected filters." /> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Offer</th><th>Clicks</th><th>Conversions</th></tr></thead>
-            <tbody>{byOffer.map(([id, v]) => <tr key={id} className="border-t border-slate-100"><td className="py-2">{id}</td><td>{v.clicks}</td><td>{v.convs}</td></tr>)}</tbody>
+            {/* Walk audit 20 Nov 2026: show the offer name, not the bare UUID. */}
+            <tbody>{byOffer.map(([id, v]) => <tr key={id} className="border-t border-slate-100"><td className="py-2">{offers.find((o) => o.id === id)?.name ?? id}</td><td>{v.clicks}</td><td>{v.convs}</td></tr>)}</tbody>
           </table></div>
         )}
       </Card>
@@ -369,7 +370,7 @@ export function AffiliatePayouts() {
   const settings = NETWORK_SETTINGS
   useEffect(() => {
     Promise.all([getPayouts(), getConversions(), getMyAffiliateProfile(), getNpPayouts()]).then(([payouts, conversions, ap, npPayouts]) => {
-      setLive({ payouts, conversions, method: ap.paymentMethod ?? 'Bank transfer', wallet: ap.payoutWallet, npPayouts })
+      setLive({ payouts, conversions, method: ap.paymentMethod ?? 'USDT (TRC20)', wallet: ap.payoutWallet, npPayouts })
       if (ap.payoutWallet?.address) setWalletAddress(ap.payoutWallet.address)
     })
   }, [])
@@ -384,7 +385,7 @@ export function AffiliatePayouts() {
   const approvedBalance = sumCommissions(
     conversions.filter((c) => c.affiliateId === user?.id && c.status === 'approved'),
     ledger, offers)
-  const method = live?.method ?? 'Bank transfer'
+  const method = live?.method ?? 'USDT (TRC20)'
   const request = async (e: FormEvent) => {
     e.preventDefault()
     const value = Number(amount)
@@ -438,7 +439,7 @@ export function AffiliatePayouts() {
         </form>
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         {requested && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Payout request submitted for review.</p>}
-        <p className="mt-3 text-xs text-slate-400">Payouts are calculated from approved commissions in the ledger. Requests are reviewed by the network admin.</p>
+        <p className="mt-3 text-xs text-slate-400">Payouts are calculated from approved commissions in the ledger and paid in USDT (TRC20). Approved commissions become payable Net-30 — 30 days after the end of the month in which they were approved. Requests are reviewed by the network admin.</p>
       </Card>
       <Card title="Payout history">
         {mine.length === 0 ? <Empty text="No payouts yet." /> : (

@@ -114,8 +114,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       setOnboarding: (p) => {
         if (!user) return
-        // Local state only: the profile row itself is created and updated
-        // by the database trigger / admin flow, not by the client.
+        // Local state only, except full_name: the profile row itself is
+        // created by the database trigger, and the name is persisted
+        // from onboarding by saveMyFullName (lib/data.ts) — ordinary
+        // self-edits of full_name pass through RLS and the trigger
+        // clamps role/status/kyc, so an approved user stays approved.
         const next = { ...user, ...p, status: p.status ?? 'pending' } as AuthUser
         setUser(next)
       },

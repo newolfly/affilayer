@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { PublicLayout } from '../components/layout'
 import { Icon } from '../components/icons'
 import { useAuth } from '../lib/auth'
+import { saveMyFullName } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import type { Role } from '../lib/types'
 
@@ -87,6 +88,11 @@ export function Register() {
     }
     const r = await signUp(email, password, role, {
       fullName: `${firstName} ${lastName}`.trim(),
+      // Walk audit 20 Nov 2026: the signup trigger (handle_new_user)
+      // reads the snake_case key `full_name` from user metadata — the
+      // camelCase `fullName` alone was dropped and profiles.full_name
+      // stayed NULL for every registrant. Send both keys.
+      full_name: `${firstName} ${lastName}`.trim(),
       accountType,
       country,
       messenger,
@@ -201,13 +207,33 @@ export function Onboarding() {
     vertical: '',
     geo: '',
     volume: '',
-    paymentMethod: 'Bank transfer',
+    // M-5 (walk audit 17 Nov 2026): payouts are USDT (TRC20) only.
+    // The old Bank transfer / PayPal / Wire options promised rails
+    // that do not exist, so there is no choice to offer here.
+    paymentMethod: 'USDT (TRC20)',
     paymentDetails: '',
   })
+  const [error, setError] = useState('')
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
+    // Walk audit 20 Nov 2026: the name was collected at registration
+    // and here at onboarding and saved nowhere. Registration now
+    // stores it via the signup trigger (full_name in user metadata);
+    // save it here too when the user is signed in, so existing
+    // accounts can set it from this form as well. A user fresh from
+    // registration has no session yet (email not confirmed) — the
+    // registration save already covers them, so the save is skipped
+    // then instead of blocking the submit.
+    const name = form.fullName.trim()
+    if (name && user) {
+      const r = await saveMyFullName(name)
+      if (r.error) {
+        setError(r.error)
+        return
+      }
+    }
     setOnboarding({
       fullName: form.fullName,
       role: form.role as Role,
@@ -253,16 +279,11 @@ export function Onboarding() {
             </select>
           </div>
           <div>
-            <label className={labelCls} htmlFor="onb-payment-method">Preferred payout method</label>
-            <select id="onb-payment-method" className={inputCls} value={form.paymentMethod} onChange={set('paymentMethod')}>
-              <option>Bank transfer</option>
-              <option>PayPal</option>
-              <option>Wire transfer</option>
-            </select>
-            <p className="mt-1 text-xs text-slate-500">This is a preference, not a promise. The methods available to your account depend on your country and setup, and are confirmed in your dashboard payment profile — the same rule the FAQ states.</p>
+            <p className="text-sm text-slate-700"><span className="font-medium">Payout method: USDT (TRC20).</span> AffiLayer pays affiliates in USDT on TRON (TRC20) only — there is no bank transfer, PayPal or wire option. Minimum payout $50, Net-30 on approved balance.</p>
           </div>
-          <div><label className={labelCls} htmlFor="onb-payment-details">Payment details (optional)</label><input id="onb-payment-details" className={inputCls} placeholder="Account / wallet reference" value={form.paymentDetails} onChange={set('paymentDetails')} /></div>
+          <div><label className={labelCls} htmlFor="onb-payment-details">Payment details (optional)</label><input id="onb-payment-details" className={inputCls} placeholder="USDT TRC20 wallet address (starts with T)" value={form.paymentDetails} onChange={set('paymentDetails')} /></div>
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">After you submit, your application goes to review. One step is easy to miss: click the confirmation link in the email we sent when you registered. Without a confirmed email you cannot log in, even after approval.</p>
+          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <button className={btnCls}>Submit application</button>
         </form>
       </div>
