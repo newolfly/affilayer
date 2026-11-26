@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { PublicLayout } from '../components/layout'
 import { Icon } from '../components/icons'
 import { useAuth } from '../lib/auth'
-import { saveMyFullName } from '../lib/data'
+import { acceptTeamInvite, declineTeamInvite, getMyPendingInvites, saveMyFullName } from '../lib/data'
+import type { TeamInvite } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import type { Role } from '../lib/types'
 
@@ -65,6 +66,13 @@ export function Login() {
 export function Register() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  // A team invite link carries ?team=<token>. It is passed through to
+  // signup metadata as team_invite (same pattern as the full_name /
+  // fullName keys) so handle_new_user() can link the new account to
+  // the inviting team (design §2b). A bad token is ignored server-side
+  // and signup still succeeds as a standalone affiliate.
+  const teamToken = searchParams.get('team') ?? ''
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -99,6 +107,7 @@ export function Register() {
       messengerId,
       company,
       website,
+      ...(teamToken ? { team_invite: teamToken } : {}),
     })
     if (r.error) setError(r.error)
     else setDone(true)
@@ -246,7 +255,10 @@ export function Onboarding() {
       paymentDetails: form.paymentDetails,
       status: 'pending',
     })
-    navigate('/pending')
+    // A team member stays status='pending' by design, but the
+    // RequireAuth carve-out admits them — so they go to the dashboard,
+    // not the approval-waiting page. Everyone else waits for approval.
+    navigate(user?.teamContext ? '/app' : '/pending')
   }
 
   return (
@@ -292,11 +304,41 @@ export function Onboarding() {
 }
 
 export function Pending() {
-  const { user } = useAuth()
+  const { user, refreshTeamContext } = useAuth()
+  const navigate = useNavigate()
+  const [invites, setInvites] = useState<TeamInvite[]>([])
+  const [inviteError, setInviteError] = useState('')
+  // A pending invite for this email is the only screen an existing
+  // account can reach before accepting (design §2c) — show the
+  // accept / decline banner here too, not just on the dashboard.
+  useEffect(() => {
+    if (!user) return
+    getMyPendingInvites().then(setInvites)
+  }, [user?.id])
+  const respondInvite = async (invite: TeamInvite, accept: boolean) => {
+    const r = accept ? await acceptTeamInvite(invite.id) : await declineTeamInvite(invite.id)
+    if (r.error) { setInviteError(r.error); return }
+    setInvites((list) => list.filter((i) => i.id !== invite.id))
+    if (accept) {
+      await refreshTeamContext()
+      navigate('/app')
+    }
+  }
   return (
     <PublicLayout>
       <div className="mx-auto max-w-md rounded-xl bg-white p-6 text-slate-900">
         <h1 className="text-xl font-bold">Approval status</h1>
+        {invites.map((inv) => (
+          <div key={inv.id} className="mt-3 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-900">
+            <p className="font-semibold">{inv.inviterEmail ?? 'Someone'} invited you to join their team</p>
+            {user?.status === 'approved' && <p className="mt-1">Joining means your own tracking links stop earning — your team's links earn for the team instead.</p>}
+            <div className="mt-2 flex gap-2">
+              <button className={btnCls} onClick={() => respondInvite(inv, true)}>Accept</button>
+              <button className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700" onClick={() => respondInvite(inv, false)}>Decline</button>
+            </div>
+          </div>
+        ))}
+        {inviteError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{inviteError}</p>}
         <p className="mt-3 text-sm text-slate-600">
           {user ? (
             <>Account <strong>{user.email}</strong> is currently <strong>{user.status}</strong>.</>

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
-import { applyToOffer, conversionCommission, createTicket, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getMyOfferApplications, getMyPostbackConfigs, getNpPayouts, getOffers, getPayouts, getStats, getTickets, offerCommissionLabel, offerPayoutLabel, offerPayoutPlain, requestPayout, resultNoun, savePostbackConfig, savePayoutWallet, sumCommissions } from '../lib/data'
-import type { OfferApplication, PostbackConfig, ReportFilters } from '../lib/data'
+import { acceptTeamInvite, applyToOffer, cancelTeamInvite, conversionCommission, createTicket, declineTeamInvite, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getMyOfferApplications, getMyPendingInvites, getMyPostbackConfigs, getMyTeamInvites, getMyTeamMembers, getNpPayouts, getOffers, getPayouts, getStats, getTickets, inviteTeamMember, leaveTeam, offerCommissionLabel, offerPayoutLabel, offerPayoutPlain, removeTeamMember, requestPayout, resultNoun, savePostbackConfig, savePayoutWallet, sumCommissions } from '../lib/data'
+import type { OfferApplication, PostbackConfig, ReportFilters, TeamInvite, TeamMember } from '../lib/data'
 import { looksLikeTrc20, validatePayoutAddress } from '../lib/payments'
 import { NETWORK_SETTINGS } from '../lib/network-settings'
 import { trackingLink } from '../lib/tracking'
@@ -40,19 +40,40 @@ function useLoad<T>(fn: () => Promise<T>, initial: T) {
 }
 
 export function AffiliateDashboard() {
-  const { user } = useAuth()
+  const { user, refreshTeamContext } = useAuth()
+  const location = useLocation()
+  // A plain message carried by a redirect — e.g. a team member opening
+  // the Payouts URL directly ("Payouts are handled by your team head.").
+  const notice = (location.state as { notice?: string } | null)?.notice
+  const isMember = !!user?.teamContext
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, pending: 0, revenue: 0, epc: 0, cr: 0 })
   const [offers, setOffers] = useState<Offer[]>([])
   const [balance, setBalance] = useState(0)
   const [chartClicks, setChartClicks] = useState<Click[]>([])
   const [chartConvs, setChartConvs] = useState<Conversion[]>([])
   const [hasWallet, setHasWallet] = useState(false)
+  const [invites, setInvites] = useState<TeamInvite[]>([])
+  const [inviteError, setInviteError] = useState('')
+  useEffect(() => { getMyPendingInvites().then(setInvites) }, [])
+  const respondInvite = async (invite: TeamInvite, accept: boolean) => {
+    const r = accept ? await acceptTeamInvite(invite.id) : await declineTeamInvite(invite.id)
+    if (r.error) { setInviteError(r.error); return }
+    setInvites((list) => list.filter((i) => i.id !== invite.id))
+    if (accept) await refreshTeamContext()
+  }
   useEffect(() => {
     getMyAffiliateProfile().then((ap) => setHasWallet(!!ap.payoutWallet?.address))
   }, [])
   // The ONE next action, in plain words, from the affiliate's real state.
+  // A team member has no wallet step and no approval wait — they go
+  // straight to making their first tracking link (design §6).
   const nextStep = (() => {
     if (user?.status === 'rejected') return { text: 'Your application was not approved. Message the team and we will tell you why.', to: '/app/affiliate/tickets', link: 'Message the team' }
+    if (isMember) {
+      if (stats.clicks === 0) return { text: 'Your next step: make your first tracking link and share it.', to: '/app/affiliate/tracking-links', link: 'Make a tracking link' }
+      if (stats.conversions === 0) return { text: 'You have clicks — now share your link in more places and watch Reports.', to: '/app/affiliate/reports', link: 'See your reports' }
+      return { text: 'You have results — check your earnings.', to: '/app/affiliate/earnings', link: 'See your earnings' }
+    }
     if (user?.status !== 'approved') return { text: 'Your next step: confirm your email, then wait for approval. Click the confirmation link we emailed you — you cannot log in until your email is confirmed.', to: '/pending', link: 'Check approval status' }
     if (!hasWallet) return { text: 'Your next step: add your USDT wallet so you can get paid.', to: '/app/affiliate/payouts', link: 'Add your wallet' }
     if (stats.clicks === 0) return { text: 'Your next step: make your first tracking link and share it.', to: '/app/affiliate/tracking-links', link: 'Make a tracking link' }
@@ -76,6 +97,27 @@ export function AffiliateDashboard() {
   return (
     <div className="space-y-4">
       <FirstSteps role="affiliate" />
+      {notice && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-slate-700">{notice}</p>
+        </div>
+      )}
+      {isMember && user?.teamContext && (
+        <div className="rounded-xl border border-sky-500/40 bg-sky-50 px-4 py-3">
+          <p className="text-sm text-slate-700">You're on {user.teamContext.parentEmail}'s team. These are your whole team's numbers, not just yours.</p>
+        </div>
+      )}
+      {invites.map((inv) => (
+        <div key={inv.id} className="rounded-xl border border-sky-500/40 bg-sky-50 px-4 py-3">
+          <p className="text-sm font-semibold text-slate-900">{inv.inviterEmail ?? 'Someone'} invited you to join their team</p>
+          {user?.status === 'approved' && <p className="mt-1 text-sm text-slate-700">Joining means your own tracking links stop earning — your team's links earn for the team instead.</p>}
+          <div className="mt-2 flex gap-2">
+            <button className={btnCls} onClick={() => respondInvite(inv, true)}>Accept</button>
+            <button className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700" onClick={() => respondInvite(inv, false)}>Decline</button>
+          </div>
+        </div>
+      ))}
+      {inviteError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{inviteError}</p>}
       <div className="rounded-xl border border-amber-500/40 bg-amber-50 px-4 py-3">
         <p className="text-sm font-semibold text-slate-900">Your next step</p>
         <p className="mt-0.5 text-sm text-slate-700">{nextStep.text}</p>
@@ -91,9 +133,11 @@ export function AffiliateDashboard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-600">
             Approved balance <span className="ml-1 text-base font-bold text-slate-900">${balance.toFixed(2)}</span>
-            <span className="ml-2">Withdraw it in USDT (TRC20) from the Payouts page.</span>
+            {isMember
+              ? <span className="ml-2">Payouts go to your team head.</span>
+              : <span className="ml-2">Withdraw it in USDT (TRC20) from the Payouts page.</span>}
           </p>
-          <Link to="/app/affiliate/payouts" className={btnCls}>Withdraw</Link>
+          {!isMember && <Link to="/app/affiliate/payouts" className={btnCls}>Withdraw</Link>}
         </div>
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -146,6 +190,11 @@ export function AffiliateOffers() {
 
 export function AffiliateOfferDetail() {
   const { id } = useParams()
+  const { user } = useAuth()
+  // Team members cannot apply to offers (design §3) — the team head
+  // applies. The button is hidden; the tracking-link shortcut stays,
+  // since members generate links with the team head's code.
+  const isMember = !!user?.teamContext
   const [offer, setOffer] = useState<Offer | undefined>()
   const [application, setApplication] = useState<OfferApplication | null>(null)
   const [applyError, setApplyError] = useState('')
@@ -182,7 +231,7 @@ export function AffiliateOfferDetail() {
       <p className="mt-3 text-xs text-slate-500">The page above is the advertiser's page. Your tracking link sends people there — and counts them as yours.</p>
       {application
         ? <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{application.status === 'approved' ? 'You are approved to run this offer.' : application.status === 'pending' ? 'Application submitted. You will be notified when the advertiser reviews it.' : `Application status: ${application.status}.`}</p>
-        : <button className={`${btnCls} mt-4`} onClick={apply} disabled={applying}>{applying ? 'Submitting…' : offer.approvalRequired ? 'Apply for this offer' : 'Join this offer'}</button>}
+        : !isMember && <button className={`${btnCls} mt-4`} onClick={apply} disabled={applying}>{applying ? 'Submitting…' : offer.approvalRequired ? 'Apply for this offer' : 'Join this offer'}</button>}
       {applyError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{applyError}</p>}
       <Link to="/app/affiliate/tracking-links" className="ml-3 text-sm font-semibold text-amber-700">Generate tracking link →</Link>
     </Card>
@@ -214,7 +263,10 @@ export function AffiliateTrackingLinks() {
   const { data: offers } = useLoad(getOffers, [] as Offer[])
   const [offerId, setOfferId] = useState('')
   const [subs, setSubs] = useState({ sub1: '', sub2: '', sub3: '', sub4: '', sub5: '' })
-  const code = user?.affiliateCode ?? ''
+  // A team member's links carry the team head's code, not their own
+  // (their own code does not work while they are on a team).
+  const isMember = !!user?.teamContext
+  const code = user?.teamContext?.parentCode ?? user?.affiliateCode ?? ''
   const url = useMemo(
     () => (offerId && code ? trackingLink(code, offerId, subs) : ''),
     [offerId, code, subs],
@@ -223,6 +275,7 @@ export function AffiliateTrackingLinks() {
   return (
     <Card title="Tracking link generator">
       <p className="mb-4 text-sm text-slate-500">Your tracking link is your own web address for one offer. Anyone who clicks it is counted as yours — if they buy or sign up, you earn the commission.</p>
+      {isMember && <p className="mb-4 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">This link uses your team head's code — clicks and earnings go to the team.</p>}
       <div className="space-y-3">
         <div><label className="mb-1 block text-sm font-medium" htmlFor="tlg-offer">Offer</label>
           <select id="tlg-offer" className={`${inputCls} w-full`} value={offerId} onChange={(e) => setOfferId(e.target.value)}>
@@ -280,6 +333,7 @@ export function ReportFiltersForm({ filters, setFilters }: { filters: ReportFilt
 
 export function AffiliateReports() {
   const { user } = useAuth()
+  const isMember = !!user?.teamContext
   const [filters, setFilters] = useState<ReportFilters>({ affiliateCode: user?.affiliateCode })
   const [clicks, setClicks] = useState<Click[]>([])
   const [convs, setConvs] = useState<Conversion[]>([])
@@ -300,6 +354,7 @@ export function AffiliateReports() {
   return (
     <div className="space-y-4">
       <Card title="Reports">
+        {isMember && <p className="mb-3 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">Team totals — these are your whole team's numbers, not just yours.</p>}
         <ReportFiltersForm filters={filters} setFilters={setFilters} />
         <div className="grid gap-4 sm:grid-cols-3">
           <Stat label="Clicks" value={String(clicks.length)} sub="People who clicked your links" icon="chart" />
@@ -324,6 +379,7 @@ export function AffiliateReports() {
 }
 
 export function AffiliatePostbacks() {
+  const { user } = useAuth()
   const [configs, setConfigs] = useState<PostbackConfig[]>([])
   const [url, setUrl] = useState('')
   const [saved, setSaved] = useState(false)
@@ -342,6 +398,11 @@ export function AffiliatePostbacks() {
     setSaved(true)
     getMyPostbackConfigs().then(setConfigs)
   }
+  // Team members have no postbacks of their own — a member's
+  // conversions sit under the team head, so a postback of theirs could
+  // never fire. The page is hidden from member navigation; a direct
+  // URL opens the dashboard with a plain message instead.
+  if (user?.teamContext) return <Navigate to="/app/affiliate" replace state={{ notice: 'Postbacks are handled by your team head.' }} />
   return (
     <Card title="Postbacks">
       <p className="mb-3 text-sm text-slate-500">A postback is an automatic message our system sends to your own website or tracker the moment you earn a commission. Most affiliates never need this — only set it up if you run your own tracking.</p>
@@ -358,6 +419,8 @@ export function AffiliatePostbacks() {
 }
 
 export function AffiliateEarnings() {
+  const { user } = useAuth()
+  const isMember = !!user?.teamContext
   const { data: convs } = useLoad(() => getConversions(), [] as Conversion[])
   const { data: ledger } = useLoad(() => getLedgerEntries(), [] as CommissionLedgerEntry[])
   const { data: offers } = useLoad(() => getOffers(), [] as Offer[])
@@ -365,6 +428,7 @@ export function AffiliateEarnings() {
   const pending = convs.filter((c) => c.status === 'pending')
   return (
     <div className="space-y-4">
+      {isMember && <p className="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">Team totals — these are your whole team's numbers, not just yours.</p>}
       <div className="grid gap-4 sm:grid-cols-3">
         {/* M-05: earnings are ledger commission, not conversion payout sums. */}
         <Stat label="Approved earnings" icon="wallet" value={`$${sumCommissions(approved, ledger, offers).toFixed(2)}`} sub="Money from approved results — this is what you can withdraw" />
@@ -446,6 +510,11 @@ export function AffiliatePayouts() {
     setWalletSaved(true)
   }
   const npByRequest = new Map((live?.npPayouts ?? []).map((n) => [n.payoutRequestId, n]))
+  // Payouts are handled by the team head: a member has no payout
+  // wallet step and no payout of their own to request. The page is
+  // hidden from member navigation; a direct URL opens the dashboard
+  // with a plain message instead.
+  if (user?.teamContext) return <Navigate to="/app/affiliate" replace state={{ notice: 'Payouts are handled by your team head.' }} />
   return (
     <div className="space-y-4">
       <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">How you get paid: in USDT on TRON (TRC20), to the wallet below. Minimum payout ${settings.minPayout.toFixed(2)}. Approved money becomes payable 30 days after the end of the month it was approved.</p>
@@ -489,6 +558,7 @@ export function AffiliatePayouts() {
 
 export function AffiliateProfile() {
   const { user } = useAuth()
+  const isMember = !!user?.teamContext
   const statusPlain = user?.status === 'approved' ? 'Approved' : user?.status === 'pending' ? 'Waiting for review' : user?.status === 'rejected' ? 'Not approved' : user?.status ?? '—'
   return (
     <Card title="Profile">
@@ -497,9 +567,14 @@ export function AffiliateProfile() {
         <div><dt className="text-slate-500">Email</dt><dd>{user?.email}</dd></div>
         <div><dt className="text-slate-500">Account type</dt><dd>{user?.role === 'affiliate' ? 'Affiliate' : user?.role === 'advertiser' ? 'Advertiser' : user?.role ?? '—'}</dd></div>
         <div><dt className="text-slate-500">Approval status</dt><dd>{statusPlain}</dd></div>
-        <div><dt className="text-slate-500">Your affiliate code</dt><dd className="font-mono">{user?.affiliateCode ?? '—'}</dd></div>
+        {isMember
+          // A member's own code does not work while they are on a team,
+          // so it is not shown — only the team head's code, which is
+          // inside every tracking link the member makes.
+          ? <div><dt className="text-slate-500">Your team code</dt><dd className="font-mono">{user?.teamContext?.parentCode ?? '—'}</dd></div>
+          : <div><dt className="text-slate-500">Your affiliate code</dt><dd className="font-mono">{user?.affiliateCode ?? '—'}</dd></div>}
       </dl>
-      <p className="mt-3 text-xs text-slate-500">This code is inside every tracking link you make — it is how clicks and results are counted as yours.</p>
+      <p className="mt-3 text-xs text-slate-500">{isMember ? 'This code is inside every tracking link you make.' : 'This code is inside every tracking link you make — it is how clicks and results are counted as yours.'}</p>
       <Link to="/onboarding" className="mt-4 inline-block font-semibold text-amber-700 text-sm">Edit onboarding details →</Link>
     </Card>
   )
@@ -539,6 +614,136 @@ export function AffiliateTickets() {
             <p className="text-slate-600">{t.message}</p>
           </div>
         ))}
+      </Card>
+    </div>
+  )
+}
+
+/** Team sub-panel (design 2026-11-26 §6). Two views, one route:
+ *  - Parent (no team context): invite by email, members table with
+ *    Remove, pending invites table with Cancel invite.
+ *  - Member (has a team context): read-only banner + Leave team.
+ *  No demo data: every row comes from the team_invites /
+ *  affiliate_profiles reads in lib/data.ts, which fail closed (empty)
+ *  until migration 030 is applied. */
+export function AffiliateTeam() {
+  const { user, refreshTeamContext } = useAuth()
+  const navigate = useNavigate()
+  const isMember = !!user?.teamContext
+  const [members, setMembers] = useState<TeamMember[]>([])
+  const [invites, setInvites] = useState<TeamInvite[]>([])
+  const [email, setEmail] = useState('')
+  const [inviteUrl, setInviteUrl] = useState('')
+  const [inviteNote, setInviteNote] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const load = () => {
+    getMyTeamMembers().then(setMembers)
+    getMyTeamInvites().then(setInvites)
+  }
+  useEffect(load, [])
+  const pending = invites.filter((i) => i.status === 'pending')
+  // The copyable link for the last invite sent — the one just sent
+  // this visit, else the newest invite still waiting for a reply.
+  const lastInviteUrl = inviteUrl || pending[0]?.inviteUrl || ''
+
+  const sendInvite = async (e: FormEvent) => {
+    e.preventDefault()
+    const address = email.trim()
+    if (!address) return
+    setBusy(true)
+    setError('')
+    setInviteNote('')
+    const r = await inviteTeamMember(address)
+    setBusy(false)
+    if (r.error) { setError(r.error); return }
+    if (r.inviteUrl) setInviteUrl(r.inviteUrl)
+    if (r.emailSent === false) setInviteNote(r.emailNote ?? 'Email not sent — share the invite link directly.')
+    setEmail('')
+    setCopied(false)
+    load()
+  }
+
+  const remove = async (m: TeamMember) => {
+    const r = await removeTeamMember(m.id)
+    if (r.error) { setError(r.error); return }
+    load()
+  }
+
+  const cancel = async (inv: TeamInvite) => {
+    const r = await cancelTeamInvite(inv.id)
+    if (r.error) { setError(r.error); return }
+    load()
+  }
+
+  const leave = async () => {
+    setLeaving(true)
+    setError('')
+    const r = await leaveTeam()
+    setLeaving(false)
+    if (r.error) { setError(r.error); return }
+    await refreshTeamContext()
+    navigate('/pending')
+  }
+
+  if (isMember && user?.teamContext) {
+    return (
+      <Card title="Your team">
+        <p className="text-sm text-slate-600">You're on {user.teamContext.parentEmail}'s team. Your links earn for the team — payouts go to your team head.</p>
+        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">You'll lose access to the team's dashboard until an admin approves your own account.</p>
+        <button className={`${btnCls} mt-4`} onClick={leave} disabled={leaving}>{leaving ? 'Leaving…' : 'Leave team'}</button>
+        {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card title="Your team">
+        <p className="text-sm text-slate-600">People on your team use your tracking links. Every click and every payout stays with you — your team members cannot see or change your payout wallet.</p>
+        <form onSubmit={sendInvite} className="mt-4 flex gap-2">
+          <input className={`${inputCls} flex-1`} type="email" required placeholder="Email address" aria-label="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <button className={btnCls} disabled={busy}>{busy ? 'Sending…' : 'Send invite'}</button>
+        </form>
+        {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {lastInviteUrl && (
+          <div className="mt-3 rounded-lg bg-slate-50 p-3">
+            <p className="text-sm font-medium">Invite link (share it anywhere):</p>
+            <p className="break-all text-sm font-mono">{lastInviteUrl}</p>
+            <button className={`${btnCls} mt-3`} onClick={() => { navigator.clipboard?.writeText(lastInviteUrl).catch(() => undefined); setCopied(true) }}>{copied ? 'Copied' : 'Copy'}</button>
+            {inviteNote && <p className="mt-2 text-xs text-slate-500">{inviteNote}</p>}
+          </div>
+        )}
+      </Card>
+      <Card title={`Team members (${members.length})`}>
+        {members.length === 0 ? <Empty text="No team members yet. Invite someone above — they join with one click." /> : (
+          <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Email</th><th>Date added</th><th /></tr></thead>
+            <tbody>{members.map((m) => (
+              <tr key={m.id} className="border-t border-slate-100">
+                <td className="py-2 font-medium">{m.email}{m.fullName ? <span className="ml-2 text-slate-500">· {m.fullName}</span> : ''}</td>
+                <td>{m.dateAdded || '—'}</td>
+                <td className="text-right"><button className="font-semibold text-red-700" onClick={() => remove(m)}>Remove</button></td>
+              </tr>
+            ))}</tbody>
+          </table></div>
+        )}
+      </Card>
+      <Card title={`Waiting for a reply (${pending.length})`}>
+        {pending.length === 0 ? <Empty text="No invites waiting for a reply." /> : (
+          <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Email</th><th>Sent</th><th /></tr></thead>
+            <tbody>{pending.map((inv) => (
+              <tr key={inv.id} className="border-t border-slate-100">
+                <td className="py-2 font-medium">{inv.email}</td>
+                <td>{inv.createdAt.slice(0, 10)}</td>
+                <td className="text-right"><button className="font-semibold text-red-700" onClick={() => cancel(inv)}>Cancel invite</button></td>
+              </tr>
+            ))}</tbody>
+          </table></div>
+        )}
       </Card>
     </div>
   )

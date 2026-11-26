@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Card, Empty, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { buildDailyClickSeries, conversionCommission, creditDepositManually, decideConversion, decidePayout, decideProfile, getAllDeposits, getAuditLogs, getCampaigns, getClicks, getConversions, getLedgerEntries, getNpPayouts, getOffers, getPayouts, getProfiles, getStats, getTickets, offerPayoutLabel, releasePayoutReservation, updateOfferStatus } from '../lib/data'
+import { buildDailyClickSeries, conversionCommission, creditDepositManually, decideConversion, decidePayout, decideProfile, getAllDeposits, getAuditLogs, getCampaigns, getClicks, getConversions, getLedgerEntries, getNpPayouts, getOffers, getPayouts, getProfiles, getStats, getTeamSummary, getTickets, offerPayoutLabel, releasePayoutReservation, updateOfferStatus } from '../lib/data'
 import type { AuditLogEntry } from '../lib/data'
 import { executePayout, getCustodyBalance, refreshPayoutStatus, verifyPayout } from '../lib/payments'
 import { NETWORK_SETTINGS } from '../lib/network-settings'
@@ -39,16 +39,25 @@ export function AdminOverview() {
   )
 }
 
-function ProfilesTable({ filter }: { filter?: (p: Profile) => boolean }) {
+function ProfilesTable({ filter, showTeam }: { filter?: (p: Profile) => boolean; showTeam?: boolean }) {
   const [profiles, setProfiles] = useState<Profile[]>([])
+  const [team, setTeam] = useState<Map<string, { memberCount: number; parentId?: string; parentEmail?: string }>>(new Map())
   useEffect(() => { getProfiles().then(setProfiles) }, [])
+  useEffect(() => { if (showTeam) getTeamSummary().then(setTeam) }, [showTeam])
   const list = filter ? profiles.filter(filter) : profiles
+  const teamLabel = (p: Profile) => {
+    const t = team.get(p.id)
+    if (!t) return '—'
+    if (t.parentEmail) return `On team: ${t.parentEmail}`
+    if (t.memberCount > 0) return `Team: ${t.memberCount} member${t.memberCount === 1 ? '' : 's'}`
+    return '—'
+  }
   return (
     <Card title="Users">
       {list.length === 0 ? <Empty text="No users match." /> : (
         <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
-          <thead><tr className="text-left text-slate-500"><th className="py-2">Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
-          <tbody>{list.map((p) => <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.fullName ?? '—'}</td><td>{p.email}</td><td>{p.role}</td><td>{p.status}</td></tr>)}</tbody>
+          <thead><tr className="text-left text-slate-500"><th className="py-2">Name</th><th>Email</th><th>Role</th><th>Status</th>{showTeam && <th>Team</th>}</tr></thead>
+          <tbody>{list.map((p) => <tr key={p.id} className="border-t border-slate-100"><td className="py-2">{p.fullName ?? '—'}</td><td>{p.email}</td><td>{p.role}</td><td>{p.status}</td>{showTeam && <td>{teamLabel(p)}</td>}</tr>)}</tbody>
         </table></div>
       )}
       <p className="mt-3 text-xs text-slate-500">Approvals, rejections and suspensions are handled in Compliance → KYC review. This table is read-only.</p>
@@ -57,7 +66,7 @@ function ProfilesTable({ filter }: { filter?: (p: Profile) => boolean }) {
 }
 
 export function AdminUsers() { return <ProfilesTable /> }
-export function AdminAffiliates() { return <ProfilesTable filter={(p) => p.role === 'affiliate'} /> }
+export function AdminAffiliates() { return <ProfilesTable filter={(p) => p.role === 'affiliate'} showTeam /> }
 export function AdminAdvertisers() { return <ProfilesTable filter={(p) => p.role === 'advertiser'} /> }
 
 export function AdminOffers() {

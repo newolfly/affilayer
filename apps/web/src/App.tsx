@@ -52,6 +52,7 @@ const AffiliateEarnings = lazy(() => import('./pages/affiliate').then((m) => ({ 
 const AffiliatePayouts = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliatePayouts })))
 const AffiliateProfile = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliateProfile })))
 const AffiliateTickets = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliateTickets })))
+const AffiliateTeam = lazy(() => import('./pages/affiliate').then((m) => ({ default: m.AffiliateTeam })))
 const AdvertiserDashboard = lazy(() => import('./pages/advertiser').then((m) => ({ default: m.AdvertiserDashboard })))
 const AdvertiserCampaigns = lazy(() => import('./pages/advertiser').then((m) => ({ default: m.AdvertiserCampaigns })))
 const AdvertiserCreateOffer = lazy(() => import('./pages/advertiser').then((m) => ({ default: m.AdvertiserCreateOffer })))
@@ -79,7 +80,11 @@ function RequireAuth({ roles, children }: { roles: Role[]; children: ReactNode }
   const { user, loading } = useAuth()
   if (loading) return <PageLoader />
   if (!user) return <Navigate to="/login" replace />
-  if (user.status === 'pending') return <Navigate to="/pending" replace />
+  // Team carve-out (design §2/§3): a team member stays
+  // status='pending' by design (their own code must stay inert), so a
+  // pending user WITH a team context is admitted; a pending user
+  // without one still goes to /pending.
+  if (user.status === 'pending' && !user.teamContext) return <Navigate to="/pending" replace />
   if (!roles.includes(user.role)) return <Navigate to={roleHome(user.role)} replace />
   return <>{children}</>
 }
@@ -95,6 +100,7 @@ const affiliateNav: DashboardNavItem[] = [
   { to: '/app/affiliate', label: 'Dashboard', icon: 'grid' },
   { to: '/app/affiliate/offers', label: 'Offers', icon: 'tag' },
   { to: '/app/affiliate/my-campaigns', label: 'My campaigns', icon: 'megaphone' },
+  { to: '/app/affiliate/team', label: 'Team', icon: 'users' },
   { to: '/app/affiliate/tracking-links', label: 'Tracking links', icon: 'link' },
   { to: '/app/affiliate/reports', label: 'Reports', icon: 'chart' },
   { to: '/app/affiliate/postbacks', label: 'Postbacks', icon: 'send' },
@@ -184,6 +190,17 @@ function RecoveryRedirect() {
   return null
 }
 
+/** Affiliate shell: team members never see Payouts or Postbacks in
+ *  navigation (design §3/§6) — the pages themselves also redirect a
+ *  member who opens the URL directly. */
+function AffiliateLayout() {
+  const { user } = useAuth()
+  const nav = user?.teamContext
+    ? affiliateNav.filter((n) => n.to !== '/app/affiliate/payouts' && n.to !== '/app/affiliate/postbacks')
+    : affiliateNav
+  return <AppLayout nav={nav} title="Affiliate" />
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -246,11 +263,12 @@ export default function App() {
           {/* App entry */}
           <Route path="/app" element={<AppHome />} />
           {/* Affiliate */}
-          <Route path="/app/affiliate" element={<RequireAuth roles={['affiliate']}><AppLayout nav={affiliateNav} title="Affiliate" /></RequireAuth>}>
+          <Route path="/app/affiliate" element={<RequireAuth roles={['affiliate']}><AffiliateLayout /></RequireAuth>}>
             <Route index element={<AffiliateDashboard />} />
             <Route path="offers" element={<AffiliateOffers />} />
             <Route path="offers/:id" element={<AffiliateOfferDetail />} />
             <Route path="my-campaigns" element={<AffiliateMyCampaigns />} />
+            <Route path="team" element={<AffiliateTeam />} />
             <Route path="tracking-links" element={<AffiliateTrackingLinks />} />
             <Route path="reports" element={<AffiliateReports />} />
             <Route path="postbacks" element={<AffiliatePostbacks />} />

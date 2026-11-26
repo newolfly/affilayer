@@ -6,6 +6,7 @@
 // never happen from this browser code. Database rows are snake_case;
 // the mappers below convert them to the shared camelCase domain types.
 import { supabase, isSupabaseConfigured } from './supabase'
+import { TRACKING_URL } from './tracking'
 import { computeCommission } from '@affilayer/shared'
 import type { AdvertiserBalance, AdvertiserDeposit, Campaign, Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, Profile, Stats, SupportTicket } from './types'
 
@@ -269,6 +270,37 @@ export async function getProfiles(): Promise<Profile[]> {
   const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
   if (error || !data) return []
   return (data as Row[]).map(mapProfile)
+}
+
+export type TeamSummary = {
+  memberCount: number
+  parentId?: string
+  parentEmail?: string
+}
+
+/** Admin view of team links (migration 030): for each profile id, how many
+ *  team members they head and, when they are a member, who their parent is.
+ *  Admins can read affiliate_profiles in full, so this is one query. */
+export async function getTeamSummary(): Promise<Map<string, TeamSummary>> {
+  const out = new Map<string, TeamSummary>()
+  if (!isSupabaseConfigured || !supabase) return out
+  const { data, error } = await supabase.from('affiliate_profiles').select('profile_id, parent_affiliate_id')
+  if (error || !data) return out
+  const { data: profs } = await supabase.from('profiles').select('id, email')
+  const emailById = new Map(((profs as Row[] | null) ?? []).map((p) => [String(p.id), String(p.email ?? '')]))
+  for (const row of data as Row[]) {
+    const pid = String(row.profile_id)
+    const parent = row.parent_affiliate_id ? String(row.parent_affiliate_id) : ''
+    if (!out.has(pid)) out.set(pid, { memberCount: 0 })
+    if (parent) {
+      const s = out.get(pid)!
+      s.parentId = parent
+      s.parentEmail = emailById.get(parent) ?? ''
+      if (!out.has(parent)) out.set(parent, { memberCount: 0 })
+      out.get(parent)!.memberCount += 1
+    }
+  }
+  return out
 }
 
 export async function getPayouts(): Promise<PayoutRequest[]> {
@@ -808,4 +840,206 @@ export async function updateOfferStatus(id: string, status: 'active' | 'paused' 
   if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
   const { error } = await supabase.from('offers').update({ status }).eq('id', id)
   return error ? { error: error.message } : {}
+}
+
+// ---------------------------------------------------------------------
+// Team sub-panel (design 2026-11-26; database side is migration 030:
+// parent_affiliate_id on affiliate_profiles, the team_invites table,
+// and the my_team_context / create_team_invite / accept_team_invite /
+// decline_team_invite / remove_team_member / leave_team RPCs).
+// Until 030 is applied every call below fails closed — an empty list
+// or an error string — and never crashes the page. The invite email
+// route POST /api/team/invite already exists on the Worker.
+
+export interface TeamContext {
+  parentId: string
+  parentCode: string
+  parentEmail: string
+}
+
+export interface TeamMember {
+  id: string
+  email: string
+  fullName?: string
+  /** parent_linked_at, ISO date. */
+  dateAdded: string
+}
+
+export interface TeamInvite {
+  id: string
+  email: string
+  status: string
+  createdAt: string
+  /** Email of the affiliate who sent the invite (pending invites to me). */
+  inviterEmail?: string
+  /** Copyable link, built from the invite token (parent view). */
+  inviteUrl?: string
+}
+
+/** The caller's team context: their team head's id, code and email —
+ *  or null when they are a standalone affiliate. The code is public
+ *  by design (it sits in every tracking-link URL); the parent's payout
+ *  wallet is never returned here. */
+export async function getMyTeamContext(): Promise<TeamContext | null> {
+  if (!isSupabaseConfigured || !supabase) return null
+  const { data, error } = await supabase.rpc('my_team_context')
+  if (error || !data) return null
+  const row = data as Row
+  const parentId = str(row, 'parent_id')
+  const parentCode = str(row, 'parent_code')
+  const parentEmail = str(row, 'parent_email')
+  if (!parentId || !parentCode || !parentEmail) return null
+  return { parentId, parentCode, parentEmail }
+}
+
+/** Members of the caller's team (parent view). Data comes from the
+ *  extended profiles / affiliate_profiles SELECT policies (030): a
+ *  parent reads members' rows, never the other way round. */
+export async function getMyTeamMembers(): Promise<TeamMember[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data, error } = await supabase.from('affiliate_profiles')
+    .select('profile_id, parent_linked_at').eq('parent_affiliate_id', user.id)
+    .order('parent_linked_at', { ascending: false })
+  if (error || !data) return []
+  const rows = data as Row[]
+  const ids = rows.map((r) => String(r.profile_id ?? '')).filter(Boolean)
+  if (ids.length === 0) return []
+  const { data: profs } = await supabase.from('profiles').select('id, email, full_name').in('id', ids)
+  const byId = new Map(((profs as Row[] | null) ?? []).map((p) => [String(p.id), p]))
+  return rows.map((r) => {
+    const p = byId.get(String(r.profile_id ?? ''))
+    return {
+      id: String(r.profile_id ?? ''),
+      email: p ? String(p.email ?? '') : '',
+      fullName: p ? str(p, 'full_name') : undefined,
+      dateAdded: String(r.parent_linked_at ?? '').slice(0, 10),
+    }
+  })
+}
+
+/** Invites the caller sent (parent view), newest first. The invite
+ *  link is rebuilt from the token — same base the Worker uses
+ *  (TEAM_INVITE_URL_BASE in services/tracking-worker/src/index.ts) —
+ *  so the copyable link survives a page reload. */
+export async function getMyTeamInvites(): Promise<TeamInvite[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data, error } = await supabase.from('team_invites')
+    .select('id, invited_email, token, status, created_at').eq('inviter_id', user.id)
+    .order('created_at', { ascending: false })
+  if (error || !data) return []
+  return (data as Row[]).map((r) => ({
+    id: String(r.id),
+    email: String(r.invited_email ?? ''),
+    status: String(r.status ?? 'pending'),
+    createdAt: String(r.created_at ?? ''),
+    inviteUrl: typeof r.token === 'string' && r.token
+      ? `https://affilayer.com/register?team=${r.token}`
+      : undefined,
+  }))
+}
+
+/** Invites sent TO the signed-in email that are still waiting for a
+ *  reply — the accept / decline banner on the dashboard and /pending. */
+export async function getMyPendingInvites(): Promise<TeamInvite[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !user.email) return []
+  const { data, error } = await supabase.from('team_invites')
+    .select('id, inviter_id, invited_email, status, created_at').eq('status', 'pending')
+    .order('created_at', { ascending: false })
+  if (error || !data) return []
+  const mine = (data as Row[]).filter(
+    (r) => typeof r.invited_email === 'string' && r.invited_email.toLowerCase() === user.email!.toLowerCase(),
+  )
+  const inviterIds = [...new Set(mine.map((r) => String(r.inviter_id ?? '')).filter(Boolean))]
+  let emailById = new Map<string, string>()
+  if (inviterIds.length > 0) {
+    const { data: profs } = await supabase.from('profiles').select('id, email').in('id', inviterIds)
+    emailById = new Map(((profs as Row[] | null) ?? []).map((p) => [String(p.id), String(p.email ?? '')]))
+  }
+  return mine.map((r) => ({
+    id: String(r.id),
+    email: String(r.invited_email ?? ''),
+    status: String(r.status ?? 'pending'),
+    createdAt: String(r.created_at ?? ''),
+    inviterEmail: emailById.get(String(r.inviter_id ?? '')),
+  }))
+}
+
+/** Invite one email to the caller's team, via the Worker
+ *  (POST /api/team/invite). Same call pattern as lib/payments.ts
+ *  workerCall: the user's Supabase JWT in the Authorization header,
+ *  JSON body, plain error on failure. The Worker calls the
+ *  create_team_invite RPC and sends the email; if the email fails the
+ *  invite still exists and the response carries the copyable link. */
+export async function inviteTeamMember(email: string): Promise<{ inviteUrl?: string; emailSent?: boolean; emailNote?: string; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Invites are not available right now.' }
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) return { error: 'You are not signed in.' }
+  let res: Response
+  try {
+    res = await fetch(`${TRACKING_URL.replace(/\/$/, '')}/api/team/invite`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: email.trim() }),
+    })
+  } catch {
+    return { error: 'Could not reach the invite service. Try again.' }
+  }
+  let data: Row = {}
+  try {
+    data = (await res.json()) as Row
+  } catch {
+    data = {}
+  }
+  if (!res.ok) return { error: typeof data.error === 'string' ? data.error : `Invite service returned ${res.status}.` }
+  return {
+    inviteUrl: typeof data.invite_url === 'string' ? data.invite_url : undefined,
+    emailSent: data.email_sent === true,
+    emailNote: typeof data.email_note === 'string' ? data.email_note : undefined,
+  }
+}
+
+async function teamRpc(fn: string, params?: Record<string, unknown>): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Teams are not available right now.' }
+  const { error } = params ? await supabase.rpc(fn, params) : await supabase.rpc(fn)
+  return error ? { error: error.message } : {}
+}
+
+/** Accept a team invite (the invited affiliate). */
+export async function acceptTeamInvite(id: string): Promise<{ error?: string }> {
+  return teamRpc('accept_team_invite', { p_invite_id: id })
+}
+
+/** Decline a team invite (the invited affiliate). */
+export async function declineTeamInvite(id: string): Promise<{ error?: string }> {
+  return teamRpc('decline_team_invite', { p_invite_id: id })
+}
+
+/** Remove a member from the caller's team (the parent). */
+export async function removeTeamMember(id: string): Promise<{ error?: string }> {
+  return teamRpc('remove_team_member', { p_member_id: id })
+}
+
+/** Leave the caller's own team (the member). */
+export async function leaveTeam(): Promise<{ error?: string }> {
+  return teamRpc('leave_team')
+}
+
+/** Cancel a pending invite the caller sent (the parent).
+ *  NOTE: design §4 requires a Cancel invite action, but §2d lists no
+ *  cancel RPC (only accept/decline for the invitee). Migration 030
+ *  defines `cancel_team_invite(p_invite_id)` as an extra RPC for
+ *  exactly this action (inviter-only, marks the row `cancelled`) —
+ *  this calls it. Do not rewire it to decline_team_invite — that RPC
+ *  is invitee-only by design. */
+export async function cancelTeamInvite(id: string): Promise<{ error?: string }> {
+  return teamRpc('cancel_team_invite', { p_invite_id: id })
 }

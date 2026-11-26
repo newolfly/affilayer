@@ -4,6 +4,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { supabase, isSupabaseConfigured } from './supabase'
+import { getMyTeamContext } from './data'
+import type { TeamContext } from './data'
 import type { Profile, Role } from './types'
 
 export interface AuthUser {
@@ -14,6 +16,10 @@ export interface AuthUser {
   status: 'pending' | 'approved' | 'rejected' | 'suspended'
   affiliateCode?: string
   organizationId?: string
+  /** The team head this affiliate belongs to, if any — loaded once at
+   *  session start via the my_team_context() RPC (migration 030).
+   *  Null = standalone affiliate. Never carries the parent's wallet. */
+  teamContext?: TeamContext | null
 }
 
 interface AuthCtx {
@@ -30,6 +36,9 @@ interface AuthCtx {
   updatePassword: (password: string) => Promise<{ error?: string }>
   signOut: () => Promise<void>
   setOnboarding: (p: Partial<Profile>) => void
+  /** Re-read the team context (after accepting / leaving a team) —
+   *  the session-start load above does not re-run on its own. */
+  refreshTeamContext: () => Promise<void>
 }
 
 const Ctx = createContext<AuthCtx | null>(null)
@@ -60,6 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: ap } = await client.from('affiliate_profiles').select('affiliate_code').eq('profile_id', s.user.id).maybeSingle()
         affiliateCode = (ap as { affiliate_code?: string } | null)?.affiliate_code ?? undefined
       }
+      // Team context (migration 030): a member's own code is inert
+      // while they are on a team, so the app needs the parent's code
+      // for tracking links. A missing RPC (030 not applied yet) reads
+      // as no team — login never blocks on it.
+      let teamContext: TeamContext | null = null
+      if (role === 'affiliate') {
+        teamContext = await getMyTeamContext().catch(() => null)
+      }
       setUser({
         id: s.user.id,
         email: s.user.email ?? '',
@@ -68,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         status: p?.status ?? 'pending',
         affiliateCode,
         organizationId: raw?.organization_id ?? undefined,
+        teamContext,
       })
       setLoading(false)
     })
@@ -121,6 +139,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // clamps role/status/kyc, so an approved user stays approved.
         const next = { ...user, ...p, status: p.status ?? 'pending' } as AuthUser
         setUser(next)
+      },
+      refreshTeamContext: async () => {
+        if (!supabase) return
+        const { data: { user: sUser } } = await supabase.auth.getUser()
+        if (!sUser) return
+        const teamContext = await getMyTeamContext().catch(() => null)
+        setUser((prev) => (prev && prev.id === sUser.id ? { ...prev, teamContext } : prev))
       },
     }),
     [user, loading],

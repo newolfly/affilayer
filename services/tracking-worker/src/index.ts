@@ -17,6 +17,8 @@
  *   GET  /api/payouts/:batchId/status -> admin: re-fetch payout status, sync + settle
  *   GET  /api/payments/balance        -> admin: NOWPayments custody balances
  *   POST /api/payments/validate-address -> signed-in user: validate a payout wallet address
+ *   POST /api/team/invite              -> approved affiliate: create a team invite + Resend email
+ *                                          (design ~/workspace/work/affilayer-team-subpanel-design-2026-11-26.md §2a)
  *
  * Money (migration 010, NOWPayments all-rounder): deposits are priced in
  * USD and credited only when NOWPayments reports the payment `finished`
@@ -122,6 +124,13 @@ export interface Env {
   NOWPAYMENTS_TOTP_SECRET?: string;
   NOWPAYMENTS_ENV?: string;
   NP_WORKER_PROOF?: string;
+  /** Sending-only Resend API key for the team-invite email
+   *  (POST /api/team/invite). Provisioning: create a sending-only key
+   *  named `worker-team-invites` in the Resend account and set it as
+   *  this Worker secret. Unset = the route still works and returns the
+   *  invite URL, but no email is sent (see handleTeamInvite). Never
+   *  reuse the Supabase SMTP key here. */
+  RESEND_TEAM_INVITE_KEY?: string;
 }
 
 // One store per isolate. Memoized: env does not change across requests
@@ -1530,6 +1539,190 @@ async function handleValidateAddress(request: Request, env: Env): Promise<Respon
   }
 }
 
+/**
+ * POST /api/team/invite — parent invites one email to their team
+ * (design §2a steps 2–4, §5 last paragraph).
+ *
+ * 1. Verify the caller's Supabase JWT (verifyUserJwt via requireUser).
+ * 2. Call the SECURITY DEFINER RPC create_team_invite(p_email) with the
+ *    caller's JWT forwarded, so auth.uid() inside the RPC is the parent.
+ *    The RPC enforces approved-affiliate / no-parent / valid-email /
+ *    not-self / no-live-duplicate / team-size-cap and returns
+ *    { invite_id, token, invite_url }.
+ * 3. Send the invite email via Resend (from AffiLayer
+ *    <support@affilayer.com>). Email failure is NEVER fatal: the invite
+ *    row already exists and the response carries the copyable invite
+ *    URL, so the parent can share the link directly. Same when the
+ *    Resend key is not configured yet — the route still deploys and
+ *    still returns the URL, with a note instead of an error.
+ *
+ * Errors: 401 missing/invalid JWT, 400 bad email, RPC rejections
+ * surfaced as 400/403 with the RPC's message (never a 500 for an
+ * expected failure).
+ */
+const TEAM_INVITE_URL_BASE = 'https://affilayer.com/register?team=';
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface TeamInviteResult {
+  invite_id?: string;
+  token?: string;
+  invite_url?: string;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Map a supabaseRpc throw to a response. PostgREST surfaces a Postgres
+ *  RAISE as 400 with a JSON body ({ message }) and RLS /
+ *  insufficient_privilege as 403 — both pass through with the RPC's
+ *  own message. Anything else (transport failure, upstream 5xx) is a
+ *  502, never a 500 for an expected RPC rejection. */
+function teamInviteRpcError(err: unknown): Response {
+  const msg = err instanceof Error ? err.message : String(err ?? '');
+  const m = msg.match(/supabase rpc \S+ failed: (\d{3})\s?([\s\S]*)$/);
+  if (m) {
+    const status = Number(m[1]);
+    let detail = (m[2] ?? '').trim();
+    try {
+      const parsed = JSON.parse(detail) as { message?: string };
+      if (parsed?.message) detail = parsed.message;
+    } catch {
+      // Not JSON — keep the raw text.
+    }
+    const mapped = status === 400 || status === 403 || status === 404 || status === 409 ? status : 502;
+    return json({ error: detail || 'invite failed' }, mapped);
+  }
+  return json({ error: msg || 'invite failed' }, 502);
+}
+
+/** Best-effort Resend send. Returns true only on a 2xx. Failures are
+ *  logged, never thrown — the caller still gets the invite URL. */
+async function sendTeamInviteEmail(
+  apiKey: string,
+  to: string,
+  inviterName: string,
+  inviteUrl: string,
+): Promise<boolean> {
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'AffiLayer <support@affilayer.com>',
+        to: [to],
+        subject: `${inviterName} invited you to join their team on AffiLayer`,
+        html:
+          `<p>${escapeHtml(inviterName)} invited you to join their team on AffiLayer.</p>` +
+          `<p>Accept the invite here: <a href="${escapeHtml(inviteUrl)}">${escapeHtml(inviteUrl)}</a></p>` +
+          `<p>The invite expires in 7 days. If you already have an AffiLayer account, sign in and accept it from your dashboard.</p>`,
+        text:
+          `${inviterName} invited you to join their team on AffiLayer.\n\n` +
+          `Accept the invite here: ${inviteUrl}\n\n` +
+          `The invite expires in 7 days. If you already have an AffiLayer account, sign in and accept it from your dashboard.`,
+      }),
+    });
+    if (!res.ok) {
+      console.error('team invite email failed:', res.status, (await res.text().catch(() => '')).slice(0, 200));
+    }
+    return res.ok;
+  } catch (err) {
+    console.error('team invite email failed:', err);
+    return false;
+  }
+}
+
+async function handleTeamInvite(request: Request, env: Env): Promise<Response> {
+  if (moneyRateLimited(clientIp(request))) return json({ error: 'rate limited' }, 429);
+  const auth = await requireUser(request, env);
+  if (auth instanceof Response) return auth;
+  const sb = supabaseClient(env);
+  if (!sb) return json({ error: 'supabase not configured' }, 500);
+
+  let body: { email?: unknown } = {};
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+  const email = typeof body.email === 'string' ? body.email.trim() : '';
+  if (!email || email.length > 254 || !EMAIL_RE.test(email)) {
+    return json({ error: 'a valid email address is required' }, 400);
+  }
+  // The RPC enforces this too; the local check gives the same 400
+  // without a round-trip when the caller's email is known.
+  if (auth.user.email && email.toLowerCase() === auth.user.email.toLowerCase()) {
+    return json({ error: 'you cannot invite yourself' }, 400);
+  }
+
+  let invite: TeamInviteResult;
+  try {
+    const raw = await supabaseRpc<TeamInviteResult | TeamInviteResult[]>(
+      sb,
+      'create_team_invite',
+      { p_email: email },
+      auth.jwt,
+    );
+    invite = Array.isArray(raw) ? raw[0] : raw;
+  } catch (err) {
+    return teamInviteRpcError(err);
+  }
+  const inviteUrl = invite?.invite_url ?? (invite?.token ? `${TEAM_INVITE_URL_BASE}${invite.token}` : '');
+  if (!inviteUrl) {
+    return json({ error: 'invite created but no invite URL was returned' }, 502);
+  }
+
+  // Parent display name for the subject: full_name when set, else the
+  // caller's email. Best-effort — a lookup failure falls back to email.
+  let inviterName = auth.user.email ?? 'An AffiLayer affiliate';
+  try {
+    const rows = await supabaseSelect<{ full_name: string | null }>(
+      sb,
+      'profiles',
+      `select=full_name&id=eq.${encodeURIComponent(auth.user.id)}&limit=1`,
+      auth.jwt,
+    );
+    const name = rows[0]?.full_name?.trim();
+    if (name) inviterName = name;
+  } catch {
+    // Keep the email fallback.
+  }
+
+  const resendKey = env.RESEND_TEAM_INVITE_KEY;
+  if (!resendKey) {
+    return json(
+      {
+        ok: true,
+        invite_id: invite.invite_id ?? null,
+        invite_url: inviteUrl,
+        email_sent: false,
+        email_note: 'email not sent — key not configured',
+      },
+      201,
+    );
+  }
+  const sent = await sendTeamInviteEmail(resendKey, email, inviterName, inviteUrl);
+  return json(
+    sent
+      ? { ok: true, invite_id: invite.invite_id ?? null, invite_url: inviteUrl, email_sent: true }
+      : {
+          ok: true,
+          invite_id: invite.invite_id ?? null,
+          invite_url: inviteUrl,
+          email_sent: false,
+          email_note: 'email failed to send — share the invite link directly',
+        },
+    201,
+  );
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // Every response leaves with the security headers (H-07), and an
@@ -1774,6 +1967,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     }
     if (request.method === 'POST' && path === '/api/payments/validate-address') {
       return handleValidateAddress(request, env);
+    }
+    if (request.method === 'POST' && path === '/api/team/invite') {
+      return handleTeamInvite(request, env);
     }
 
     return json({ error: 'not found' }, 404);
