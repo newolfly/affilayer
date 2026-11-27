@@ -467,7 +467,7 @@ function AffiliatePromoKit({ offer }: { offer: Offer }) {
             ))}
           </div>
           <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-semibold text-slate-900">Your to-do list {done.length > 0 && <span className="font-normal text-slate-500">— {done.length} of {todos.length} done</span>}</p>
+            <p className="text-sm font-semibold text-slate-900">Your to-do list <span className="font-normal text-slate-500">— {done.length} of {todos.length} done</span></p>
             <ul className="mt-2 space-y-2">
               {todos.map((t) => (
                 <li key={t}>
