@@ -8,7 +8,7 @@ import { acceptTeamInvite, applyToOffer, cancelTeamInvite, conversionCommission,
 import type { OfferApplication, PostbackConfig, ReportFilters, TeamInvite, TeamMember } from '../lib/data'
 import { looksLikeTrc20, validatePayoutAddress } from '../lib/payments'
 import { NETWORK_SETTINGS } from '../lib/network-settings'
-import { trackingLink } from '../lib/tracking'
+import { smartLink, trackingLink } from '../lib/tracking'
 import { trackEvent } from '../lib/analytics'
 import type { Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, SupportTicket } from '../lib/types'
 
@@ -241,6 +241,15 @@ const SMARTLINK_OFFER_NAME = 'Dating Smartlink'
 const SMARTLINK_LINE = 'One link with 1,000+ dating offers inside — each visitor sees the best match for their country and device.'
 const isSmartlink = (o: Offer) => o.name === SMARTLINK_OFFER_NAME
 
+/** The Gambling Smartlink: one link rotating the South Asia casino and
+ *  sports betting brands (migration 033). Same shape as the dating line
+ *  above — no provider name, no backend mechanics. The live card below
+ *  renders only when at least one Gambling offer is active; all rows
+ *  are paused at build time, so nothing shows yet. */
+const GAMBLING_SMARTLINK_CODE = 'gambling'
+const GAMBLING_SMARTLINK_LINE = 'One link that rotates South Asia casino and sports betting — each visitor sees the best match for their country and device.'
+const isGamblingOffer = (o: Offer) => o.vertical === 'Gambling'
+
 function countriesText(o: Offer): string {
   return !o.countries || o.countries.length === 0 || o.countries.includes('ALL') ? 'All countries' : o.countries.join(', ')
 }
@@ -267,6 +276,10 @@ const COMING_SOON_NAMED: ComingSoonOffer[] = [
   // Finance Survey RevShare: the 50% was seen once and never re-confirmed
   // — no % on this card until it is confirmed in writing at launch.
   { name: 'Finance Survey RevShare', payout: 'Revenue share — rate confirmed at launch', category: 'Surveys', countries: 'All countries' },
+  // Gambling Smartlink: the 8 South Asia brands are paused in the DB
+  // (migration 033). DELETE this row when the first gambling offer
+  // activates — the live card then comes from getOffers() automatically.
+  { name: 'Gambling Smartlink', payout: 'Up to 45% of net revenue', category: 'Gambling', countries: 'Bangladesh, India, Pakistan, Nepal' },
 ]
 const COMING_SOON_MOBIDEA: ComingSoonOffer[] = [
   // Real € payouts from the DB rows (imported 27 Nov 2026, all CPA, EUR),
@@ -320,14 +333,27 @@ const COMING_SOON_CJ: ComingSoonOffer[] = [
 ]
 
 export function AffiliateOffers() {
+  const { user } = useAuth()
   const { data: offers, loading } = useLoad(getOffers, [] as Offer[])
   const [q, setQ] = useState('')
   const [vertical, setVertical] = useState('')
   const filtered = offers.filter((o) => (!q || o.name.toLowerCase().includes(q.toLowerCase())) && (!vertical || o.vertical === vertical))
   const active = filtered.filter((o) => o.status === 'active')
   const comingSoon = [...COMING_SOON_NAMED, ...COMING_SOON_MOBIDEA, ...COMING_SOON_CJ]
+  // Gambling Smartlink: renders only once a Gambling offer is active.
+  // Team members share their head's code (same pattern as the promo kit).
+  const gamblingActive = offers.filter((o) => o.status === 'active' && isGamblingOffer(o))
+  const gamblingCode = user?.teamContext?.parentCode ?? user?.affiliateCode ?? ''
   return (
     <div className="space-y-4">
+      {gamblingActive.length > 0 && gamblingCode && (
+        <Card title="Gambling Smartlink">
+          <p className="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">{GAMBLING_SMARTLINK_LINE}</p>
+          <p className="mt-2 text-sm text-slate-600">You earn 22.5%–45% of net revenue, depending on the brand. Paid in USDT (TRC20) once your approved balance reaches $50, Net-30.</p>
+          <p className="mt-3 break-all rounded-lg bg-slate-50 px-3 py-2 font-mono text-sm text-slate-900">{smartLink(gamblingCode, GAMBLING_SMARTLINK_CODE)}</p>
+          <CopyButton text={smartLink(gamblingCode, GAMBLING_SMARTLINK_CODE)} label="Copy smartlink" className="mt-3" />
+        </Card>
+      )}
       <Card title="Offers">
         <div className="mb-4 flex gap-2">
           <input className={inputCls} placeholder="Search offers…" aria-label="Search offers" value={q} onChange={(e) => setQ(e.target.value)} />

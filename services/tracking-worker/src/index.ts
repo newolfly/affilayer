@@ -2016,6 +2016,10 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       // real-offers-only because demo offers are stripped from
       // SupabaseStore (see supabase-store.ts).
       let pinnedOfferId: string | null = null;
+      // 033: a code carrying a vertical only rotates offers of that
+      // vertical — the gambling chain must never pick a VPN, dating
+      // or other offer. NULL keeps the old whole-pool behaviour.
+      let smartlinkVertical: string | null = null;
       if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
         if (!isDemoSmartlinkCode(code)) return json({ error: 'smartlink not found' }, 404);
       } else {
@@ -2026,13 +2030,13 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         // closed. offer_id NULL means the code is not pinned to one
         // offer and the existing pick flow runs unchanged.
         const sb = supabaseClient(env);
-        let rows: { code: string; offer_id: string | null }[] | null = null;
+        let rows: { code: string; offer_id: string | null; vertical: string | null }[] | null = null;
         try {
           rows = sb
-            ? await supabaseSelect<{ code: string; offer_id: string | null }>(
+            ? await supabaseSelect<{ code: string; offer_id: string | null; vertical: string | null }>(
                 sb,
                 'smartlinks',
-                `select=code,offer_id&code=eq.${encodeURIComponent(code)}&limit=1`,
+                `select=code,offer_id,vertical&code=eq.${encodeURIComponent(code)}&limit=1`,
                 sb.anonKey,
               )
             : null;
@@ -2041,10 +2045,12 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         }
         if (!rows || rows.length === 0) return json({ error: 'smartlink not found' }, 404);
         pinnedOfferId = rows[0].offer_id;
+        smartlinkVertical = rows[0].vertical ?? null;
       }
       const store = getStore(env);
       const allOffers = await store.listOffers();
-      const offers = pinnedOfferId ? allOffers.filter((o) => o.id === pinnedOfferId) : allOffers;
+      let offers = pinnedOfferId ? allOffers.filter((o) => o.id === pinnedOfferId) : allOffers;
+      if (smartlinkVertical) offers = offers.filter((o) => o.vertical === smartlinkVertical);
       // H-06: enforce per-offer click caps at the edge, in the same
       // windows migration 022 enforces in the record RPC (UTC calendar
       // day for daily_cap, UTC calendar month for monthly_cap, which
