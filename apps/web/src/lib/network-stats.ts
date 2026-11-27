@@ -28,7 +28,7 @@
  *     publicly, so it is not counted here.
  *     Guides = published posts in blog-data.ts (== RSS item count).
  */
-export const STATS_PULLED_AT = '25 November 2026'
+export const STATS_PULLED_AT = '27 November 2026'
 
 export interface NetworkStat {
   value: string
@@ -40,9 +40,9 @@ export interface NetworkStat {
 export const NETWORK_STATS: NetworkStat[] = [
   { value: '195', label: 'Countries live', sub: 'a country page with local join terms for each', icon: 'compass' },
   { value: '5', label: 'Offers live', sub: 'in the public catalogue right now', icon: 'tag' },
-  { value: '25', label: 'Guides published', sub: 'launch notes, guides and announcements', icon: 'file' },
-  { value: '77', label: 'Clicks tracked', sub: 'written to the ledger since launch', icon: 'chart' },
-  { value: '23', label: 'Conversions recorded', sub: 'each one a ledger row — never edited, never deleted', icon: 'check' },
+  { value: '28', label: 'Guides published', sub: 'launch notes, guides and announcements', icon: 'file' },
+  { value: '82', label: 'Clicks tracked', sub: 'written to the ledger since launch', icon: 'chart' },
+  { value: '24', label: 'Conversions recorded', sub: 'each one a ledger row — never edited, never deleted', icon: 'check' },
 ]
 
 /** Shown under the strip wherever it renders. Do not remove: it is what
