@@ -304,10 +304,22 @@ export function Onboarding() {
 }
 
 export function Pending() {
-  const { user, refreshTeamContext } = useAuth()
+  const { user, refreshTeamContext, refreshEmailConfirmed } = useAuth()
   const navigate = useNavigate()
   const [invites, setInvites] = useState<TeamInvite[]>([])
   const [inviteError, setInviteError] = useState('')
+  // Live verified state: re-read the session user's confirmation flag
+  // on mount (landing straight from the confirmation link) and
+  // whenever the tab regains focus (confirmed in another tab) — the
+  // page flips to the green verified box without a manual reload.
+  // The auth-state subscription in AuthProvider covers the same
+  // events; this is the belt-and-braces re-fetch.
+  useEffect(() => {
+    refreshEmailConfirmed()
+    const onFocus = () => { void refreshEmailConfirmed() }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [refreshEmailConfirmed])
   // A pending invite for this email is the only screen an existing
   // account can reach before accepting (design §2c) — show the
   // accept / decline banner here too, not just on the dashboard.
@@ -346,7 +358,10 @@ export function Pending() {
             <>No account is signed in. Log in to check your approval status.</>
           )}
         </p>
-        {user?.status === 'pending' && (
+        {user?.status === 'pending' && user?.emailConfirmed && (
+          <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Email confirmed ✓ — your application is under review. You will be able to use the app once it is approved.</p>
+        )}
+        {user?.status === 'pending' && !user?.emailConfirmed && (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">Your application is under review. You will be able to use the app once it is approved. While you wait, make sure your email is confirmed: click the confirmation link we emailed you when you registered. You cannot log in until your email is confirmed, even after approval.</p>
         )}
         {!user && (

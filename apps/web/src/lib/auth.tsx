@@ -16,6 +16,13 @@ export interface AuthUser {
   status: 'pending' | 'approved' | 'rejected' | 'suspended'
   affiliateCode?: string
   organizationId?: string
+  /** Whether the session user's email is confirmed
+   *  (auth.users email_confirmed_at). /pending shows a green
+   *  "Email confirmed" state when true and the amber "confirm your
+   *  email" warning when false — a pending user who just clicked
+   *  their confirmation link must not be told to confirm it again
+   *  (27 Nov 2026). */
+  emailConfirmed?: boolean
   /** The team head this affiliate belongs to, if any — loaded once at
    *  session start via the my_team_context() RPC (migration 030).
    *  Null = standalone affiliate. Never carries the parent's wallet. */
@@ -39,6 +46,12 @@ interface AuthCtx {
   /** Re-read the team context (after accepting / leaving a team) —
    *  the session-start load above does not re-run on its own. */
   refreshTeamContext: () => Promise<void>
+  /** Re-read the session user's email-confirmation flag from the
+   *  server and merge it into the app user. /pending calls this on
+   *  mount and on window focus so it flips to the verified state
+   *  when the user lands straight from the confirmation link or
+   *  confirms in another tab — no manual reload. */
+  refreshEmailConfirmed: () => Promise<void>
 }
 
 const Ctx = createContext<AuthCtx | null>(null)
@@ -86,11 +99,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         affiliateCode,
         organizationId: raw?.organization_id ?? undefined,
         teamContext,
+        emailConfirmed: !!s.user.email_confirmed_at,
       })
       setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!session?.user) setUser(null)
+      if (!session?.user) { setUser(null); return }
+      // Live confirmation state: the confirmation link (SIGNED_IN) and
+      // a confirmation completed in another tab both refresh the
+      // session user — carry email_confirmed_at into the app user so
+      // /pending flips to the verified state without a reload. If no
+      // app user is loaded yet, the session-start load above sets the
+      // flag when it resolves.
+      setUser((prev) => (prev && prev.id === session.user.id ? { ...prev, emailConfirmed: !!session.user.email_confirmed_at } : prev))
     })
     return () => sub.subscription.unsubscribe()
   }, [])
@@ -146,6 +167,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!sUser) return
         const teamContext = await getMyTeamContext().catch(() => null)
         setUser((prev) => (prev && prev.id === sUser.id ? { ...prev, teamContext } : prev))
+      },
+      refreshEmailConfirmed: async () => {
+        if (!supabase) return
+        const { data: { user: sUser } } = await supabase.auth.getUser()
+        if (!sUser) return
+        setUser((prev) => (prev && prev.id === sUser.id ? { ...prev, emailConfirmed: !!sUser.email_confirmed_at } : prev))
       },
     }),
     [user, loading],
