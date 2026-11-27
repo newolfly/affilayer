@@ -26,6 +26,22 @@ const base = (children: JSX.Element, props: IconProps) => (
   </svg>
 )
 
+/** Filled variant for brand marks (YouTube / Medium), which read better
+ *  solid than in the stroke style above. */
+const fillBase = (children: JSX.Element, props: IconProps) => (
+  <svg
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    fill="currentColor"
+    stroke="none"
+    className={props.className}
+    aria-hidden="true"
+  >
+    {children}
+  </svg>
+)
+
 const PATHS: Record<string, (p: IconProps) => JSX.Element> = {
   grid: (p) => base(<>
     <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -182,6 +198,17 @@ const PATHS: Record<string, (p: IconProps) => JSX.Element> = {
   play: (p) => base(<>
     <rect x="2" y="5" width="20" height="14" rx="4" />
     <polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none" />
+  </>, p),
+  /** Brand marks. YouTube: rounded rect with the play triangle cut out
+   *  (evenodd). Medium: bold geometric "M". */
+  youtube: (p) => fillBase(<>
+    <path
+      fillRule="evenodd"
+      d="M21.58 7.19a2.5 2.5 0 0 0-1.76-1.77C18.25 5 12 5 12 5s-6.25 0-7.82.42A2.5 2.5 0 0 0 2.42 7.2 26.2 26.2 0 0 0 2 12a26.2 26.2 0 0 0 .42 4.81 2.5 2.5 0 0 0 1.76 1.77C5.75 19 12 19 12 19s6.25 0 7.82-.42a2.5 2.5 0 0 0 1.76-1.77A26.2 26.2 0 0 0 22 12a26.2 26.2 0 0 0-.42-4.81zM10 15.27V8.73L15.5 12 10 15.27z"
+    />
+  </>, p),
+  medium: (p) => fillBase(<>
+    <path d="M3 20V4h3.6l5.4 8.4L17.4 4H21v16h-3.4v-9.4L12 18.8 6.4 10.6V20H3z" />
   </>, p),
 }
 

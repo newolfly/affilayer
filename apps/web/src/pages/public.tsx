@@ -638,23 +638,38 @@ function PromoVideo() {
   )
 }
 
-/** Follow AffiLayer — the only confirmed social handle is YouTube
- *  (@affilayer). No other network is listed: no handle on record. */
+/** Follow AffiLayer — the only confirmed social handles are YouTube and
+ *  Medium (both @affilayer). No other network is listed: no handle on record. */
 function FollowAffiLayer() {
   const t = useT()
   return (
     <section className="mt-10 text-center">
       <Reveal>
         <h2 className="text-2xl font-bold text-white">{t('home.follow.title')}</h2>
-        <a
-          href="https://www.youtube.com/@affilayer"
-          target="_blank"
-          rel="noreferrer"
-          className="pill-btn-outline mt-5 inline-flex items-center gap-2"
-        >
-          <Icon name="play" className="h-4 w-4" />
-          YouTube — @affilayer
-        </a>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="https://www.youtube.com/@affilayer"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="YouTube — @affilayer"
+            title="YouTube — @affilayer"
+            className="pill-btn-outline inline-flex items-center gap-2"
+          >
+            <Icon name="youtube" className="h-4 w-4" />
+            YouTube — @affilayer
+          </a>
+          <a
+            href="https://medium.com/@affilayer"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Medium — @affilayer"
+            title="Medium — @affilayer"
+            className="pill-btn-outline inline-flex items-center gap-2"
+          >
+            <Icon name="medium" className="h-4 w-4" />
+            Medium — @affilayer
+          </a>
+        </div>
       </Reveal>
     </section>
   )

@@ -247,9 +247,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             <div className="mt-3">
               <a href="/download/affilayer.apk" download className="pill-btn-outline">{t('footer.app')}</a>
             </div>
-            <p className="mt-3 text-sm">
+            <p className="mt-3 flex items-center gap-3 text-sm">
               <span className="text-[#8A97A8]">{t('home.follow.title')}: </span>
-              <a href="https://www.youtube.com/@affilayer" target="_blank" rel="noreferrer" className="font-semibold text-amber-400 hover:text-amber-300">YouTube — @affilayer</a>
+              <a href="https://www.youtube.com/@affilayer" target="_blank" rel="noreferrer" aria-label="YouTube — @affilayer" title="YouTube — @affilayer" className="text-amber-400 hover:text-amber-300"><Icon name="youtube" className="h-5 w-5" /></a>
+              <a href="https://medium.com/@affilayer" target="_blank" rel="noreferrer" aria-label="Medium — @affilayer" title="Medium — @affilayer" className="text-amber-400 hover:text-amber-300"><Icon name="medium" className="h-5 w-5" /></a>
             </p>
           </div>
           <div>
