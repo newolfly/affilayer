@@ -451,7 +451,10 @@ function ProductCards() {
   )
 }
 
-const BENEFIT_ICONS: IconName[] = ['tag', 'sparkle', 'link', 'shield', 'globe', 'ticket', 'chart']
+/** One icon + one accent per card, in card order. Accents cycle
+ *  gold → sky → periwinkle so no two neighbours share a colour. */
+const BENEFIT_ICONS: IconName[] = ['tag-check', 'route', 'funnel', 'banknote-check', 'globe', 'headset', 'chart']
+const BENEFIT_ACCENTS = ['gold', 'sky', 'indigo', 'gold', 'sky', 'indigo', 'gold'] as const
 
 export function BenefitsSection() {
   const t = useT()
@@ -459,6 +462,7 @@ export function BenefitsSection() {
     t: t(`benefit.${n}.t` as `benefit.${1 | 2 | 3 | 4 | 5 | 6 | 7}.t`),
     d: t(`benefit.${n}.d` as `benefit.${1 | 2 | 3 | 4 | 5 | 6 | 7}.d`),
     icon: BENEFIT_ICONS[n - 1],
+    accent: BENEFIT_ACCENTS[n - 1],
   }))
   return (
     <section className="mt-14">
@@ -471,20 +475,23 @@ export function BenefitsSection() {
       <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {benefits.map((b, i) => (
           <Reveal key={b.t} delay={(i % 3) * 80}>
-          <div className="lift h-full rounded-xl bg-white p-5 text-slate-900">
-            <span className="inline-flex rounded-lg bg-amber-500/10 p-2 text-amber-700">
-              <Icon name={b.icon} className="h-5 w-5" />
+          <div className={`benefit-card benefit-accent-${b.accent}`}>
+            <span className="benefit-icon">
+              <Icon name={b.icon} className="h-6 w-6" />
             </span>
-            <h3 className="mt-3 font-semibold">{b.t}</h3>
-            <p className="mt-2 text-sm text-slate-600">{b.d}</p>
+            <h3 className="mt-4 text-lg font-bold text-white">{b.t}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-300">{b.d}</p>
           </div>
           </Reveal>
         ))}
         <Reveal delay={160}>
-        <div className="lift flex h-full flex-col justify-between rounded-xl border border-amber-500/40 bg-amber-500/10 p-5">
+        <div className="benefit-cta benefit-accent-gold flex flex-col justify-between">
           <div>
-            <h3 className="font-semibold text-white">{t('home.ready.title')}</h3>
-            <p className="mt-2 text-sm text-slate-300">{t('home.ready.body')}</p>
+            <span className="benefit-icon">
+              <Icon name="sparkle" className="h-6 w-6" />
+            </span>
+            <h3 className="mt-4 text-lg font-bold text-white">{t('home.ready.title')}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-300">{t('home.ready.body')}</p>
           </div>
           <Link to="/register" className="pill-btn mt-4 self-start">{t('home.ready.cta')}</Link>
         </div>
