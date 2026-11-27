@@ -1,9 +1,10 @@
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, useEffect, useRef } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { AppLayout, PageLoader } from './components/layout'
 import type { DashboardNavItem } from './components/layout'
 import { useAuth, roleHome } from './lib/auth'
+import { trackPageview } from './lib/analytics'
 import { supabase } from './lib/supabase'
 import { RouteSeo } from './lib/seo'
 import { LocaleProvider, useT } from './lib/i18n'
@@ -155,6 +156,22 @@ function SkipLink() {
   )
 }
 
+/** PostHog $pageview on every route change (27 Nov 2026). PostHog is
+ *  initialised with capture_pageview off, so the SPA would otherwise
+ *  record only the first load. The ref guard skips the duplicate
+ *  effect run React StrictMode performs in dev. */
+function PageviewTracker() {
+  const location = useLocation()
+  const last = useRef('')
+  useEffect(() => {
+    const path = `${location.pathname}${location.search}`
+    if (last.current === path) return
+    last.current = path
+    trackPageview()
+  }, [location.pathname, location.search])
+  return null
+}
+
 function SignupRedirect() {
   const navigate = useNavigate()
   useEffect(() => {
@@ -230,6 +247,7 @@ export default function App() {
     <BrowserRouter>
       <LocaleProvider>
       <SkipLink />
+      <PageviewTracker />
       <SignupRedirect />
       <RecoveryRedirect />
       <RouteSeo />

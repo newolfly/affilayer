@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
@@ -9,6 +9,7 @@ import type { OfferApplication, PostbackConfig, ReportFilters, TeamInvite, TeamM
 import { looksLikeTrc20, validatePayoutAddress } from '../lib/payments'
 import { NETWORK_SETTINGS } from '../lib/network-settings'
 import { trackingLink } from '../lib/tracking'
+import { trackEvent } from '../lib/analytics'
 import type { Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, SupportTicket } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
@@ -535,6 +536,15 @@ export function AffiliateOfferDetail() {
   const [applyError, setApplyError] = useState('')
   const [applying, setApplying] = useState(false)
   useEffect(() => { if (id) getOffers().then((os) => { setOffer(os.find((o) => o.id === id)); setLoaded(true) }).catch(() => setLoaded(true)) }, [id])
+  // PostHog offer_viewed (27 Nov 2026): once per offer shown, with id
+  // + name only. The ref guard skips the StrictMode double-effect in dev.
+  const viewedRef = useRef('')
+  useEffect(() => {
+    if (offer && viewedRef.current !== offer.id) {
+      viewedRef.current = offer.id
+      trackEvent('offer_viewed', { offer_id: offer.id, offer_name: offer.name })
+    }
+  }, [offer])
   useEffect(() => {
     if (id) getMyOfferApplications().then((apps) => setApplication(apps.find((a) => a.offerId === id) ?? null))
   }, [id])
@@ -547,6 +557,7 @@ export function AffiliateOfferDetail() {
     const r = await applyToOffer(offer)
     setApplying(false)
     if (r.error) { setApplyError(r.error); return }
+    trackEvent('offer_applied', { offer_id: offer.id, offer_name: offer.name })
     const apps = await getMyOfferApplications()
     setApplication(apps.find((a) => a.offerId === offer.id) ?? null)
   }
@@ -625,6 +636,15 @@ export function AffiliateTrackingLinks() {
     [offerId, code, subs],
   )
   const [copied, setCopied] = useState(false)
+  // PostHog tracking_link_generated (27 Nov 2026): the copy click is
+  // the moment a link actually goes out into the world — a link built
+  // but never copied is never used. Offer id + name only.
+  const copyLink = () => {
+    navigator.clipboard?.writeText(url).catch(() => undefined)
+    setCopied(true)
+    const o = offers.find((x) => x.id === offerId)
+    trackEvent('tracking_link_generated', { offer_id: offerId, offer_name: o?.name ?? offerId })
+  }
   return (
     <Card title="Tracking link generator">
       <p className="mb-4 text-sm text-slate-500">Your tracking link is your own web address for one offer. Anyone who clicks it is counted as yours — if they buy or sign up, you earn the commission.</p>
@@ -652,7 +672,7 @@ export function AffiliateTrackingLinks() {
         {url && (
           <div className="rounded-lg bg-slate-50 p-3">
             <p className="break-all text-sm font-mono">{url}</p>
-            <button className={`${btnCls} mt-3`} onClick={() => { navigator.clipboard?.writeText(url).catch(() => undefined); setCopied(true) }}>{copied ? 'Copied' : 'Copy link'}</button>
+            <button className={`${btnCls} mt-3`} onClick={copyLink}>{copied ? 'Copied' : 'Copy link'}</button>
             <p className="mt-3 text-xs text-slate-500">Share this link anywhere you promote the offer. Clicks and results appear in Reports.</p>
           </div>
         )}
@@ -842,6 +862,7 @@ export function AffiliatePayouts() {
     if (value > approvedBalance) { setError(`Amount exceeds your approved balance of $${approvedBalance.toFixed(2)}.`); return }
     const r = await requestPayout(value, settings.defaultCurrency, method)
     if (r.error) { setError(r.error); return }
+    trackEvent('payout_requested', { amount: value, currency: settings.defaultCurrency })
     const fresh = await getPayouts()
     setLive((prev) => (prev ? { ...prev, payouts: fresh } : prev))
     setAmount('')
@@ -859,6 +880,9 @@ export function AffiliatePayouts() {
     const r = await savePayoutWallet({ currency: 'usdttrc20', address })
     setWalletBusy(false)
     if (r.error) { setWalletError(r.error); return }
+    // PostHog wallet_added (27 Nov 2026): no address or value — the
+    // wallet address itself must never leave the app in analytics.
+    trackEvent('wallet_added')
     setLive((prev) => (prev ? { ...prev, wallet: { currency: 'usdttrc20', address } } : prev))
     setWalletSaved(true)
   }

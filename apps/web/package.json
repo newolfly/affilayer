@@ -2,11 +2,12 @@
   "dependencies": {
     "@affilayer/shared": "*",
     "@supabase/supabase-js": "^2.45.0",
+    "posthog-js": "^1.455.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0"
   },
-  "description": "AffiLayer web frontend \u2014 public site, auth, and role-based affiliate / advertiser / admin app",
+  "description": "AffiLayer web frontend — public site, auth, and role-based affiliate / advertiser / admin app",
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.0",
     "@types/react": "^19.1.0",

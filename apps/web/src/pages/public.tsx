@@ -594,13 +594,16 @@ export function Home() {
   )
 }
 
-/** Homepage promo video — the AffiLayer YouTube promo
- *  (video ID cAVqulSQk9g). Was a plain 16:9 iframe — first the
- *  standard youtube.com embed, then the privacy-enhanced nocookie
- *  embed — and BOTH showed a broken grey box on Sojib's screen
- *  (25 Nov and 27 Nov 2026). Per the agreed fallback, it is now a
- *  clickable thumbnail that opens the video on YouTube instead:
- *  no embed, nothing to break. */
+/** Homepage promo video — the AffiLayer promo (25 s, 720p), served
+ *  from our own site as a native <video> so it AUTOPLAYS on load
+ *  (muted — browsers only allow muted autoplay — looping, with
+ *  controls so anyone can unmute). History: the YouTube iframe
+ *  broke on Sojib's screen twice (standard embed 25 Nov, nocookie
+ *  embed 27 Nov — both a grey box), then a thumbnail link (27 Nov).
+ *  Sojib asked 27 Nov 19:55 for autoplay on the homepage: a
+ *  self-hosted video is the only form that autoplays reliably —
+ *  no embed, no YouTube dependency, nothing external to break.
+ *  Files: public/promo.mp4 (the landscape promo) + poster. */
 function PromoVideo() {
   const t = useT()
   return (
@@ -608,30 +611,28 @@ function PromoVideo() {
       <Reveal>
         <h2 className="text-center text-2xl font-bold text-white">{t('home.video.title')}</h2>
         <div className="mx-auto mt-5 aspect-video max-w-3xl overflow-hidden rounded-2xl border border-slate-800">
+          <video
+            className="h-full w-full object-cover"
+            src="/promo.mp4"
+            poster="/promo-poster.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            controls
+            preload="auto"
+          />
+        </div>
+        <p className="mt-3 text-center text-sm text-slate-400">
           <a
             href="https://www.youtube.com/watch?v=cAVqulSQk9g"
             target="_blank"
             rel="noreferrer"
-            title="AffiLayer | Connect Globally. Promote Smarter. Earn Together"
-            className="relative block h-full w-full"
+            className="underline hover:text-white"
           >
-            <img
-              src="https://i.ytimg.com/vi/cAVqulSQk9g/maxresdefault.jpg"
-              onError={(e) => {
-                e.currentTarget.src = 'https://i.ytimg.com/vi/cAVqulSQk9g/hqdefault.jpg'
-              }}
-              alt="AffiLayer | Connect Globally. Promote Smarter. Earn Together"
-              className="h-full w-full object-cover"
-            />
-            <span className="absolute inset-0 flex items-center justify-center">
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/90 shadow-lg">
-                <svg viewBox="0 0 24 24" className="ml-1 h-7 w-7 fill-slate-950" aria-hidden="true">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </span>
-            </span>
+            Watch on YouTube
           </a>
-        </div>
+        </p>
       </Reveal>
     </section>
   )

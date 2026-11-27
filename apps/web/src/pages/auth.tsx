@@ -6,6 +6,7 @@ import { Icon } from '../components/icons'
 import { useAuth } from '../lib/auth'
 import { acceptTeamInvite, declineTeamInvite, getMyPendingInvites, saveMyFullName } from '../lib/data'
 import type { TeamInvite } from '../lib/data'
+import { trackEvent } from '../lib/analytics'
 import { supabase } from '../lib/supabase'
 import type { Role } from '../lib/types'
 
@@ -258,6 +259,7 @@ export function Onboarding() {
     // A team member stays status='pending' by design, but the
     // RequireAuth carve-out admits them — so they go to the dashboard,
     // not the approval-waiting page. Everyone else waits for approval.
+    trackEvent('profile_completed', { role: form.role })
     navigate(user?.teamContext ? '/app' : '/pending')
   }
 

@@ -3,6 +3,12 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 import { AuthProvider } from './lib/auth'
+import { initAnalytics } from './lib/analytics'
+
+// PostHog (27 Nov 2026): free tier only, key from VITE_POSTHOG_KEY.
+// No key configured yet → initAnalytics() is a no-op and no PostHog
+// code loads and no PostHog request is made.
+initAnalytics()
 
 // Cloudflare Web Analytics (Q8, 10 Nov 2026): the beacon loads only when a
 // site token is configured at build time (VITE_CF_WEB_ANALYTICS_TOKEN).

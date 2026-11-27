@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { supabase, isSupabaseConfigured } from './supabase'
 import { getMyTeamContext } from './data'
+import { identifyUser, trackEvent } from './analytics'
 import type { TeamContext } from './data'
 import type { Profile, Role } from './types'
 
@@ -101,6 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         teamContext,
         emailConfirmed: !!s.user.email_confirmed_at,
       })
+      // PostHog identify (27 Nov 2026): profile id + affiliate code
+      // only — never email. Runs on every session start, so it covers
+      // sign-in, page reload, and confirmation-link sign-in alike.
+      identifyUser(s.user.id, affiliateCode)
       setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -124,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isSupabaseConfigured || !supabase) return { error: 'Authentication is not available right now. Please try again later.' }
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) return { error: error.message }
+        trackEvent('user_signed_in')
         window.location.href = '/app'
         return {}
       },
@@ -131,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isSupabaseConfigured || !supabase) return { error: 'Registration is not available right now. Please try again later.' }
         const { error } = await supabase.auth.signUp({ email, password, options: { data: { role, ...(meta ?? {}) } } })
         if (error) return { error: error.message }
+        trackEvent('user_signed_up', { role })
         return {}
       },
       requestPasswordReset: async (email) => {
