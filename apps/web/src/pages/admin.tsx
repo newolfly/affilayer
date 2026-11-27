@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Card, Empty, Stat } from '../components/layout'
 import { BarChart } from '../components/charts'
-import { buildDailyClickSeries, conversionCommission, creditDepositManually, decideConversion, decidePayout, decideProfile, getAllDeposits, getAuditLogs, getCampaigns, getClicks, getConversions, getLedgerEntries, getNpPayouts, getOffers, getPayouts, getProfiles, getStats, getTeamSummary, getTickets, offerPayoutLabel, releasePayoutReservation, updateOfferStatus } from '../lib/data'
-import type { AuditLogEntry } from '../lib/data'
+import { buildDailyClickSeries, conversionCommission, creditDepositManually, decideConversion, decidePayout, decideProfile, getAllDeposits, getAuditLogs, getCampaigns, getClicks, getConversions, getLedgerEntries, getNpPayouts, getOffers, getPayouts, getProfiles, getReconciliations, getStats, getTeamSummary, getTickets, offerPayoutLabel, recordProviderCredit, releasePayoutReservation, reverseConversion, setReconciliationStatus, updateOfferStatus } from '../lib/data'
+import type { AuditLogEntry, ProviderReconciliation } from '../lib/data'
 import { executePayout, getCustodyBalance, refreshPayoutStatus, verifyPayout } from '../lib/payments'
 import { NETWORK_SETTINGS } from '../lib/network-settings'
 import { supabase } from '../lib/supabase'
@@ -169,6 +169,8 @@ export function AdminConversions() {
   const [ledger, setLedger] = useState<CommissionLedgerEntry[]>([])
   const [offers, setOffers] = useState<Offer[]>([])
   const [error, setError] = useState('')
+  const [reverseTarget, setReverseTarget] = useState<string | null>(null)
+  const [reverseReason, setReverseReason] = useState('')
   useEffect(() => {
     getLedgerEntries().then(setLedger)
     getOffers().then(setOffers)
@@ -182,6 +184,23 @@ export function AdminConversions() {
     const r = await decideConversion(id, to, user.id)
     if (r.error) { setError(r.error); return }
     setError('')
+    getConversions().then(setLiveConversions)
+    getLedgerEntries().then(setLedger)
+  }
+  // Balance mirror (migration 032): reverse an APPROVED conversion that
+  // turns out to be wrong. Payable/paid rows are excluded — they are
+  // reserved in a payout request, so release the reservation first.
+  // The ledger is immutable: reversal flips the row to 'reversed' and a
+  // corrected credit is recorded fresh (see Reconciliation).
+  const reverse = async (id: string) => {
+    const reason = reverseReason.trim()
+    if (!reason) { setError('A reason is required to reverse a conversion.'); return }
+    if (!user) return
+    const r = await reverseConversion(id, reason, user.id)
+    if (r.error) { setError(r.error); return }
+    setError('')
+    setReverseTarget(null)
+    setReverseReason('')
     getConversions().then(setLiveConversions)
     getLedgerEntries().then(setLedger)
   }
@@ -202,6 +221,16 @@ export function AdminConversions() {
                   <span className="flex justify-end gap-2">
                     <button className={btnCls} onClick={() => decide(c.id, 'approved')}>Approve</button>
                     <button className={dangerCls} onClick={() => decide(c.id, 'rejected')}>Reject</button>
+                  </span>
+                )}
+                {c.status === 'approved' && reverseTarget !== c.id && (
+                  <button className={dangerCls} onClick={() => { setReverseTarget(c.id); setReverseReason('') }}>Reverse</button>
+                )}
+                {c.status === 'approved' && reverseTarget === c.id && (
+                  <span className="flex justify-end gap-2">
+                    <input className={`${inputCls} w-48`} placeholder="Reason (required)" aria-label="Reversal reason" value={reverseReason} onChange={(e) => setReverseReason(e.target.value)} />
+                    <button className={dangerCls} onClick={() => reverse(c.id)}>Confirm reverse</button>
+                    <button className={ghostCls} onClick={() => { setReverseTarget(null); setReverseReason('') }}>Cancel</button>
                   </span>
                 )}
               </td>
@@ -252,6 +281,183 @@ export function AdminLedger() {
         </table></div>
       )}
     </Card>
+  )
+}
+
+const RECONCILIATION_PROVIDERS = ['nowpayments', 'cj', 'mobidea', 'lospollos'] as const
+
+/** Balance mirror (migration 032): the admin view of provider
+ *  reconciliation. Admin-only — provider names and backend mechanics
+ *  are visible here and nowhere affiliate-facing. The ledger is USD;
+ *  mismatches are flagged and decided by a person, never auto-edited. */
+export function AdminReconciliation() {
+  const { user } = useAuth()
+  const [rows, setRows] = useState<ProviderReconciliation[]>([])
+  const [conversions, setConversions] = useState<Conversion[]>([])
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [offers, setOffers] = useState<Offer[]>([])
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [statusNote, setStatusNote] = useState<Record<string, string>>({})
+  const [statusPick, setStatusPick] = useState<Record<string, ProviderReconciliation['status']>>({})
+  const [credit, setCredit] = useState({ affiliateId: '', offerId: '', provider: 'nowpayments', reference: '', amount: '', note: '' })
+
+  const load = () => {
+    getReconciliations().then(setRows)
+    getConversions().then(setConversions)
+    getProfiles().then(setProfiles)
+    getOffers().then(setOffers)
+  }
+  useEffect(() => { load() }, [])
+
+  const mismatches = rows.filter((r) => r.status === 'mismatch' || (r.status === 'open' && Math.abs(r.difference) > 0.005))
+  const openCount = rows.filter((r) => r.status === 'open').length
+  const stuck = conversions.filter((c) => c.status === 'pending' && Date.now() - new Date(c.createdAt).getTime() > 7 * 24 * 3600 * 1000)
+  const approvedAffiliates = profiles.filter((p) => p.role === 'affiliate' && p.status === 'approved')
+  const activeOffers = offers.filter((o) => o.status === 'active')
+  const emailById = new Map(profiles.map((p) => [p.id, p.email]))
+  const offerName = (id: string) => offers.find((o) => o.id === id)?.name ?? id
+  const latestCj = rows.find((r) => r.provider === 'cj')
+  const cjUnmatched = (latestCj?.details?.unmatched as Array<Record<string, unknown>> | undefined) ?? []
+
+  const markStatus = async (row: ProviderReconciliation) => {
+    const to = statusPick[row.id] ?? 'matched'
+    if (!user) return
+    const r = await setReconciliationStatus(row.id, to, (statusNote[row.id] ?? '').trim(), user.id)
+    if (r.error) { setError(r.error); return }
+    setError('')
+    setNotice(`${row.provider} ${row.periodStart} marked ${to}.`)
+    load()
+  }
+
+  const submitCredit = async () => {
+    if (!user) return
+    const amount = Number(credit.amount)
+    if (!credit.affiliateId || !credit.offerId || !credit.reference.trim() || !Number.isFinite(amount) || amount <= 0) {
+      setError('Pick an affiliate and an offer, enter a reference and a positive USD amount.')
+      return
+    }
+    const r = await recordProviderCredit({
+      affiliateId: credit.affiliateId, offerId: credit.offerId, provider: credit.provider,
+      reference: credit.reference.trim(), amount, note: credit.note.trim(), actorId: user.id,
+    })
+    if (r.error) { setError(r.error); return }
+    const res = r.result
+    if (!res) { setError('No result returned.'); return }
+    if (res.amountMismatch) {
+      setError(`Already recorded at $${res.existingAmount?.toFixed(2)} — requested $${res.requestedAmount?.toFixed(2)}. Nothing was recorded; decide against the provider's own record.`)
+      return
+    }
+    if (res.duplicate) {
+      setNotice(`Already recorded (${res.idempotencyKey}). No duplicate created.`)
+    } else {
+      setNotice('Credit recorded as pending — it goes through the normal approval flow in Conversions.')
+    }
+    setError('')
+    setCredit({ affiliateId: '', offerId: '', provider: 'nowpayments', reference: '', amount: '', note: '' })
+    load()
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat label="Open reconciliations" icon="clock" value={String(openCount)} />
+        <Stat label="Mismatches to decide" icon="eye" value={String(mismatches.length)} />
+        <Stat label="Pending over 7 days" icon="chart" value={String(stuck.length)} />
+      </div>
+      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {notice && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
+
+      <Card title="Mismatches — decide, never auto-edit">
+        <p className="mb-3 text-sm text-slate-500">A mismatch means what a provider reports and what the ledger holds disagree. Mark it matched (explained by the note), mismatch (still open), or explained — and fix the money by reversing the wrong conversion and recording a fresh credit, never by editing a ledger row.</p>
+        {mismatches.length === 0 ? <Empty text="No mismatches. Open rows with a zero difference are fine." /> : mismatches.map((r) => (
+          <div key={r.id} className="border-b border-slate-100 py-3 text-sm last:border-0">
+            <p className="font-medium">{r.provider} · {r.periodStart} → {r.periodEnd} · provider ${r.providerTotal.toFixed(2)} vs ledger ${r.ledgerTotal.toFixed(2)} · <span className="text-red-700">difference ${r.difference.toFixed(2)}</span> · {r.status}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <select className={inputCls} aria-label="New status" value={statusPick[r.id] ?? 'matched'} onChange={(e) => setStatusPick((x) => ({ ...x, [r.id]: e.target.value as ProviderReconciliation['status'] }))}>
+                <option value="matched">matched</option>
+                <option value="mismatch">mismatch</option>
+                <option value="explained">explained</option>
+                <option value="open">open</option>
+              </select>
+              <input className={`${inputCls} min-w-48 flex-1`} placeholder="Note — what explains this?" aria-label="Status note" value={statusNote[r.id] ?? ''} onChange={(e) => setStatusNote((x) => ({ ...x, [r.id]: e.target.value }))} />
+              <button className={btnCls} onClick={() => markStatus(r)}>Mark</button>
+            </div>
+          </div>
+        ))}
+      </Card>
+
+      <Card title="Record a provider credit by hand">
+        <p className="mb-3 text-sm text-slate-500">For earnings a provider reports with no automatic postback — NOWPayments referral earnings (affiliate self-report + admin verify) and corrections. The amount is already the affiliate amount in USD; no rate math happens here. A repeat with the same reference reports as a duplicate; a repeat with a different amount records nothing. The conversion starts pending and goes through the normal approval flow.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <select className={inputCls} aria-label="Affiliate" value={credit.affiliateId} onChange={(e) => setCredit((c) => ({ ...c, affiliateId: e.target.value }))}>
+            <option value="">Affiliate…</option>
+            {approvedAffiliates.map((p) => <option key={p.id} value={p.id}>{p.email}</option>)}
+          </select>
+          <select className={inputCls} aria-label="Offer" value={credit.offerId} onChange={(e) => setCredit((c) => ({ ...c, offerId: e.target.value }))}>
+            <option value="">Offer…</option>
+            {activeOffers.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </select>
+          <select className={inputCls} aria-label="Provider" value={credit.provider} onChange={(e) => setCredit((c) => ({ ...c, provider: e.target.value }))}>
+            {RECONCILIATION_PROVIDERS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <input className={inputCls} placeholder="Provider reference (merchant / transaction id)" aria-label="Provider reference" value={credit.reference} onChange={(e) => setCredit((c) => ({ ...c, reference: e.target.value }))} />
+          <input className={inputCls} type="number" min="0" step="0.01" placeholder="Amount (USD)" aria-label="Amount in USD" value={credit.amount} onChange={(e) => setCredit((c) => ({ ...c, amount: e.target.value }))} />
+          <input className={inputCls} placeholder="Note — what was verified, and where" aria-label="Credit note" value={credit.note} onChange={(e) => setCredit((c) => ({ ...c, note: e.target.value }))} />
+        </div>
+        <button className={`${btnCls} mt-3`} onClick={submitCredit}>Record credit</button>
+      </Card>
+
+      <Card title="Pending over 7 days">
+        {stuck.length === 0 ? <Empty text="Nothing stuck — every pending conversion is under 7 days old." /> : (
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Date</th><th>Affiliate</th><th>Offer</th><th>Amount</th></tr></thead>
+            <tbody>{stuck.map((c) => (
+              <tr key={c.id} className="border-t border-slate-100">
+                <td className="py-2">{c.createdAt.slice(0, 10)}</td>
+                <td>{emailById.get(c.affiliateId ?? '') ?? c.affiliateCode ?? '—'}</td>
+                <td>{offerName(c.offerId)}</td><td>${c.payout.toFixed(2)} {c.currency}</td>
+              </tr>
+            ))}</tbody>
+          </table></div>
+        )}
+        <p className="mt-3 text-xs text-slate-500">Approve, reject, or reverse these in Conversions — this list only surfaces them.</p>
+      </Card>
+
+      <Card title="CJ import — read-only">
+        <p className="mb-3 text-sm text-slate-500">CJ has no postback: sales reconcile weekly from the Transaction Detail report, matched by sid (the click id). Approve only after CJ's 60-day locking passes. Unmatched SIDs are never auto-credited — they wait here for an admin decision.</p>
+        <p className="text-sm">Script: <span className="font-mono text-xs">~/workspace/work/affilayer-cj-import-report.py</span> (dry-run by default; <span className="font-mono text-xs">--live</span> inserts)</p>
+        <p className="mt-1 text-sm">Review list file: <span className="font-mono text-xs">~/workspace/work/affilayer-cj-unmatched.json</span></p>
+        {cjUnmatched.length === 0 ? <p className="mt-3 text-sm text-slate-500">No unmatched SIDs on the latest CJ import.</p> : (
+          <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Transaction</th><th>SID</th><th>Reason</th></tr></thead>
+            <tbody>{cjUnmatched.map((u, i) => (
+              <tr key={i} className="border-t border-slate-100">
+                <td className="py-2 font-mono">{String(u.txid ?? '—')}</td>
+                <td className="font-mono">{String(u.sid ?? '—')}</td>
+                <td>{String(u.reason ?? '—')}</td>
+              </tr>
+            ))}</tbody>
+          </table></div>
+        )}
+      </Card>
+
+      <Card title="All reconciliation rows">
+        {rows.length === 0 ? <Empty text="No reconciliation rows yet — the first CJ import or manual check creates one." /> : (
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
+            <thead><tr className="text-left text-slate-500"><th className="py-2">Provider</th><th>Period</th><th>Provider total</th><th>Ledger total</th><th>Difference</th><th>Status</th></tr></thead>
+            <tbody>{rows.slice(0, 50).map((r) => (
+              <tr key={r.id} className="border-t border-slate-100">
+                <td className="py-2">{r.provider}</td><td>{r.periodStart} → {r.periodEnd}</td>
+                <td>${r.providerTotal.toFixed(2)}</td><td>${r.ledgerTotal.toFixed(2)}</td>
+                <td className={Math.abs(r.difference) > 0.005 ? 'text-red-700' : ''}>${r.difference.toFixed(2)}</td><td>{r.status}</td>
+              </tr>
+            ))}</tbody>
+          </table></div>
+        )}
+        <p className="mt-3 text-xs text-slate-500">Daily checks run from the VM cron (reconciliation-daily.py) and the daily report flags anything new. Mobidea is dormant until activation; its receiver converts EUR to USD at the ECB daily rate at record time.</p>
+      </Card>
+    </div>
   )
 }
 

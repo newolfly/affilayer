@@ -332,6 +332,115 @@ export async function decideConversion(id: string, to: 'approved' | 'rejected', 
   return error ? { error: error.message } : {}
 }
 
+/** Balance mirror (migration 032): provider reconciliation rows.
+ *  Admin-only table; a non-admin read yields [] via RLS. */
+export type ProviderReconciliation = {
+  id: string
+  provider: 'lospollos' | 'cj' | 'nowpayments' | 'mobidea'
+  periodStart: string
+  periodEnd: string
+  providerTotal: number
+  ledgerTotal: number
+  difference: number
+  status: 'open' | 'matched' | 'mismatch' | 'explained'
+  details: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+export async function getReconciliations(): Promise<ProviderReconciliation[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data, error } = await supabase.from('provider_reconciliations').select('*').order('period_start', { ascending: false }).limit(200)
+  if (error || !data) return []
+  return (data as Row[]).map((r) => ({
+    id: String(r.id),
+    provider: String(r.provider) as ProviderReconciliation['provider'],
+    periodStart: String(r.period_start ?? ''),
+    periodEnd: String(r.period_end ?? ''),
+    providerTotal: num(r, 'provider_total') ?? 0,
+    ledgerTotal: num(r, 'ledger_total') ?? 0,
+    difference: num(r, 'difference') ?? 0,
+    status: String(r.status ?? 'open') as ProviderReconciliation['status'],
+    details: (r.details as Record<string, unknown>) ?? {},
+    createdAt: String(r.created_at ?? ''),
+    updatedAt: String(r.updated_at ?? ''),
+  }))
+}
+
+export async function setReconciliationStatus(id: string, status: ProviderReconciliation['status'], note: string, actorId: string): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { error } = await supabase.rpc('set_reconciliation_status', {
+    p_row_id: id, p_status: status, p_note: note || null, p_actor: actorId,
+  })
+  return error ? { error: error.message } : {}
+}
+
+/** Admin: reverse a pending/approved conversion (and its ledger row) —
+ *  the correction path for a wrong credit. Payable/paid rows are
+ *  refused by the RPC (they are reserved in a payout request). The
+ *  ledger is immutable: a reversal never edits a row, it flips the
+ *  status to 'reversed', and a corrected credit is recorded fresh. */
+export async function reverseConversion(id: string, reason: string, actorId: string): Promise<{ error?: string; result?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { data, error } = await supabase.rpc('reverse_conversion', {
+    p_conversion_id: id, p_actor: actorId, p_reason: reason,
+  })
+  if (error) return { error: error.message }
+  return { result: typeof data === 'string' ? data : undefined }
+}
+
+export type ProviderCreditResult = {
+  duplicate: boolean
+  amountMismatch: boolean
+  existingAmount?: number
+  requestedAmount?: number
+  conversionId?: string
+  idempotencyKey?: string
+}
+
+/** Admin: record a provider credit by hand (NOWPayments self-report +
+ *  admin verify, or a CJ/Mobidea/LosPollos correction). The amount is
+ *  already the affiliate amount in USD — no rate math happens here.
+ *  Idempotent on `manual:<provider>:<reference>`: a repeat with the
+ *  same amount reports duplicate, a repeat with a different amount
+ *  reports amountMismatch and records nothing. The conversion starts
+ *  pending and goes through the normal approval flow. */
+export async function recordProviderCredit(args: {
+  affiliateId: string
+  offerId: string
+  provider: string
+  reference: string
+  amount: number
+  note: string
+  actorId: string
+  metadata?: Record<string, unknown>
+}): Promise<{ error?: string; result?: ProviderCreditResult }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { data, error } = await supabase.rpc('record_provider_credit', {
+    p_affiliate_id: args.affiliateId,
+    p_offer_id: args.offerId,
+    p_provider: args.provider,
+    p_provider_reference: args.reference,
+    p_amount: args.amount,
+    p_currency: 'USD',
+    p_note: args.note || null,
+    p_actor: args.actorId,
+    p_metadata: args.metadata ?? {},
+  })
+  if (error) return { error: error.message }
+  const r = (data ?? {}) as Record<string, unknown>
+  return {
+    result: {
+      duplicate: r.duplicate === true,
+      amountMismatch: r.amount_mismatch === true,
+      existingAmount: typeof r.existing_amount === 'number' ? r.existing_amount : undefined,
+      requestedAmount: typeof r.requested_amount === 'number' ? r.requested_amount : undefined,
+      conversionId: typeof r.conversion_id === 'string' ? r.conversion_id : (typeof r.id === 'string' ? r.id : undefined),
+      idempotencyKey: typeof r.idempotency_key === 'string' ? r.idempotency_key : undefined,
+    },
+  }
+}
+
 /** Admin: approve / reject / suspend / reinstate an affiliate account.
  *  In Supabase mode this updates `profiles.status` directly. That is safe
  *  because the table's UPDATE policy (`profiles_update_own_or_admin`)

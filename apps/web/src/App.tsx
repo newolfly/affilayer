@@ -70,6 +70,7 @@ const AdminCampaigns = lazy(() => import('./pages/admin').then((m) => ({ default
 const AdminConversions = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminConversions })))
 const AdminFraud = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminFraud })))
 const AdminLedger = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminLedger })))
+const AdminReconciliation = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminReconciliation })))
 const AdminPayouts = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminPayouts })))
 const AdminDeposits = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminDeposits })))
 const AdminCompliance = lazy(() => import('./pages/admin').then((m) => ({ default: m.AdminCompliance })))
@@ -138,6 +139,7 @@ const adminNav: DashboardNavItem[] = [
   { to: '/app/admin/conversions', label: 'Conversions', icon: 'check' },
   { to: '/app/admin/fraud', label: 'Fraud', icon: 'shield' },
   { to: '/app/admin/ledger', label: 'Ledger', icon: 'file' },
+  { to: '/app/admin/reconciliation', label: 'Reconciliation', icon: 'chart' },
   { to: '/app/admin/payouts', label: 'Payouts', icon: 'banknote' },
   { to: '/app/admin/deposits', label: 'Deposits', icon: 'wallet' },
   { to: '/app/admin/compliance', label: 'Compliance', icon: 'lock' },
@@ -321,6 +323,7 @@ export default function App() {
             <Route path="conversions" element={<AdminConversions />} />
             <Route path="fraud" element={<AdminFraud />} />
             <Route path="ledger" element={<AdminLedger />} />
+            <Route path="reconciliation" element={<AdminReconciliation />} />
             <Route path="payouts" element={<AdminPayouts />} />
             <Route path="deposits" element={<AdminDeposits />} />
             <Route path="compliance" element={<AdminCompliance />} />
