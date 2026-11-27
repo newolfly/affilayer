@@ -104,6 +104,9 @@ export interface Conversion {
   status: ConversionStatus;
   idempotencyKey: string;
   sub1?: string;
+  /** Provider-reported originals (e.g. Mobidea EUR amount + FX rate at
+   *  record time). Written to conversions.metadata; the ledger stays USD. */
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt?: string;
 }
@@ -117,6 +120,9 @@ export interface CommissionLedgerEntry {
   amount: number;
   currency: string;
   status: ConversionStatus;
+  /** One-line provenance (e.g. Mobidea FX summary). Set at insert time:
+   *  the ledger immutability trigger forbids note changes afterwards. */
+  note?: string;
   createdAt: string;
   updatedAt?: string;
 }

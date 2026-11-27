@@ -8,6 +8,9 @@
  *   POST /conversion                  -> HMAC-signed, idempotent, deduped (201 / 200 duplicate)
  *   GET  /api/postbacks/cpalead       -> CPAlead S2S postback receiver (relay-IP or secret gated)
  *   GET  /api/postbacks/lospollos     -> LosPollos S2S postback receiver (secret gated)
+ *   GET  /api/postbacks/mobidea       -> Mobidea S2S postback receiver (secret gated; DORMANT —
+ *                                          no Mobidea offer is active, no postback URL is
+ *                                          registered, no live-traffic E2E until activation)
  *   GET  /api/stats                   -> operator-only aggregation (Bearer POSTBACK_SECRET)
  *   GET  /api/clicks/:clickId         -> operator-only click + its conversion
  *   POST /api/payments/deposits       -> advertiser deposit (NOWPayments invoice, JWT)
@@ -113,6 +116,13 @@ export interface Env {
    *  publishes no relay IP, so the secret in the registered postback
    *  URL is the only caller check. Unset = POSTBACK_SECRET fallback. */
   LOSPOLLOS_POSTBACK_SECRET?: string;
+  /** Dedicated secret for the Mobidea receiver's ?secret= path — same
+   *  W4-06 pattern as LOSPOLLOS_POSTBACK_SECRET. Unset = POSTBACK_SECRET
+   *  fallback. DORMANT: no Mobidea offer is active and no Global
+   *  Postback URL is registered until activation (design
+   *  ~/workspace/work/affilayer-balance-mirror-design-2026-11-27.md
+   *  §3.4); set the dedicated secret when the URL is registered. */
+  MOBIDEA_POSTBACK_SECRET?: string;
   /** Bearer token for /api/stats and /api/clicks. Falls back to
    *  POSTBACK_SECRET until set (R22) — see isOperator(). */
   OPERATOR_TOKEN?: string;
@@ -253,6 +263,16 @@ function isLospollosLandingUrl(url: string): boolean {
   return /kissableheart\.org/.test(url);
 }
 
+/** Mobidea landings. The tracking domains rotate
+ *  (frictionstrange.wiki, bingogreen.help, …), so the stable markers
+ *  are our publisher id and the click-id placeholder in the link we
+ *  store: `...&pub_id=299169&pub_click_id=ADD_CLICK_ID_HERE&site=PASS_SITE_HERE`.
+ *  The click handler substitutes the placeholders (see redirectLocation)
+ *  and the postback receiver resolves pub_click_id back to the click. */
+function isMobideaLandingUrl(url: string): boolean {
+  return /[?&]pub_click_id=/.test(url) && /[?&]pub_id=299169/.test(url);
+}
+
 /**
  * Redirect target for a recorded click: the offer landing URL plus the
  * AffiLayer click id. CPAlead offers additionally receive the click id
@@ -262,8 +282,10 @@ function isLospollosLandingUrl(url: string): boolean {
  * as CJ's sid so CJ's commission reports can be reconciled back to
  * this click. LosPollos smartlinks additionally receive the click id
  * as their s1 sub-ID so their S2S postback returns it as {s1} (see
- * handleLospollosPostback). All other offers get click_id only,
- * exactly as before.
+ * handleLospollosPostback). Mobidea offers additionally receive the
+ * click id as pub_click_id and the affiliate code as site, replacing
+ * the placeholders in the stored link (see handleMobideaPostback).
+ * All other offers get click_id only, exactly as before.
  */
 function redirectLocation(offer: Offer, clickId: string, affiliateCode: string): string {
   let target = appendQuery(offer.landingUrl, 'click_id', clickId);
@@ -276,6 +298,10 @@ function redirectLocation(offer: Offer, clickId: string, affiliateCode: string):
   }
   if (isLospollosLandingUrl(offer.landingUrl)) {
     target = appendQuery(target, 's1', clickId);
+  }
+  if (isMobideaLandingUrl(offer.landingUrl)) {
+    target = target.replace('pub_click_id=ADD_CLICK_ID_HERE', `pub_click_id=${encodeURIComponent(clickId)}`);
+    target = target.replace('site=PASS_SITE_HERE', `site=${encodeURIComponent(affiliateCode)}`);
   }
   return target;
 }
@@ -980,6 +1006,192 @@ async function handleLospollosPostback(request: Request, env: Env, url: URL): Pr
     ledger_entry_id: ledgerEntry.id,
     payout,
     currency,
+  });
+}
+
+/** Affiliate share of a Mobidea payout, applied at record time in
+ *  handleMobideaPostback.
+ *  ZERO-PROFIT LAUNCH PROMO (25 Nov 2026): share is 1.0 — 100% of the
+ *  reported value goes to the affiliate until 25 Feb 2027. On
+ *  26 Feb 2027 revert to 0.75 (the proposed 25% network keep) unless
+ *  Sojib extends the promo. */
+const MOBIDEA_AFFILIATE_SHARE = 1.0;
+
+/** ECB daily reference rate for EUR->USD, fetched at record time.
+ *  Free, no key. Fail-closed: on any fetch/parse failure the caller
+ *  gets a 502 and nothing is recorded — a conversion must never be
+ *  booked at a stale or unknown rate. Mobidea retries failed
+ *  postbacks, so a transient ECB outage only delays the credit. */
+async function fetchEcbUsdRate(): Promise<number> {
+  const res = await fetch('https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml', {
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!res.ok) throw new Error(`ECB rate fetch failed: HTTP ${res.status}`);
+  const xml = await res.text();
+  const m = xml.match(/currency=["']USD["']\s+rate=["']([\d.]+)["']/);
+  const rate = m ? Number(m[1]) : Number.NaN;
+  if (!Number.isFinite(rate) || rate <= 0) throw new Error('ECB USD rate not found in feed');
+  return rate;
+}
+
+/**
+ * GET /api/postbacks/mobidea — Mobidea S2S postback receiver.
+ *
+ * DORMANT until activation: no Mobidea offer is active, no Global
+ * Postback URL is registered in the Mobidea dashboard, and no
+ * live-traffic E2E has run. The registered URL (at activation) is:
+ *   https://go.affilayer.com/api/postbacks/mobidea
+ *     ?pub_click_id={{EXTERNAL_ID}}&money={{MONEY}}&secret=<MOBIDEA_POSTBACK_SECRET>
+ * ({{EXTERNAL_ID}} is the click id we sent as pub_click_id;
+ * {{MONEY}} is the revenue in EUR. {{DATA1}}/{{DATA2}}/{{DATA4}}/
+ * {{DATA5}} are accepted and stored in metadata when present.)
+ *
+ * Recording mirrors handleLospollosPostback line for line, with two
+ * differences: the amount arrives in EUR and is converted to USD at
+ * record time at the locked ECB daily rate (the ledger is USD — the
+ * EUR originals, rate, source and date are preserved in
+ * conversions.metadata and summarised in the ledger note), and the
+ * offer must be a EUR offer (422 otherwise). Dedup is on the click
+ * id (idempotency_key `mobidea:<pub_click_id>`); Mobidea publishes
+ * no separate transaction-id token — if the dashboard exposes one,
+ * prefer `mobidea:<transaction id>` and keep the click fallback.
+ * Conversion status `pending` → normal approval flow.
+ */
+async function handleMobideaPostback(request: Request, env: Env, url: URL): Promise<Response> {
+  const store = getStore(env);
+  const secretParam = url.searchParams.get('secret') ?? '';
+  const expectedSecret = env.MOBIDEA_POSTBACK_SECRET ?? env.POSTBACK_SECRET;
+  const secretOk =
+    !!expectedSecret &&
+    secretParam.length > 0 &&
+    timingSafeEqualStr(secretParam, expectedSecret);
+  if (!secretOk) {
+    return json({ error: 'forbidden' }, 403);
+  }
+
+  const clickId = url.searchParams.get('pub_click_id') ?? url.searchParams.get('external_id') ?? '';
+  const moneyRaw = url.searchParams.get('money');
+  if (!clickId || moneyRaw == null) {
+    return json({ error: 'pub_click_id and money are required' }, 400);
+  }
+  const reportedEur = Number(moneyRaw);
+  if (!Number.isFinite(reportedEur) || reportedEur <= 0 || reportedEur > MAX_PAYOUT) {
+    return json({ error: 'money must be a positive payout within the per-conversion ceiling' }, 422);
+  }
+
+  const click = await store.getClick(clickId);
+  if (!click) return json({ error: 'unknown click' }, 404);
+  const offer = await store.getOffer(click.offerId);
+  if (!offer) return json({ error: 'unknown offer' }, 404);
+  if ((offer.currency ?? 'USD') !== 'EUR') {
+    return json({ error: 'mobidea reports EUR only' }, 422);
+  }
+
+  const idempotencyKey = `mobidea:${clickId}`;
+  const existing =
+    (await store.findConversionByIdempotencyKey(idempotencyKey)) ??
+    (await store.findConversionByClickAndOffer(clickId, click.offerId));
+  if (existing) {
+    try {
+      await ensureLedgerEntry(store, existing, offer);
+    } catch (err) {
+      console.error('mobidea duplicate-path ledger backfill failed:', err, { conversionId: existing.id });
+    }
+    return json({ ok: true, duplicate: true, conversion_id: existing.id });
+  }
+
+  // EUR -> USD at the locked ECB daily rate. Fail closed on any FX
+  // failure: nothing is recorded at an unknown rate.
+  let fxRate: number;
+  try {
+    fxRate = await fetchEcbUsdRate();
+  } catch (err) {
+    console.error('mobidea FX unavailable:', err);
+    return json({ error: 'fx unavailable' }, 502);
+  }
+  const fxDate = new Date().toISOString().slice(0, 10);
+  const payout = Math.round(reportedEur * fxRate * MOBIDEA_AFFILIATE_SHARE * 100) / 100;
+  if (!Number.isFinite(payout) || payout <= 0 || payout > MAX_PAYOUT) {
+    return json({ error: 'converted payout outside the per-conversion ceiling' }, 422);
+  }
+
+  const affiliateCode =
+    click.affiliateCode === SMARTLINK_AFFILIATE_CODE || !click.affiliateCode
+      ? HOUSE_AFFILIATE_CODE
+      : click.affiliateCode;
+  const metadata: Record<string, unknown> = {
+    provider: 'mobidea',
+    provider_amount: reportedEur,
+    provider_currency: 'EUR',
+    fx_rate: fxRate,
+    fx_source: 'ECB daily reference rate',
+    fx_date: fxDate,
+    site: affiliateCode,
+  };
+  for (const key of ['data1', 'data2', 'data4', 'data5'] as const) {
+    const v = url.searchParams.get(key);
+    if (v != null) metadata[key] = v;
+  }
+  const conversion: Conversion = {
+    id: crypto.randomUUID(),
+    clickId,
+    offerId: offer.id,
+    affiliateCode,
+    payout,
+    currency: 'USD',
+    status: 'pending',
+    idempotencyKey,
+    sub1: click.sub1,
+    metadata,
+    createdAt: new Date().toISOString(),
+  };
+  let recordedConversion: Conversion;
+  try {
+    recordedConversion = await store.recordConversion(conversion);
+  } catch (err) {
+    if (isAffiliateNotApprovedError(err)) {
+      return json({ error: 'affiliate not approved' }, 403);
+    }
+    throw err;
+  }
+
+  const commission = computeCommission(payout, offer.payoutModel ?? 'CPA', offer.rateBps);
+  const ledgerEntry = await store.recordLedgerEntry({
+    id: crypto.randomUUID(),
+    conversionId: recordedConversion.id,
+    affiliateCode,
+    offerId: offer.id,
+    amount: commission,
+    currency: 'USD',
+    status: 'pending',
+    note: `Mobidea €${reportedEur.toFixed(2)} @ ${fxRate} ECB ${fxDate}`,
+    createdAt: new Date().toISOString(),
+  });
+  console.log('mobidea postback recorded', {
+    clickId,
+    reportedEur,
+    fxRate,
+    recordedPayout: payout,
+  });
+
+  const configs = await store.getPostbackConfigs(offer.id, affiliateCode);
+  const vars: Record<string, string> = {
+    click_id: clickId,
+    conversion_id: recordedConversion.id,
+    payout: String(payout),
+    currency: 'USD',
+    status: conversion.status,
+    sub1: click.sub1 ?? '',
+  };
+  await deliverPostbacks(store, configs, vars);
+
+  return json({
+    ok: true,
+    duplicate: false,
+    conversion_id: recordedConversion.id,
+    ledger_entry_id: ledgerEntry.id,
+    payout,
+    currency: 'USD',
   });
 }
 
@@ -1924,6 +2136,14 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     // GET /api/postbacks/lospollos — LosPollos S2S postback receiver
     if (request.method === 'GET' && path === '/api/postbacks/lospollos') {
       return handleLospollosPostback(request, env, url);
+    }
+
+    // GET /api/postbacks/mobidea — Mobidea S2S postback receiver.
+    // DORMANT until activation (no Mobidea offer active, no postback
+    // URL registered, no live-traffic E2E). Gate probes (403/404/422)
+    // are the only live checks until then.
+    if (request.method === 'GET' && path === '/api/postbacks/mobidea') {
+      return handleMobideaPostback(request, env, url);
     }
 
     // GET /api/stats — operator only

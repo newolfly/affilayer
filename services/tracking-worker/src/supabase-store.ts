@@ -132,6 +132,7 @@ function mapConversion(row: Row): Conversion {
     status: (str(row.status) ?? 'pending') as Conversion['status'],
     idempotencyKey: str(row.idempotency_key) ?? '',
     sub1: str(row.sub1),
+    metadata: (row.metadata as Record<string, unknown> | undefined) ?? undefined,
     createdAt: str(row.created_at) ?? new Date().toISOString(),
     updatedAt: str(row.updated_at),
   };
@@ -290,6 +291,7 @@ export class SupabaseStore implements Store {
         p_status: conversion.status,
         p_idempotency_key: conversion.idempotencyKey,
         p_sub1: conversion.sub1 ?? null,
+        p_metadata: conversion.metadata ?? null,
         p_proof: await this.workerProofFor('tracking_record_conversion'),
       },
     );
@@ -374,6 +376,7 @@ export class SupabaseStore implements Store {
         p_offer_id: entry.offerId,
         p_amount: entry.amount,
         p_currency: entry.currency,
+        p_note: entry.note ?? null,
         p_proof: await this.workerProofFor('tracking_record_ledger_entry'),
       },
     );
