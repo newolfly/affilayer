@@ -992,9 +992,10 @@ export function AffiliateTeam() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  const [loaded, setLoaded] = useState(false)
   const load = () => {
-    getMyTeamMembers().then(setMembers)
-    getMyTeamInvites().then(setInvites)
+    Promise.all([getMyTeamMembers().then(setMembers), getMyTeamInvites().then(setInvites)])
+      .then(() => setLoaded(true))
   }
   useEffect(load, [])
   const pending = invites.filter((i) => i.status === 'pending')
@@ -1071,7 +1072,7 @@ export function AffiliateTeam() {
         )}
       </Card>
       <Card title={`Team members (${members.length})`}>
-        {members.length === 0 ? <Empty text="No team members yet. Invite someone above — they join with one click." /> : (
+        {!loaded ? <p className="text-sm text-slate-500">Loading team…</p> : members.length === 0 ? <Empty text="No team members yet. Invite someone above — they join with one click." /> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Email</th><th>Date added</th><th /></tr></thead>
             <tbody>{members.map((m) => (
@@ -1085,7 +1086,7 @@ export function AffiliateTeam() {
         )}
       </Card>
       <Card title={`Waiting for a reply (${pending.length})`}>
-        {pending.length === 0 ? <Empty text="No invites waiting for a reply." /> : (
+        {!loaded ? <p className="text-sm text-slate-500">Loading team…</p> : pending.length === 0 ? <Empty text="No invites waiting for a reply." /> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Email</th><th>Sent</th><th /></tr></thead>
             <tbody>{pending.map((inv) => (

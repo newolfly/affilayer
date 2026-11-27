@@ -304,7 +304,7 @@ export function Onboarding() {
 }
 
 export function Pending() {
-  const { user, refreshTeamContext, refreshEmailConfirmed } = useAuth()
+  const { user, loading, refreshTeamContext, refreshEmailConfirmed } = useAuth()
   const navigate = useNavigate()
   const [invites, setInvites] = useState<TeamInvite[]>([])
   const [inviteError, setInviteError] = useState('')
@@ -352,13 +352,18 @@ export function Pending() {
         ))}
         {inviteError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{inviteError}</p>}
         <p className="mt-3 text-sm text-slate-600">
-          {user ? (
+          {loading ? (
+            <>Checking your account…</>
+          ) : user ? (
             <>Account <strong>{user.email}</strong> is currently <strong>{user.status}</strong>.</>
           ) : (
             <>No account is signed in. Log in to check your approval status.</>
           )}
         </p>
-        {user?.status === 'pending' && user?.emailConfirmed && (
+        {user?.status === 'pending' && user?.teamContext && (
+          <p className="mt-3 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-900">You're on {user.teamContext.parentEmail}'s team — you can use the app now, no approval wait. <button className="font-semibold underline" onClick={() => navigate('/app')}>Go to dashboard</button></p>
+        )}
+        {user?.status === 'pending' && user?.emailConfirmed && !user?.teamContext && (
           <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Email confirmed ✓ — your application is under review. You will be able to use the app once it is approved.</p>
         )}
         {user?.status === 'pending' && !user?.emailConfirmed && (
