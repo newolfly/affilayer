@@ -127,6 +127,22 @@ export interface CommissionLedgerEntry {
   updatedAt?: string;
 }
 
+/** Bank-transfer payout details, submitted by the affiliate with the
+ *  payout request (27 Nov 2026). Stored as a snapshot on the request
+ *  row (payout_requests.payment_details) and as the affiliate's saved
+ *  details (affiliate_profiles.payment_details, key "bank_transfer").
+ *  No new table or column — both jsonb homes already exist. */
+export interface BankDetails {
+  accountHolder?: string;
+  bankName?: string;
+  accountNumber?: string;
+  branch?: string;
+  /** Routing number, SWIFT/BIC, or IFSC — whichever the bank uses. */
+  routing?: string;
+  country?: string;
+  currency?: string;
+}
+
 export interface PayoutRequest {
   id: string;
   affiliateCode: string;
@@ -136,6 +152,8 @@ export interface PayoutRequest {
   currency: string;
   status: 'requested' | 'approved' | 'paid' | 'rejected';
   method?: string;
+  /** Bank details as submitted with the request (Bank transfer only). */
+  bankDetails?: BankDetails;
   createdAt: string;
   updatedAt?: string;
 }

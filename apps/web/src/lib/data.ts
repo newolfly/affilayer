@@ -8,7 +8,7 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { TRACKING_URL } from './tracking'
 import { computeCommission } from '@affilayer/shared'
-import type { AdvertiserBalance, AdvertiserDeposit, Campaign, Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, Profile, Stats, SupportTicket } from './types'
+import type { AdvertiserBalance, AdvertiserDeposit, BankDetails, Campaign, Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, Profile, Stats, SupportTicket } from './types'
 
 export { isSupabaseConfigured }
 
@@ -91,6 +91,24 @@ export function mapProfile(r: Row): Profile {
   }
 }
 
+/** Parse the bank-details snapshot on a payout request row
+ *  (payout_requests.payment_details jsonb). Returns undefined unless
+ *  the row actually carries bank fields — USDT rows store {}. */
+export function parseBankDetails(raw: unknown): BankDetails | undefined {
+  let obj: Record<string, unknown> | null = null
+  if (raw && typeof raw === 'object') obj = raw as Record<string, unknown>
+  else if (typeof raw === 'string') {
+    try { obj = JSON.parse(raw) as Record<string, unknown> } catch { return undefined }
+  }
+  if (!obj || typeof obj !== 'object') return undefined
+  const pick = (k: string): string | undefined => (typeof obj[k] === 'string' && (obj[k] as string).trim() ? (obj[k] as string) : undefined)
+  const details: BankDetails = {
+    accountHolder: pick('accountHolder'), bankName: pick('bankName'), accountNumber: pick('accountNumber'),
+    branch: pick('branch'), routing: pick('routing'), country: pick('country'), currency: pick('currency'),
+  }
+  return (details.accountHolder || details.bankName || details.accountNumber) ? details : undefined
+}
+
 export function mapPayout(r: Row): PayoutRequest {
   // The database status is 'pending'; the UI calls that state 'requested'.
   // Without this translation the admin action buttons (which check for
@@ -99,7 +117,8 @@ export function mapPayout(r: Row): PayoutRequest {
   return {
     id: String(r.id), affiliateCode: String(r.affiliate_code ?? ''), affiliateId: str(r, 'affiliate_id'), amount: num(r, 'amount') ?? 0,
     currency: String(r.currency ?? 'USD'), status: (dbStatus === 'pending' ? 'requested' : dbStatus) as PayoutRequest['status'],
-    method: str(r, 'payment_method') ?? str(r, 'method'), createdAt: String(r.created_at ?? ''),
+    method: str(r, 'payment_method') ?? str(r, 'method'), bankDetails: parseBankDetails(r.payment_details),
+    createdAt: String(r.created_at ?? ''),
   }
 }
 
@@ -509,13 +528,49 @@ export async function creditDepositManually(id: string, amountUsd: number, actor
   })
   return error ? { error: error.message } : {}
 }
-export async function requestPayout(amount: number, currency: string, method: string): Promise<{ error?: string }> {
+export async function requestPayout(amount: number, currency: string, method: string, details?: BankDetails): Promise<{ error?: string }> {
   if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'You are not signed in.' }
+  // Bank transfer: the details ride on the request row as a snapshot
+  // (payout_requests.payment_details jsonb, already in the schema),
+  // so the admin sees exactly what was submitted — even if the
+  // affiliate changes their saved details later. USDT rows store {}.
   const { error } = await supabase.from('payout_requests').insert({
     affiliate_id: user.id, amount, currency, payment_method: method,
+    payment_details: details ?? {},
   })
+  return error ? { error: error.message } : {}
+}
+
+/** The affiliate's saved bank-transfer details
+ *  (affiliate_profiles.payment_details jsonb, key "bank_transfer"),
+ *  so the form is prefilled next time. Same read-merge-write pattern
+ *  as saveFirstSteps — other keys are never dropped. */
+export async function getBankDetails(): Promise<BankDetails | undefined> {
+  if (!isSupabaseConfigured || !supabase) return undefined
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return undefined
+  const { data } = await supabase.from('affiliate_profiles').select('payment_details').eq('profile_id', user.id).maybeSingle()
+  const details = (data as Row | null)?.payment_details
+  if (!details || typeof details !== 'object') return undefined
+  const saved = (details as Record<string, unknown>).bank_transfer
+  if (!saved || typeof saved !== 'object') return undefined
+  return parseBankDetails(saved)
+}
+
+export async function saveBankDetails(details: BankDetails): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured.' }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You are not signed in.' }
+  const { data: row } = await supabase.from('affiliate_profiles').select('payment_details').eq('profile_id', user.id).maybeSingle()
+  const current = ((row as Row | null)?.payment_details ?? {}) as Record<string, unknown>
+  const next = { ...current, bank_transfer: details }
+  if (row) {
+    const { error } = await supabase.from('affiliate_profiles').update({ payment_details: next }).eq('profile_id', user.id)
+    return error ? { error: error.message } : {}
+  }
+  const { error } = await supabase.from('affiliate_profiles').insert({ profile_id: user.id, payment_details: next })
   return error ? { error: error.message } : {}
 }
 

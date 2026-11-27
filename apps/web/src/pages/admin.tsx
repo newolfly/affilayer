@@ -532,7 +532,7 @@ export function AdminPayouts() {
         <Stat label="NOWPayments custody (USDT)" icon="wallet" value={custody ? `${(custody.usdttrc20?.amount ?? 0).toFixed(2)} USDT` : '—'} sub="Balance available for affiliate payouts" />
       </div>
       <Card title="Payouts">
-        <p className="mb-3 text-sm text-slate-500">Approving a request reserves the ledger balance but does not move money. Pay via NOWPayments sends USDT (TRC20) to the affiliate's saved wallet — the ledger settles to paid only when NOWPayments reports the payout finished. "Mark paid" is for payouts made outside NOWPayments.</p>
+        <p className="mb-3 text-sm text-slate-500">Approving a request reserves the ledger balance but does not move money. Pay via NOWPayments sends USDT (TRC20) to the affiliate's saved wallet — the ledger settles to paid only when NOWPayments reports the payout finished. "Mark paid" is for payouts made outside NOWPayments. Bank transfer requests are paid by hand from the details shown on the request — check them, send the money yourself, then use "Mark paid".</p>
         {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         {notice && <p className="mb-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
         {payouts.length === 0 ? <Empty text="No payout requests yet." /> : (
@@ -543,7 +543,14 @@ export function AdminPayouts() {
               return (
               <tr key={p.id} className="border-t border-slate-100">
                 <td className="py-2">{p.createdAt.slice(0, 10)}</td><td>{p.affiliateCode}</td>
-                <td>${p.amount.toFixed(2)} {p.currency}</td><td>{p.method ?? '—'}</td><td>{p.status}</td>
+                <td>${p.amount.toFixed(2)} {p.currency}</td><td>{p.method ?? '—'}{p.method === 'Bank transfer' && p.bankDetails && (
+                  <span className="mt-1 block text-xs text-slate-500">
+                    {p.bankDetails.accountHolder} · {p.bankDetails.bankName} · Acct {p.bankDetails.accountNumber}
+                    {p.bankDetails.branch ? ` · ${p.bankDetails.branch}` : ''}{p.bankDetails.routing ? ` · ${p.bankDetails.routing}` : ''}{p.bankDetails.country ? ` · ${p.bankDetails.country}` : ''}{p.bankDetails.currency ? ` · ${p.bankDetails.currency}` : ''}
+                  </span>
+                )}{p.method === 'Bank transfer' && !p.bankDetails && (
+                  <span className="mt-1 block text-xs text-red-600">No bank details on this request.</span>
+                )}</td><td>{p.status}</td>
                 <td>{np ? (<>
                   <span className="font-mono text-xs">{np.batchId}</span> · {np.status}
                   <span className="mt-1 flex gap-2">
@@ -561,7 +568,7 @@ export function AdminPayouts() {
                       <button className={dangerCls} onClick={() => setStatus(p, 'rejected')}>Reject</button>
                     </>)}
                     {p.status === 'approved' && (<>
-                      <button className={btnCls} disabled={payBusy === p.id} onClick={() => payViaNowPayments(p)}>{payBusy === p.id ? 'Paying…' : 'Pay via NOWPayments'}</button>
+                      {p.method !== 'Bank transfer' && <button className={btnCls} disabled={payBusy === p.id} onClick={() => payViaNowPayments(p)}>{payBusy === p.id ? 'Paying…' : 'Pay via NOWPayments'}</button>}
                       <button className={btnCls} onClick={() => setStatus(p, 'paid')}>Mark paid</button>
                       {np && (np.status === 'rejected' || np.status === 'failed') && <button className={ghostCls} onClick={() => release(p)}>Release</button>}
                     </>)}

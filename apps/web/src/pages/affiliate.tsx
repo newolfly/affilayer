@@ -4,13 +4,13 @@ import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } 
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
-import { acceptTeamInvite, applyToOffer, cancelTeamInvite, conversionCommission, createTicket, declineTeamInvite, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getMyOfferApplications, getMyPendingInvites, getMyPostbackConfigs, getMyTeamInvites, getMyTeamMembers, getNpPayouts, getOffers, getPayouts, getStats, getTickets, inviteTeamMember, leaveTeam, offerCommissionLabel, offerHeadline, offerPayoutLabel, offerPayoutPlain, removeTeamMember, requestPayout, resultNoun, savePostbackConfig, savePayoutWallet, sumCommissions } from '../lib/data'
+import { acceptTeamInvite, applyToOffer, cancelTeamInvite, conversionCommission, createTicket, declineTeamInvite, getBankDetails, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getMyOfferApplications, getMyPendingInvites, getMyPostbackConfigs, getMyTeamInvites, getMyTeamMembers, getNpPayouts, getOffers, getPayouts, getStats, getTickets, inviteTeamMember, leaveTeam, offerCommissionLabel, offerHeadline, offerPayoutLabel, offerPayoutPlain, removeTeamMember, requestPayout, resultNoun, saveBankDetails, savePostbackConfig, savePayoutWallet, sumCommissions } from '../lib/data'
 import type { OfferApplication, PostbackConfig, ReportFilters, TeamInvite, TeamMember } from '../lib/data'
 import { looksLikeTrc20, validatePayoutAddress } from '../lib/payments'
 import { NETWORK_SETTINGS } from '../lib/network-settings'
 import { smartLink, trackingLink } from '../lib/tracking'
 import { trackEvent } from '../lib/analytics'
-import type { Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, SupportTicket } from '../lib/types'
+import type { BankDetails, Click, CommissionLedgerEntry, Conversion, NpPayout, Offer, PayoutRequest, PayoutWallet, SupportTicket } from '../lib/types'
 
 const inputCls = 'rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900'
 const btnCls = 'rounded-lg bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-[#0B1220]'
@@ -53,7 +53,7 @@ export function AffiliateDashboard() {
   const [balance, setBalance] = useState(0)
   const [chartClicks, setChartClicks] = useState<Click[]>([])
   const [chartConvs, setChartConvs] = useState<Conversion[]>([])
-  const [hasWallet, setHasWallet] = useState(false)
+  const [hasPayoutMethod, setHasPayoutMethod] = useState(false)
   const [invites, setInvites] = useState<TeamInvite[]>([])
   const [inviteError, setInviteError] = useState('')
   useEffect(() => { getMyPendingInvites().then(setInvites) }, [])
@@ -64,7 +64,11 @@ export function AffiliateDashboard() {
     if (accept) await refreshTeamContext()
   }
   useEffect(() => {
-    getMyAffiliateProfile().then((ap) => setHasWallet(!!ap.payoutWallet?.address))
+    // A payout method counts as set with either a USDT wallet or saved
+    // bank details (bank transfer joined as a second method 27 Nov 2026).
+    Promise.all([getMyAffiliateProfile(), getBankDetails()]).then(([ap, bd]) => {
+      setHasPayoutMethod(!!ap.payoutWallet?.address || !!bd?.accountNumber)
+    }).catch(() => undefined)
   }, [])
   // The ONE next action, in plain words, from the affiliate's real state.
   // A team member has no wallet step and no approval wait — they go
@@ -77,7 +81,7 @@ export function AffiliateDashboard() {
       return { text: 'You have results — check your earnings.', to: '/app/affiliate/earnings', link: 'See your earnings' }
     }
     if (user?.status !== 'approved') return { text: 'Your next step: confirm your email, then wait for approval. Click the confirmation link we emailed you — you cannot log in until your email is confirmed.', to: '/pending', link: 'Check approval status' }
-    if (!hasWallet) return { text: 'Your next step: add your USDT wallet so you can get paid.', to: '/app/affiliate/payouts', link: 'Add your wallet' }
+    if (!hasPayoutMethod) return { text: 'Your next step: add a payout method so you can get paid — a USDT wallet or your bank details.', to: '/app/affiliate/payouts', link: 'Add a payout method' }
     if (stats.clicks === 0) return { text: 'Your next step: make your first tracking link and share it.', to: '/app/affiliate/tracking-links', link: 'Make a tracking link' }
     if (stats.conversions === 0) return { text: 'You have clicks — now share your link in more places and watch Reports.', to: '/app/affiliate/reports', link: 'See your reports' }
     return { text: 'You have results — check your earnings. At $50 approved balance you can request a payout.', to: '/app/affiliate/earnings', link: 'See your earnings' }
@@ -142,7 +146,7 @@ export function AffiliateDashboard() {
             Approved balance <span className="ml-1 text-base font-bold text-slate-900">${balance.toFixed(2)}</span>
             {isMember
               ? <span className="ml-2">Payouts go to your team head.</span>
-              : <span className="ml-2">Withdraw it in USDT (TRC20) from the Payouts page.</span>}
+              : <span className="ml-2">Withdraw it from the Payouts page — USDT or bank transfer.</span>}
           </p>
           {!isMember && <Link to="/app/affiliate/payouts" className={btnCls}>Withdraw</Link>}
         </div>
@@ -181,10 +185,10 @@ export function AffiliateGuide() {
       link: 'Complete onboarding',
     },
     {
-      title: 'Add your USDT wallet',
-      text: 'Payouts go to your USDT wallet on the TRON network (TRC20). Paste your wallet address on the Payouts page. Make sure it is a TRC20 address — an address from another network will not work.',
+      title: 'Add a payout method',
+      text: 'Pick how you want to be paid on the Payouts page — a USDT wallet on the TRON network (TRC20), or a bank transfer. For USDT, paste your wallet address and make sure it is a TRC20 address — an address from another network will not work. For bank transfer, fill in your bank details; we pay those by hand after checking them.',
       to: '/app/affiliate/payouts',
-      link: 'Add your wallet',
+      link: 'Add a payout method',
     },
     {
       title: 'Pick an offer',
@@ -206,7 +210,7 @@ export function AffiliateGuide() {
     },
     {
       title: 'Get paid',
-      text: 'When your approved balance reaches $50, request a payout on the Payouts page. We pay in USDT (TRC20). Approved money becomes payable 30 days after the end of the month it was approved in — that is what Net-30 means. Until 25 February 2027, you keep 100% of the payout.',
+      text: 'When your approved balance reaches $50, request a payout on the Payouts page — in USDT (TRC20) or by bank transfer. Approved money becomes payable 30 days after the end of the month it was approved in — that is what Net-30 means. Until 25 February 2027, you keep 100% of the payout.',
       to: '/app/affiliate/payouts',
       link: 'Request a payout',
     },
@@ -847,6 +851,9 @@ export function AffiliateEarnings() {
   )
 }
 
+export const PAYOUT_METHOD_USDT = 'USDT (TRC20)'
+export const PAYOUT_METHOD_BANK = 'Bank transfer'
+
 export function AffiliatePayouts() {
   const { user } = useAuth()
   const [live, setLive] = useState<{ payouts: PayoutRequest[]; conversions: Conversion[]; method: string; wallet?: PayoutWallet; npPayouts: NpPayout[] } | null>(null)
@@ -857,15 +864,25 @@ export function AffiliatePayouts() {
   const [walletSaved, setWalletSaved] = useState(false)
   const [walletError, setWalletError] = useState('')
   const [walletBusy, setWalletBusy] = useState(false)
+  // Bank transfer (second payout method, 27 Nov 2026, manual): the
+  // affiliate picks the method per request; bank details are saved on
+  // their account and snapshotted onto the request row at submit time.
+  const [reqMethod, setReqMethod] = useState(PAYOUT_METHOD_USDT)
+  const [bank, setBank] = useState<BankDetails>({})
+  const [bankSaved, setBankSaved] = useState(false)
+  const [bankError, setBankError] = useState('')
+  const [bankBusy, setBankBusy] = useState(false)
   const { data: ledger } = useLoad(() => getLedgerEntries(), [] as CommissionLedgerEntry[])
   const { data: offers } = useLoad(() => getOffers(), [] as Offer[])
   // There is no network-settings table yet, so the published terms live
   // in lib/network-settings.ts as constants.
   const settings = NETWORK_SETTINGS
   useEffect(() => {
-    Promise.all([getPayouts(), getConversions(), getMyAffiliateProfile(), getNpPayouts()]).then(([payouts, conversions, ap, npPayouts]) => {
-      setLive({ payouts, conversions, method: ap.paymentMethod ?? 'USDT (TRC20)', wallet: ap.payoutWallet, npPayouts })
+    Promise.all([getPayouts(), getConversions(), getMyAffiliateProfile(), getNpPayouts(), getBankDetails()]).then(([payouts, conversions, ap, npPayouts, savedBank]) => {
+      setLive({ payouts, conversions, method: ap.paymentMethod ?? PAYOUT_METHOD_USDT, wallet: ap.payoutWallet, npPayouts })
+      if (ap.paymentMethod === PAYOUT_METHOD_BANK) setReqMethod(PAYOUT_METHOD_BANK)
       if (ap.payoutWallet?.address) setWalletAddress(ap.payoutWallet.address)
+      if (savedBank) setBank(savedBank)
     })
   }, [])
   const payouts = live?.payouts ?? []
@@ -879,14 +896,44 @@ export function AffiliatePayouts() {
   const approvedBalance = sumCommissions(
     conversions.filter((c) => c.affiliateId === user?.id && c.status === 'approved'),
     ledger, offers)
-  const method = live?.method ?? 'USDT (TRC20)'
+  const bankValid = (d: BankDetails): string | null => {
+    if (!d.accountHolder?.trim()) return 'Enter the account holder name.'
+    if (!d.bankName?.trim()) return 'Enter the bank name.'
+    if (!d.accountNumber?.trim()) return 'Enter the account number.'
+    if (!d.country?.trim()) return 'Enter the country of the bank.'
+    return null
+  }
+  const saveBank = async (e: FormEvent) => {
+    e.preventDefault()
+    const problem = bankValid(bank)
+    if (problem) { setBankError(problem); return }
+    setBankBusy(true)
+    setBankError('')
+    const r = await saveBankDetails(bank)
+    setBankBusy(false)
+    if (r.error) { setBankError(r.error); return }
+    setBankSaved(true)
+  }
   const request = async (e: FormEvent) => {
     e.preventDefault()
     const value = Number(amount)
     if (!Number.isFinite(value) || value <= 0) { setError('Enter an amount greater than 0.'); return }
     if (value < settings.minPayout) { setError(`Minimum payout is $${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}.`); return }
     if (value > approvedBalance) { setError(`Amount exceeds your approved balance of $${approvedBalance.toFixed(2)}.`); return }
-    const r = await requestPayout(value, settings.defaultCurrency, method)
+    let details: BankDetails | undefined
+    if (reqMethod === PAYOUT_METHOD_BANK) {
+      // Bank transfer is manual: the details are saved on the account
+      // and snapshotted onto the request, so the admin reviews exactly
+      // what was submitted.
+      const problem = bankValid(bank)
+      if (problem) { setError(`Add your bank details first — ${problem}`); return }
+      details = { ...bank, currency: bank.currency?.trim() || settings.defaultCurrency }
+      const s = await saveBankDetails(details)
+      if (s.error) { setError(s.error); return }
+      setBank(details)
+      setBankSaved(true)
+    }
+    const r = await requestPayout(value, settings.defaultCurrency, reqMethod, details)
     if (r.error) { setError(r.error); return }
     trackEvent('payout_requested', { amount: value, currency: settings.defaultCurrency })
     const fresh = await getPayouts()
@@ -920,7 +967,7 @@ export function AffiliatePayouts() {
   if (user?.teamContext) return <Navigate to="/app/affiliate" replace state={{ notice: 'Payouts are handled by your team head.' }} />
   return (
     <div className="space-y-4">
-      <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">How you get paid: in USDT on TRON (TRC20), to the wallet below. Minimum payout ${settings.minPayout.toFixed(2)}. Approved money becomes payable 30 days after the end of the month it was approved.</p>
+      <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">How you get paid: in USDT on TRON (TRC20), to the wallet below — or by bank transfer, which we pay by hand after checking your details. Minimum payout ${settings.minPayout.toFixed(2)}. Approved money becomes payable 30 days after the end of the month it was approved.</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <Stat label="Approved balance" icon="banknote" value={`$${approvedBalance.toFixed(2)}`} sub="Money from approved results — this is what you can withdraw" />
         <Stat label="Minimum payout" icon="banknote" value={`$${settings.minPayout.toFixed(2)} ${settings.defaultCurrency}`} sub="You can withdraw once your approved balance reaches this" />
@@ -936,14 +983,42 @@ export function AffiliatePayouts() {
           <p className="mt-3 text-xs text-slate-400">Payouts are sent in USDT on TRON (TRC20) to this address. The address is checked with NOWPayments before it is saved — a wrong address means the payout cannot be sent. {live?.wallet?.address ? `Saved: ${live.wallet.address}` : 'No wallet saved yet — add one before requesting a payout.'}</p>
         </Card>
       )}
+      {reqMethod === PAYOUT_METHOD_BANK && (
+        <Card title="Bank details">
+          <form onSubmit={saveBank} className="grid gap-2 sm:grid-cols-2">
+            <input className={inputCls} type="text" placeholder="Account holder name" aria-label="Account holder name" value={bank.accountHolder ?? ''} onChange={(e) => setBank((b) => ({ ...b, accountHolder: e.target.value }))} />
+            <input className={inputCls} type="text" placeholder="Bank name" aria-label="Bank name" value={bank.bankName ?? ''} onChange={(e) => setBank((b) => ({ ...b, bankName: e.target.value }))} />
+            <input className={inputCls} type="text" placeholder="Account number" aria-label="Account number" value={bank.accountNumber ?? ''} onChange={(e) => setBank((b) => ({ ...b, accountNumber: e.target.value }))} />
+            <input className={inputCls} type="text" placeholder="Branch" aria-label="Branch" value={bank.branch ?? ''} onChange={(e) => setBank((b) => ({ ...b, branch: e.target.value }))} />
+            <input className={inputCls} type="text" placeholder="Routing / SWIFT / IFSC" aria-label="Routing, SWIFT or IFSC" value={bank.routing ?? ''} onChange={(e) => setBank((b) => ({ ...b, routing: e.target.value }))} />
+            <input className={inputCls} type="text" placeholder="Country" aria-label="Country" value={bank.country ?? ''} onChange={(e) => setBank((b) => ({ ...b, country: e.target.value }))} />
+            <input className={inputCls} type="text" placeholder="Currency (USD)" aria-label="Currency" value={bank.currency ?? ''} onChange={(e) => setBank((b) => ({ ...b, currency: e.target.value }))} />
+            <button className={btnCls} disabled={bankBusy}>{bankBusy ? 'Saving…' : 'Save bank details'}</button>
+          </form>
+          {bankError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{bankError}</p>}
+          {bankSaved && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Bank details saved.</p>}
+          <p className="mt-3 text-xs text-slate-400">Bank transfers are paid by hand after we check your details — no automatic transfer. Your details are saved on your account and sent with each bank-transfer request.</p>
+        </Card>
+      )}
       <Card title="Request a payout">
+        <fieldset className="mb-3 flex flex-wrap gap-4 text-sm">
+          <legend className="sr-only">Payout method</legend>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input type="radio" name="payout-method" checked={reqMethod === PAYOUT_METHOD_USDT} onChange={() => setReqMethod(PAYOUT_METHOD_USDT)} />
+            USDT (TRC20)
+          </label>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input type="radio" name="payout-method" checked={reqMethod === PAYOUT_METHOD_BANK} onChange={() => setReqMethod(PAYOUT_METHOD_BANK)} />
+            Bank transfer
+          </label>
+        </fieldset>
         <form onSubmit={request} className="flex gap-2">
           <input className={inputCls} type="number" min="0" step="0.01" placeholder={`Amount (${settings.defaultCurrency})`} aria-label={`Amount (${settings.defaultCurrency})`} value={amount} onChange={(e) => setAmount(e.target.value)} />
           <button className={btnCls}>Request payout</button>
         </form>
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         {requested && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">Payout request submitted for review.</p>}
-        <p className="mt-3 text-xs text-slate-400">Payouts are calculated from approved commissions in the ledger and paid in USDT (TRC20). Approved commissions become payable Net-30 — 30 days after the end of the month in which they were approved. Requests are reviewed by the network admin.</p>
+        <p className="mt-3 text-xs text-slate-400">Payouts are calculated from approved commissions in the ledger and paid in USDT (TRC20) or by bank transfer. Approved commissions become payable Net-30 — 30 days after the end of the month in which they were approved. Requests are reviewed by the network admin.</p>
       </Card>
       <Card title="Payout history">
         {mine.length === 0 ? <><Empty text="No payouts yet." /><p className="text-center text-sm text-slate-500">Once your approved balance reaches ${settings.minPayout.toFixed(2)} and your wallet above is saved, you can request your first payout.</p></> : (

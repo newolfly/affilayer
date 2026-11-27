@@ -4,6 +4,7 @@
 export type {
   AdvertiserBalance,
   AdvertiserDeposit,
+  BankDetails,
   Campaign,
   Click,
   CommissionLedgerEntry,
