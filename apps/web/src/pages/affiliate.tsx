@@ -1071,7 +1071,7 @@ export function AffiliateTeam() {
           </div>
         )}
       </Card>
-      <Card title={`Team members (${members.length})`}>
+      <Card title={`Team members (${loaded ? members.length : '…'})`}>
         {!loaded ? <p className="text-sm text-slate-500">Loading team…</p> : members.length === 0 ? <Empty text="No team members yet. Invite someone above — they join with one click." /> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Email</th><th>Date added</th><th /></tr></thead>
@@ -1085,7 +1085,7 @@ export function AffiliateTeam() {
           </table></div>
         )}
       </Card>
-      <Card title={`Waiting for a reply (${pending.length})`}>
+      <Card title={`Waiting for a reply (${loaded ? pending.length : '…'})`}>
         {!loaded ? <p className="text-sm text-slate-500">Loading team…</p> : pending.length === 0 ? <Empty text="No invites waiting for a reply." /> : (
           <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
             <thead><tr className="text-left text-slate-500"><th className="py-2">Email</th><th>Sent</th><th /></tr></thead>
