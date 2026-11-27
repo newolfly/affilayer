@@ -21,7 +21,7 @@ export const FAQ_GROUPS: { group: string; items: { q: string; a: string }[] }[] 
       },
       {
         q: 'What is sub-ID tracking?',
-        a: 'Sub IDs are labels you attach to your own clicks — AffiLayer tracking links carry five of them, sub1 to sub5. They travel with the click ID to the conversion, so you can break down clicks and conversions by campaign, placement or creative and see which of your clicks earned.',
+        a: 'Sub IDs are labels you attach to your own clicks — AffiLayer tracking links carry five of them, sub1 to sub5. They travel with your click to the sale, so you can break down clicks and conversions by campaign, placement or creative and see which of your clicks earned.',
       },
       {
         q: 'How do I get access to offers?',
@@ -104,7 +104,7 @@ export const FAQ_GROUPS: { group: string; items: { q: string; a: string }[] }[] 
       },
       {
         q: 'How do I get my first tracking link?',
-        a: 'Create an account, complete onboarding, and wait for approval. Once approved, browse the marketplace, apply to an offer where approval is required, and generate a tracking link — or use your SmartLink for mixed traffic. The link carries a unique click ID and up to five sub-parameters.',
+        a: 'Create an account, complete onboarding, and wait for approval. Once approved, browse the marketplace, apply to an offer where approval is required, and generate a tracking link — or use your SmartLink for mixed traffic. The link carries up to five sub-parameters.',
       },
       {
         q: 'How do I get approved on a CPA network?',
@@ -162,7 +162,7 @@ export const PAGE_FAQS: Record<'advertisers' | 'affiliates' | 'how', { q: string
   ],
   affiliates: [
     { q: 'How do I get a tracking link?', a: 'Create an account, complete onboarding, and wait for approval. Once approved, browse the marketplace, apply to an offer where required, and generate a tracking link — or use your SmartLink for mixed traffic.' },
-    { q: 'What are sub-parameters (sub1–sub5)?', a: 'Five labels you attach to your own clicks — campaign, placement, creative, audience, or anything you want to test. They travel with the click ID to the conversion, so you can see which clicks earned.' },
+    { q: 'What are sub-parameters (sub1–sub5)?', a: 'Five labels you attach to your own clicks — campaign, placement, creative, audience, or anything you want to test. They travel with your click to the sale, so you can see which clicks earned.' },
     { q: 'Direct offer or SmartLink — which first?', a: 'A direct link when you know the offer and the audience match. A SmartLink when your traffic is mixed — several countries or devices — and no single offer fits everyone.' },
     { q: 'When do I see my stats?', a: 'Clicks appear in your reports as they are recorded. Conversions appear as pending once attributed, and move to approved, rejected or reversed after review. Earnings become payable only from approved conversions in the commission ledger.' },
     { q: 'I am new to CPA marketing — where do I start?', a: 'Start with one offer in a vertical and country you understand, and one traffic source you can verify. Create an account, complete onboarding, wait for approval, then generate a tracking link — or use your SmartLink for mixed traffic. Send a little traffic first, label your clicks with sub-parameters, and scale what gets approved — not what gets clicked.' },
@@ -171,7 +171,7 @@ export const PAGE_FAQS: Record<'advertisers' | 'affiliates' | 'how', { q: string
     { q: 'How long is each step?', a: 'Steps 1, 3, 4 and 5 happen as you use the network — registration, publishing or promoting, clicks, and attribution. Step 2 (approval) and step 6 (review and payout) are done by our team by hand, so no fixed time is promised; you can check your status on the approval page.' },
     { q: 'What happens if my application is declined?', a: 'The decision message on your approval page says what to fix — usually an incomplete profile, a traffic source we cannot verify, or a mismatch with the verticals and GEOs we serve. Update your profile and re-apply.' },
     { q: 'When does a conversion become payable?', a: 'A conversion is recorded as pending, reviewed, and — if approved — entered in the commission ledger. Approved commissions become payable 30 days after the end of the month in which they were approved (Net30 by default).' },
-    { q: 'How does AffiLayer track conversions?', a: 'Server-to-server: when a conversion happens, the advertiser posts the click ID back to the network, signed and deduplicated by idempotency key, and the conversion is recorded as pending for review. It does not depend on the visitor’s browser, so it is not lost to ad blockers or closed tabs the way a pixel can be.' },
+    { q: 'How does AffiLayer track conversions?', a: 'Your tracking link counts every click as yours. When a visitor buys or registers through it, the sale is linked to your link and shows up in your reports as pending, then approved once reviewed. It is counted from your link, not from the visitor’s browser, so an ad blocker or a closed tab cannot lose it.' },
   ],
 }
 
@@ -191,7 +191,7 @@ export const PAGE_FAQS_LOCALIZED: Record<'es' | 'pt', typeof PAGE_FAQS> = {
     ],
     affiliates: [
       { q: '¿Cómo consigo un enlace de seguimiento?', a: 'Crea una cuenta, completa la incorporación y espera la aprobación. Una vez aprobado, explora el mercado, solicita una oferta cuando se requiera y genera un enlace de seguimiento — o usa tu SmartLink para tráfico mixto.' },
-      { q: '¿Qué son los subparámetros (sub1–sub5)?', a: 'Cinco etiquetas que adjuntas a tus propios clics — campaña, ubicación, creatividad, audiencia o lo que quieras probar. Viajan con el ID de clic hasta la conversión, para que puedas ver qué clics generaron ganancias.' },
+      { q: '¿Qué son los subparámetros (sub1–sub5)?', a: 'Cinco etiquetas que adjuntas a tus propios clics — campaña, ubicación, creatividad, audiencia o lo que quieras probar. Viajan con tu clic hasta la venta, para que puedas ver qué clics generaron ganancias.' },
       { q: '¿Oferta directa o SmartLink: qué uso primero?', a: 'Un enlace directo cuando sabes que la oferta y la audiencia coinciden. Un SmartLink cuando tu tráfico es mixto — varios países o dispositivos — y ninguna oferta se ajusta a todos.' },
       { q: '¿Cuándo veo mis estadísticas?', a: 'Los clics aparecen en tus informes a medida que se registran. Las conversiones aparecen como pendientes una vez atribuidas, y pasan a aprobadas, rechazadas o revertidas tras la revisión. Las ganancias solo se vuelven pagaderas a partir de las conversiones aprobadas en el libro contable de comisiones.' },
       { q: 'Soy nuevo en el marketing CPA — ¿por dónde empiezo?', a: 'Empieza con una oferta de una vertical y un país que entiendas, y una fuente de tráfico que puedas verificar. Crea una cuenta, completa la incorporación, espera la aprobación y genera un enlace de seguimiento — o usa tu SmartLink para el tráfico mixto. Envía un poco de tráfico primero, etiqueta tus clics con subparámetros y escala lo que se aprueba, no lo que se hace clic.' },
@@ -200,7 +200,7 @@ export const PAGE_FAQS_LOCALIZED: Record<'es' | 'pt', typeof PAGE_FAQS> = {
       { q: '¿Cuánto dura cada paso?', a: 'Los pasos 1, 3, 4 y 5 ocurren mientras usas la red — registro, publicación o promoción, clics y atribución. El paso 2 (aprobación) y el paso 6 (revisión y pago) los realiza nuestro equipo a mano, por lo que no se promete un tiempo fijo; puedes consultar tu estado en la página de aprobación.' },
       { q: '¿Qué pasa si rechazan mi solicitud?', a: 'El mensaje de decisión en tu página de aprobación dice qué debes corregir — normalmente un perfil incompleto, una fuente de tráfico que no podemos verificar o una discrepancia con las verticales y GEOs que servimos. Actualiza tu perfil y vuelve a solicitarlo.' },
       { q: '¿Cuándo se vuelve pagadera una conversión?', a: 'Una conversión se registra como pendiente, se revisa y — si se aprueba — se registra en el libro contable de comisiones. Las comisiones aprobadas se vuelven pagaderas 30 días después del fin del mes en que fueron aprobadas (Net30 por defecto).' },
-      { q: '¿Cómo sigue AffiLayer las conversiones?', a: 'De servidor a servidor: cuando ocurre una conversión, el anunciante devuelve el ID de clic a la red, firmado y deduplicado por clave de idempotencia, y la conversión se registra como pendiente de revisión. No depende del navegador del visitante, así que no se pierde por bloqueadores de anuncios o pestañas cerradas como puede pasar con un píxel.' },
+      { q: '¿Cómo sigue AffiLayer las conversiones?', a: 'Tu enlace de seguimiento cuenta cada clic como tuyo. Cuando un visitante compra o se registra a través de él, la venta se vincula a tu enlace y aparece en tus informes como pendiente, y luego aprobada tras la revisión. Se cuenta desde tu enlace, no desde el navegador del visitante, así que un bloqueador de anuncios o una pestaña cerrada no puede perderla.' },
     ],
   },
   pt: {
@@ -214,7 +214,7 @@ export const PAGE_FAQS_LOCALIZED: Record<'es' | 'pt', typeof PAGE_FAQS> = {
     ],
     affiliates: [
       { q: 'Como obtenho um link de rastreamento?', a: 'Crie uma conta, conclua a integração e aguarde a aprovação. Depois de aprovado, explore o mercado, candidate-se a uma oferta quando necessário e gere um link de rastreamento — ou use seu SmartLink para tráfego misto.' },
-      { q: 'O que são subparâmetros (sub1–sub5)?', a: 'Cinco rótulos que você anexa aos seus próprios cliques — campanha, posicionamento, criativo, público ou o que quiser testar. Eles acompanham o ID de clique até a conversão, para que você possa ver quais cliques geraram ganhos.' },
+      { q: 'O que são subparâmetros (sub1–sub5)?', a: 'Cinco rótulos que você anexa aos seus próprios cliques — campanha, posicionamento, criativo, público ou o que quiser testar. Eles acompanham seu clique até a venda, para que você possa ver quais cliques geraram ganhos.' },
       { q: 'Oferta direta ou SmartLink: qual uso primeiro?', a: 'Um link direto quando você sabe que a oferta e o público combinam. Um SmartLink quando seu tráfego é misto — vários países ou dispositivos — e nenhuma oferta serve para todos.' },
       { q: 'Quando vejo minhas estatísticas?', a: 'Os cliques aparecem nos seus relatórios à medida que são registrados. As conversões aparecem como pendentes após a atribuição e passam para aprovadas, rejeitadas ou revertidas após a revisão. Os ganhos só se tornam pagáveis a partir das conversões aprovadas no livro-razão de comissões.' },
       { q: 'Sou novo no marketing de CPA — por onde começo?', a: 'Comece com uma oferta de uma vertical e um país que você entenda, e uma fonte de tráfego que possa verificar. Crie uma conta, conclua a integração, aguarde a aprovação e gere um link de rastreamento — ou use seu SmartLink para tráfego misto. Envie um pouco de tráfego primeiro, rotule seus cliques com subparâmetros e escale o que for aprovado — não o que for clicado.' },
@@ -223,7 +223,7 @@ export const PAGE_FAQS_LOCALIZED: Record<'es' | 'pt', typeof PAGE_FAQS> = {
       { q: 'Quanto dura cada etapa?', a: 'As etapas 1, 3, 4 e 5 acontecem enquanto você usa a rede — cadastro, publicação ou promoção, cliques e atribuição. A etapa 2 (aprovação) e a etapa 6 (revisão e pagamento) são feitas pela nossa equipe à mão, por isso nenhum prazo fixo é prometido; você pode verificar seu status na página de aprovação.' },
       { q: 'O que acontece se minha inscrição for recusada?', a: 'A mensagem de decisão na sua página de aprovação diz o que corrigir — geralmente um perfil incompleto, uma fonte de tráfego que não podemos verificar ou uma incompatibilidade com as verticais e GEOs que atendemos. Atualize seu perfil e candidate-se novamente.' },
       { q: 'Quando uma conversão se torna pagável?', a: 'Uma conversão é registrada como pendente, revisada e — se aprovada — lançada no livro-razão de comissões. As comissões aprovadas se tornam pagáveis 30 dias após o fim do mês em que foram aprovadas (Net30 por padrão).' },
-      { q: 'Como a AffiLayer rastreia conversões?', a: 'De servidor para servidor: quando uma conversão acontece, o anunciante devolve o ID de clique à rede, assinado e deduplicado por chave de idempotência, e a conversão é registrada como pendente de revisão. Não depende do navegador do visitante, por isso não se perde por bloqueadores de anúncios ou abas fechadas como pode acontecer com um pixel.' },
+      { q: 'Como a AffiLayer rastreia conversões?', a: 'Seu link de rastreamento conta cada clique como seu. Quando um visitante compra ou se registra através dele, a venda se vincula ao seu link e aparece em seus relatórios como pendente, e depois aprovada após a revisão. É contado a partir do seu link, não do navegador do visitante, então um bloqueador de anúncios ou uma aba fechada não pode perdê-la.' },
     ],
   },
 }
@@ -235,18 +235,18 @@ export const PAGE_FAQS_LOCALIZED: Record<'es' | 'pt', typeof PAGE_FAQS> = {
  *  (TRC20), Net-30, manual approval, live offer rates. The same lists feed
  *  the visible sections (public.tsx) and the FAQPage JSON-LD (seo.ts). */
 export const HOME_FAQS: { q: string; a: string }[] = [
-  { q: 'What is AffiLayer?', a: 'A CPA affiliate network operated by MarketSync Global LLC. Advertisers publish offers; affiliates promote them and earn commission on approved conversions. Tracking is server-to-server and every commission is recorded in an append-only ledger. Joining is free.' },
+  { q: 'What is AffiLayer?', a: 'A CPA affiliate network operated by MarketSync Global LLC. Advertisers publish offers; affiliates promote them and earn commission on approved conversions. Tracking links count every click as yours, and every commission is recorded in an append-only ledger. Joining is free.' },
   { q: 'Do I need a website to join as an affiliate?', a: 'No. You need a traffic source you can describe and we can verify — a website, a YouTube or TikTok channel, a social page or a community. What is not accepted anywhere on the network: bots, incentivised clicks, forced clicks and misleading creatives.' },
   { q: 'How does approval work?', a: 'Every application is reviewed by a person. A complete profile with a verifiable traffic source is usually decided the same day. The decision arrives by email and on your approval page; if you are declined, the reason is stated and you can fix your profile and re-apply.' },
   { q: 'What is the minimum payout?', a: '$50. Payouts are made in USDT (TRC20) and become payable Net-30 — 30 days after the end of the month in which the commissions were approved. You request a payout from your dashboard once your payable balance passes $50.' },
-  { q: 'Which offers are live?', a: 'NordVPN and Surfshark at 40% of the sale, NordPass at 30% of the sale, Sucuri at $57.25 per sale and a NOWPayments offer at 25% of the fees collected. Until 25 February 2027 these are 100% of each programme\'s payout — AffiLayer keeps 0% during the launch. The rate on every offer is shown on the offer before you promote it.' },
+  { q: 'Which offers are live?', a: 'NordVPN and Surfshark at 40% of the sale, NordPass at 30% of the sale, Sucuri at $57.25 per sale and a NOWPayments offer at 25% of the fees collected. Those are the full rates until 25 February 2027. The rate on every offer is shown on the offer before you promote it.' },
   { q: 'Is AffiLayer legit — does it actually pay?', a: 'Check the record before you trust the claim: the payout terms are published, the network stats page is public, and every click, conversion and payout decision is written to a ledger you can inspect. That is the standard we hold ourselves to — and the standard to hold any network to.' },
 ]
 
 export const PRICING_FAQS: { q: string; a: string }[] = [
   { q: 'Is AffiLayer free to join?', a: 'Yes — for affiliates and advertisers. There is no monthly fee, no setup fee and no tier to buy.' },
   { q: 'What does an affiliate pay?', a: 'Nothing. Affiliates pay no fees, and the rate shown on an offer is the rate paid on approved conversions.' },
-  { q: 'What is the launch offer?', a: 'Until 25 February 2027, 100% of the programme payout goes to the affiliate — AffiLayer keeps 0% for the first three months. For example, NordVPN and Surfshark pay 40% of the sale, NordPass 30%, Sucuri $57.25 per sale and NOWPayments 25% of the fees collected. After 25 February 2027 our standard network share applies and the rates on the offers page will change to show it.' },
+  { q: 'What is the launch offer?', a: 'Until 25 February 2027 you earn the full rate on every offer. For example, NordVPN and Surfshark pay 40% of the sale, NordPass 30%, Sucuri $57.25 per sale and NOWPayments 25% of the fees collected. After 25 February 2027 the rates on the offers page will show the new figures.' },
   { q: 'What is the minimum payout for affiliates?', a: '$50, paid in USDT (TRC20). Approved commissions become payable Net-30 — 30 days after the end of the month in which they were approved — and payouts are requested from the dashboard.' },
   { q: 'What does an advertiser pay?', a: 'Only for conversions they have reviewed and approved. Advertisers fund their account first (crypto deposit, $10 minimum) and approved commissions are drawn from that balance. A conversion rejected on review is not charged.' },
   { q: 'Are there any hidden fees?', a: 'No. The only money that moves is advertiser funding in and affiliate payouts out — both on the record in the commission ledger.' },

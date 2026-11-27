@@ -142,8 +142,8 @@ const HOWTO = {
     { '@type': 'HowToStep', name: '1. Create an account', text: 'Register as an advertiser or an affiliate and complete onboarding: profile, traffic source, vertical, GEO, volume and payment profile.' },
     { '@type': 'HowToStep', name: '2. Get approved', text: 'Our team reviews every application. You can check your status on the approval page.' },
     { '@type': 'HowToStep', name: '3. Offers and links', text: 'Advertisers publish offers. Affiliates apply where required, then generate a tracking link — or use a SmartLink for mixed traffic.' },
-    { '@type': 'HowToStep', name: '4. Clicks are tracked', text: 'A visitor clicking a tracking link is redirected to the offer landing page. The click is recorded with a unique click ID.' },
-    { '@type': 'HowToStep', name: '5. Conversions are attributed', text: 'When a conversion happens, it is linked to the original click ID and recorded as pending.' },
+    { '@type': 'HowToStep', name: '4. Clicks are tracked', text: 'A visitor clicking a tracking link is sent to the offer page. The click is counted as yours.' },
+    { '@type': 'HowToStep', name: '5. Conversions are attributed', text: 'When a visitor buys or registers, the sale is linked to your link and recorded as pending.' },
     { '@type': 'HowToStep', name: '6. Review and payout', text: 'Conversions are approved, rejected or reversed by review. Approved commissions enter the ledger and become payable; payouts are manual and admin-approved, Net30 by default.' },
   ],
 }

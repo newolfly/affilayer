@@ -719,7 +719,7 @@ export function About() {
       <PageHighlights
         items={[
           { icon: 'building', text: 'Operated by MarketSync Global LLC, a registered company in New Mexico, USA.' },
-          { icon: 'search', text: 'Tracking you can audit — every click has a unique click ID linked to its conversion.' },
+          { icon: 'search', text: 'Tracking you can check — every click is linked to its sale.' },
           { icon: 'file', text: 'A ledger that cannot be silently rewritten — every change is recorded.' },
         ]}
       />
@@ -1006,7 +1006,7 @@ export function Faq() {
       <PageHighlights
         items={[
           { icon: 'user', text: 'Joining — free to join; applications reviewed by our team.' },
-          { icon: 'link', text: 'Running traffic — direct offers or one SmartLink, every click tracked with a unique click ID.' },
+          { icon: 'link', text: 'Running traffic — pick an offer or use one SmartLink; every click counts as yours.' },
           { icon: 'banknote', text: 'Getting paid — manual, admin-approved payouts, Net30 by default.' },
         ]}
       />
@@ -1046,19 +1046,19 @@ export function Contact() {
       <PageArt
         variant="contact"
         label="Illustration: the AffiLayer hub connecting email, in-app tickets and a reply from a real person"
-        nodes={['support@affilayer.com', 'In-app tickets', 'A real reply', 'Include your click ID']}
+        nodes={['support@affilayer.com', 'In-app tickets', 'A real reply', 'Include your tracking link']}
         caption="a real person answers"
       />
       <PageHighlights
         items={[
           { icon: 'mail', text: 'Email us — support@affilayer.com. Include your account email so we can find you.' },
           { icon: 'ticket', text: 'In-app tickets — registered users can raise a ticket from the dashboard.' },
-          { icon: 'search', text: 'Tracking questions — include the click ID from your link so we can look it up.' },
+          { icon: 'search', text: 'Tracking questions — include your tracking link so we can look it up.' },
         ]}
       />
       <ContactForm />
       <p className="mt-8 text-center text-sm text-[#8A97A8]">
-        Include your account email and, for tracking questions, the click ID from your link.
+        Include your account email and, for tracking questions, your tracking link.
       </p>
     </PublicLayout>
   )
@@ -1093,7 +1093,7 @@ export function Terms() {
         <p><strong>4. Commissions.</strong> Commission is earned only on conversions that are approved and not reversed, as recorded in the commission ledger. Payouts are manual and admin-approved, on a Net30 schedule by default: approved commissions become payable 30 days after the end of the month in which they were approved. Payout methods and minimum thresholds are shown in your dashboard.</p>
         <p><strong>5. Prohibited traffic.</strong> Incentivised, misleading, bot, chat or otherwise fraudulent traffic is prohibited. Fraud signals may lead to review, rejection of conversions, or account suspension.</p>
         <p><strong>6. Advertiser funding and refunds.</strong> Advertisers fund their account before their offers can pay out. Funds are used only to pay approved commissions. If an advertiser stops using the network, unused funds can be requested back — write to support@affilayer.com and we will review the request, including any commissions still pending review. Funds held with us do not earn interest.</p>
-        <p><strong>7. Chargebacks and disputes.</strong> If an advertiser disputes a conversion, we review the click ID, the attribution and the traffic source, and the disputed conversion stays pending until the review is decided. If a payment made to us is charged back, or a payout fails, the commissions it covered may be reversed and the account reviewed. Either side may raise a dispute by emailing support@affilayer.com with the click ID or conversion reference.</p>
+        <p><strong>7. Chargebacks and disputes.</strong> If an advertiser disputes a conversion, we review the click, the traffic source, and the disputed conversion stays pending until the review is decided. If a payment made to us is charged back, or a payout fails, the commissions it covered may be reversed and the account reviewed. Either side may raise a dispute by emailing support@affilayer.com with your tracking link or conversion reference.</p>
         <p><strong>8. Reversals and review deadlines.</strong> A conversion that was approved can still be reversed if fraud, a tracking error or a breach of the offer rules is found afterwards; every reversal is recorded in the ledger with a reason, and the affiliate is notified. We review conversions promptly. If a conversion has been pending for more than 30 days, either side may ask support for a decision on it.</p>
         <p><strong>9. Taxes.</strong> You are responsible for your own taxes on commissions you earn or payments you make through AffiLayer. We do not give tax advice. Where the law requires it, we may ask for tax information before paying out, and may report payments to the tax authorities as required.</p>
         <p><strong>10. Restricted verticals and geographies.</strong> Offers must comply with the law in every country they target. We do not accept offers for illegal goods or services, deceptive financial products, or anything that misleads the visitor about what they are signing up for. Affiliates must follow advertising law in the countries they target, including any disclosure rules for advertising. We may refuse or remove any offer or account, and may restrict countries or verticals where we cannot operate lawfully.</p>
@@ -1128,7 +1128,7 @@ export function Privacy() {
         ]}
       />
       <div className="mt-6 space-y-4 rounded-xl bg-white p-6 text-sm text-slate-700">
-        <p><strong>1. Data we collect.</strong> Account details you provide (email, name, payment profile), and tracking data needed to operate the network: click IDs, offer IDs, country, device, source and sub-parameters.</p>
+        <p><strong>1. Data we collect.</strong> Account details you provide (email, name, payment profile), and tracking data needed to operate the network: clicks, offers, country, device, source and sub-parameters.</p>
         <p><strong>2. How we use it.</strong> To operate tracking and attribution, calculate commissions, process payouts, prevent fraud, and provide support.</p>
         <p><strong>3. Sharing.</strong> Aggregated or attributed performance data is shared with the advertiser or affiliate involved in a given click or conversion. We do not sell personal data.</p>
         <p><strong>4. Retention.</strong> Tracking and ledger records are kept for as long as needed for accounting, audit and dispute resolution, and for as long as the law requires. Account data is deleted when you ask us to delete your account, once those obligations end. Backups may keep copies for a short time after deletion.</p>
@@ -1228,7 +1228,7 @@ export function WhiteLabel() {
       <h2 className="mt-10 text-2xl font-bold text-white">What it includes</h2>
       <div className="mt-4 space-y-4">
         {[
-          { t: 'Tracking links and SmartLink', d: 'Every click gets a unique click ID; mixed traffic routes through one SmartLink with deterministic rules.' },
+          { t: 'Tracking links and SmartLink', d: 'Every click is counted as yours; mixed traffic routes through one SmartLink.' },
           { t: 'Offer and affiliate approval', d: 'Advertisers publish offers with caps and traffic rules; affiliates apply and are approved before they can run them.' },
           { t: 'Conversion review', d: 'Conversions move through pending, approved, rejected or reversed, with a record of each change.' },
           { t: 'Manual, admin-approved payouts', d: 'Approved commissions enter the ledger and become payable on a Net30 schedule by default.' },
@@ -1328,6 +1328,7 @@ const PUBLIC_OFFERS: {
   rate: string
   conversion: string
   note: string
+  earn: string
 }[] = [
   {
     name: 'NordVPN',
@@ -1335,7 +1336,8 @@ const PUBLIC_OFFERS: {
     model: 'CPS',
     rate: '40% of sale',
     conversion: 'per new subscription sale',
-    note: 'VPN subscriptions. You earn 40% of each new subscription sale — the full programme rate.',
+    note: 'VPN subscriptions. You earn 40% of each new subscription sale.',
+    earn: 'Share your link → a visitor buys a subscription → you earn 40% of the sale → paid in USDT, $50 minimum, Net-30.',
   },
   {
     name: 'Surfshark',
@@ -1343,7 +1345,8 @@ const PUBLIC_OFFERS: {
     model: 'CPS',
     rate: '40% of sale',
     conversion: 'per website purchase',
-    note: 'VPN subscriptions. You earn 40% of each website purchase — the full programme rate.',
+    note: 'VPN subscriptions. You earn 40% of each website purchase.',
+    earn: 'Share your link → a visitor buys → you earn 40% of the purchase → paid in USDT, $50 minimum, Net-30.',
   },
   {
     name: 'NordPass',
@@ -1351,7 +1354,8 @@ const PUBLIC_OFFERS: {
     model: 'CPS',
     rate: '30% of sale',
     conversion: 'per new subscription sale',
-    note: 'Password manager subscriptions. You earn 30% of each new subscription sale — the full programme rate.',
+    note: 'Password manager subscriptions. You earn 30% of each new subscription sale.',
+    earn: 'Share your link → a visitor buys a subscription → you earn 30% of the sale → paid in USDT, $50 minimum, Net-30.',
   },
   {
     name: 'Sucuri',
@@ -1359,7 +1363,8 @@ const PUBLIC_OFFERS: {
     model: 'CPA',
     rate: '$57.25 per sale',
     conversion: 'per sale',
-    note: 'Website security plans. $57.25 per sale on the Basic plan — the full programme rate; higher plans pay more and reconcile from the programme report.',
+    note: 'Website security plans. $57.25 per sale on the Basic plan; higher plans pay more.',
+    earn: 'Share your link → a visitor buys a plan → you earn $57.25 per sale → paid in USDT, $50 minimum, Net-30.',
   },
   {
     name: 'NOWPayments',
@@ -1367,7 +1372,8 @@ const PUBLIC_OFFERS: {
     model: 'CPS',
     rate: '25% of fees collected',
     conversion: 'per referred merchant',
-    note: 'Crypto payment processing for businesses. You earn 25% of the fees we collect from merchants you refer — the full programme rate. Earnings are reconciled monthly from the NOWPayments dashboard — this programme has no per-affiliate tracking ID.',
+    note: 'Crypto payment processing for businesses. You earn 25% of the fees from merchants you refer.',
+    earn: 'Share your link → a business signs up and takes payments → you earn 25% of the fees → paid in USDT, $50 minimum, Net-30.',
   },
 ]
 
@@ -1403,7 +1409,7 @@ const COMING_SOON_OFFERS: {
     rate: '70% of sale',
     conversion: 'per sale',
     geo: 'Worldwide',
-    note: 'Game booster for PC gamers. You earn 70% of each sale — the full programme rate. Joining the catalogue once the programme confirms promotion through AffiLayer.',
+    note: 'Game booster for PC gamers. You earn 70% of each sale. Joining the catalogue soon.',
   },
   {
     name: 'Finance Survey',
@@ -1412,7 +1418,7 @@ const COMING_SOON_OFFERS: {
     rate: 'Revenue share',
     conversion: 'per completed survey',
     geo: 'Worldwide · Mobile only',
-    note: 'Finance surveys. Revenue-share payout — the exact share is confirmed with the programme before this offer goes live, so no rate figure is shown until then.',
+    note: 'Finance surveys. Revenue-share payout — the exact share is confirmed before this offer goes live, so no rate figure is shown until then.',
   },
   {
     name: 'Virgin Mobile UAE',
@@ -1421,7 +1427,7 @@ const COMING_SOON_OFFERS: {
     rate: '$20.00 per order',
     conversion: 'per order',
     geo: 'United Arab Emirates',
-    note: 'Mobile telecom in the UAE. $20.00 per order — the full programme rate. Joining the catalogue once the programme confirms promotion through AffiLayer.',
+    note: 'Mobile telecom in the UAE. $20.00 per order. Joining the catalogue soon.',
   },
   {
     name: 'AliExpress – Global',
@@ -1430,7 +1436,7 @@ const COMING_SOON_OFFERS: {
     rate: '1%–8% of order',
     conversion: 'per order',
     geo: 'Worldwide',
-    note: 'Global marketplace. 1% headline, up to 8% by category, capped at $45 commission per order. Joining the catalogue once the programme confirms promotion through AffiLayer.',
+    note: 'Global marketplace. 1% headline, up to 8% by category, capped at $45 commission per order. Joining the catalogue soon.',
   },
   {
     name: 'Canada Pet Care',
@@ -1439,7 +1445,7 @@ const COMING_SOON_OFFERS: {
     rate: '10% of order',
     conversion: 'per order',
     geo: 'Canada',
-    note: 'Pet care products in Canada. 10% of each order — the full programme rate. Joining the catalogue once the programme confirms promotion through AffiLayer.',
+    note: 'Pet care products in Canada. 10% of each order. Joining the catalogue soon.',
   },
 ]
 
@@ -1457,9 +1463,10 @@ export function Offers() {
         person — complete profiles are usually decided the same day.
       </p>
       <p className="mt-4 max-w-3xl font-semibold text-amber-300">
-        Launch offer: 100% of the programme payout goes to you until
-        25 February 2027. AffiLayer keeps 0% during the launch. After that
-        date our standard network share applies.
+        Launch offer: you earn the full rate on every offer until
+        25 February 2027 — 40% of the sale on NordVPN and Surfshark,
+        30% on NordPass, $57.25 per Sucuri sale, 25% of the fees on
+        NOWPayments.
       </p>
       <PageHighlights
         items={[
@@ -1482,8 +1489,9 @@ export function Offers() {
                 {o.vertical} · {o.conversion} · Worldwide · Approval required
               </p>
               <p className="mt-2 text-sm text-slate-600">{o.note}</p>
-              <Link to="/register" className="mt-3 inline-flex items-center gap-1.5 font-semibold text-amber-700 hover:text-amber-600">
-                Run this offer →
+              <p className="mt-2 text-sm text-slate-600"><span className="font-semibold text-slate-900">How you earn: </span>{o.earn}</p>
+              <Link to="/register" className="pill-btn mt-4 inline-block">
+                Join free &amp; run this offer
               </Link>
             </div>
           </Reveal>
@@ -1519,12 +1527,14 @@ export function Offers() {
         ))}
       </div>
       <p className="mt-6 max-w-3xl text-sm text-slate-400">
-        Rates are the affiliate rates recorded in the network today — during
-        the launch offer they are 100% of each programme's payout, until
-        25 February 2027. If a rate changes, this catalogue changes with
-        it. Five offers live today — the catalogue grows as new programmes
-        are verified.
+        Rates are the rates recorded in the network today, under the
+        launch offer until 25 February 2027. If a rate changes, this
+        catalogue changes with it. Five offers live today — the
+        catalogue grows as new offers are verified.
       </p>
+      <div className="mt-6">
+        <Link to="/register" className="pill-btn inline-block">Join free — be first when these go live</Link>
+      </div>
       <div className="mt-6 flex flex-wrap gap-3">
         <Link to="/register" className="pill-btn">Create an account</Link>
         <Link to="/advertisers" className="pill-btn-outline">Advertise with AffiLayer</Link>
@@ -1565,16 +1575,14 @@ export function Pricing() {
       <div className="mt-6 space-y-4">
         <Reveal>
           <div className="lift rounded-xl bg-amber-50 p-5 text-slate-900">
-            <h2 className="font-semibold">Launch offer — 100% of the programme payout, until 25 February 2027</h2>
+            <h2 className="font-semibold">Launch offer — the full rate on every offer, until 25 February 2027</h2>
             <p className="mt-1 text-sm text-slate-600">
-              For the first three months AffiLayer keeps 0%. Every commission
-              on every offer goes to the affiliate in full — 100% of what the
-              programme pays us, for example 40% of the sale on NordVPN and
+              Until 25 February 2027 you earn the full rate on every
+              offer — for example 40% of the sale on NordVPN and
               Surfshark, 30% on NordPass, $57.25 per Sucuri sale, 25% of the
-              fees on NOWPayments. After 25 February 2027 our standard
-              network share applies, and the rates on the offers page will
-              show the new figures. Payouts stay in USDT, $50 minimum,
-              Net-30 on approved balance.
+              fees on NOWPayments. After that date the rates on the
+              offers page will show the new figures. Payouts stay in USDT,
+              $50 minimum, Net-30 on approved balance.
             </p>
           </div>
         </Reveal>

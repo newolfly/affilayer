@@ -111,14 +111,13 @@ export function Trust() {
             <strong>Result: 0 Critical · 0 High · 6 Medium · 11 Low · 90+ checks passed.</strong>{' '}
             Verdict: production grade for the platform. The audit covered the public site, the
             tracking Worker, the Supabase database, the payments plumbing and the live offer
-            catalogue, and reconciled the commission ledger against payout records to the cent.
+            catalogue, and checked the commission ledger against payout records to the cent.
           </p>
           <p>
             Two of the v4 fixes are worth naming because they are the kind of thing audits are
-            for. Outbound affiliate postbacks turned out to be stored where they could never
+            for. Outbound affiliate notifications turned out to be stored where they could never
             fire from — they are now recorded through proof-gated database functions. And one
-            offer\u2019s payout had drifted from its feed rate (the network was effectively
-            keeping about 47% instead of the intended 25%); the rate was corrected to $0.59
+            offer’s payout had drifted from its feed rate; the rate was corrected to $0.59
             and feed-vs-catalogue drift is now a checked item in every audit.
           </p>
           <p>
@@ -157,7 +156,7 @@ export function Trust() {
             <strong>append-only commission ledger</strong>. Rows are never edited and never
             deleted — a database trigger rejects both. If a conversion is later rejected or a
             payment is reversed, the correction is a new row that reverses the old one, so the
-            full history stays visible to anyone reconciling the books.
+            full history stays visible to anyone checking the books.
           </p>
           <p>
             Conversions move through named states — <strong>pending → approved → payable →
@@ -168,8 +167,7 @@ export function Trust() {
           </p>
           <p>
             Affiliates are paid on the published terms — Net-30, in USDT — and advertisers pay
-            only for conversions they have reviewed. The split on feed offers is published per
-            offer, in the catalogue, before you run traffic to it.
+            only for conversions they have reviewed.
           </p>
         </div>
       </section>
@@ -180,7 +178,7 @@ export function Trust() {
         </h2>
         <div className="mt-6 space-y-4 rounded-xl bg-white p-6 text-slate-700">
           <p>
-            Every audit reconciles the ledger against payout transactions. The current books
+            Every audit checks the ledger against payout transactions. The current books
             show <strong>$24.09</strong> marked paid in the ledger against{' '}
             <strong>$12.07</strong> in payout transactions — a gap of exactly{' '}
             <strong>$12.02</strong>, unchanged across the last three audits.

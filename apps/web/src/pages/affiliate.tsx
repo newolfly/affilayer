@@ -286,6 +286,10 @@ export function AffiliateOfferDetail() {
     <Card title={offer.name}>
       <p className="text-sm text-slate-600">{offer.description}</p>
       <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-slate-900">{offerPayoutPlain(offer)}</p>
+      <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+        <span className="font-semibold text-slate-900">How you earn: </span>
+        Share your tracking link. When a visitor buys or registers through it, the sale counts as yours and shows in your reports. You get paid in USDT (TRC20) once your approved balance reaches $50, Net-30.
+      </div>
       <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
         <div><dt className="text-slate-500">Category</dt><dd>{offer.vertical ?? '—'}</dd></div>
         <div><dt className="text-slate-500">What earns you money</dt><dd>{resultNoun(offer.conversionType) === 'result' ? 'A completed action' : `A ${resultNoun(offer.conversionType)}`}</dd></div>

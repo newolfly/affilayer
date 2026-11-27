@@ -57,13 +57,13 @@ const EN: BrandStrings = {
   ],
   principlesH: 'The three principles',
   principles: [
-    { t: 'Tracking you can audit', d: 'Every click gets a unique click ID with country, device, referrer and sub-parameters, and stays linked to its conversion.' },
+    { t: 'Tracking you can audit', d: 'Every click is counted as yours, with country, device, referrer and sub-parameters, and stays linked to its sale.' },
     { t: 'An append-only commission ledger', d: 'Commissions move through pending, approved, rejected or reversed states, with a record of each change, in a ledger that cannot be silently rewritten.' },
     { t: 'Approval on both sides', d: 'Affiliates apply to offers, advertisers approve them, and conversions are reviewed before they become payable. Nobody runs blind.' },
   ],
   differentH: 'What makes it different',
   different: [
-    { t: 'Auditable ledger', d: 'The numbers you see are the numbers in the ledger. Every commission state change is recorded. Verify it: in your dashboard, every conversion shows its click ID.' },
+    { t: 'Auditable ledger', d: 'The numbers you see are the numbers in the ledger. Every commission state change is recorded. Verify it: in your dashboard, every sale shows the click that earned it.' },
     { t: 'Deterministic SmartLink', d: 'One link routes each visitor to an eligible offer for their country and device, using clear deterministic rules. No AI optimisation, no black box, no guaranteed earnings — and you see which offer each click landed on.' },
     { t: 'Manual, admin-approved payouts', d: 'Payouts are reviewed by a person before money moves. Net30 by default: approved commissions become payable 30 days after the end of the month in which they were approved.' },
   ],
@@ -109,7 +109,7 @@ const EN: BrandStrings = {
     'Offer catalogue: small and growing offer by offer',
   ],
   pressH: 'Press kit',
-  press: 'Logos, boilerplate and brand rules — download the press kit. For press enquiries, email support@affilayer.com with the subject "Press". For tracking questions, include the click ID from your link.',
+  press: 'Logos, boilerplate and brand rules — download the press kit. For press enquiries, email support@affilayer.com with the subject "Press". For tracking questions, include your tracking link.',
   pressCta: 'Download the press kit (.zip)',
 }
 
@@ -128,13 +128,13 @@ const ES: BrandStrings = {
   ],
   principlesH: 'Los tres principios',
   principles: [
-    { t: 'Seguimiento que puedes auditar', d: 'Cada clic recibe un ID único con país, dispositivo, referente y subparámetros, y queda vinculado a su conversión.' },
+    { t: 'Seguimiento que puedes auditar', d: 'Cada clic cuenta como tuyo, con país, dispositivo, referente y subparámetros, y queda vinculado a su venta.' },
     { t: 'Un libro contable de comisiones de solo anexión', d: 'Las comisiones pasan por estados pendiente, aprobada, rechazada o revertida, con un registro de cada cambio, en un libro que no se puede reescribir en silencio.' },
     { t: 'Aprobación en ambos lados', d: 'Los afiliados solicitan ofertas, los anunciantes las aprueban y las conversiones se revisan antes de ser pagaderas. Nadie trabaja a ciegas.' },
   ],
   differentH: 'Qué nos hace diferentes',
   different: [
-    { t: 'Libro contable auditable', d: 'Los números que ves son los números del libro contable. Cada cambio de estado de una comisión queda registrado. Verifícalo: en tu panel, cada conversión muestra su ID de clic.' },
+    { t: 'Libro contable auditable', d: 'Los números que ves son los números del libro contable. Cada cambio de estado de una comisión queda registrado. Verifícalo: en tu panel, cada venta muestra el clic que la ganó.' },
     { t: 'SmartLink determinista', d: 'Un enlace dirige a cada visitante a una oferta elegible para su país y dispositivo, con reglas deterministas claras. Sin optimización de IA, sin caja negra, sin ganancias garantizadas — y ves a qué oferta llegó cada clic.' },
     { t: 'Pagos manuales, aprobados por un administrador', d: 'Un persona revisa los pagos antes de que se mueva el dinero. Net30 por defecto: las comisiones aprobadas se vuelven pagaderas 30 días después del fin del mes en que fueron aprobadas.' },
   ],
@@ -180,7 +180,7 @@ const ES: BrandStrings = {
     'Catálogo de ofertas: pequeño y creciendo oferta a oferta',
   ],
   pressH: 'Kit de prensa',
-  press: 'Logotipos, texto estándar y reglas de marca — descarga el kit de prensa. Para consultas de prensa, escribe a support@affilayer.com con el asunto "Press". Para preguntas de seguimiento, incluye el ID de clic de tu enlace.',
+  press: 'Logotipos, texto estándar y reglas de marca — descarga el kit de prensa. Para consultas de prensa, escribe a support@affilayer.com con el asunto "Press". Para preguntas de seguimiento, incluye tu enlace de seguimiento.',
   pressCta: 'Descargar el kit de prensa (.zip)',
 }
 
@@ -199,13 +199,13 @@ const PT: BrandStrings = {
   ],
   principlesH: 'Os três princípios',
   principles: [
-    { t: 'Rastreamento que você pode auditar', d: 'Cada clique recebe um ID único com país, dispositivo, referência e subparâmetros, e permanece vinculado à sua conversão.' },
+    { t: 'Rastreamento que você pode auditar', d: 'Cada clique conta como seu, com país, dispositivo, referência e subparâmetros, e permanece vinculado à sua venda.' },
     { t: 'Um livro-razão de comissões append-only', d: 'As comissões passam pelos estados pendente, aprovada, rejeitada ou revertida, com registro de cada mudança, em um livro que não pode ser reescrito em silêncio.' },
     { t: 'Aprovação dos dois lados', d: 'Os afiliados se candidatam às ofertas, os anunciantes as aprovam e as conversões são revisadas antes de se tornarem pagáveis. Ninguém trabalha às cegas.' },
   ],
   differentH: 'O que nos torna diferentes',
   different: [
-    { t: 'Livro-razão auditável', d: 'Os números que você vê são os números do livro-razão. Cada mudança de estado de uma comissão é registrada. Verifique: no seu painel, cada conversão mostra seu ID de clique.' },
+    { t: 'Livro-razão auditável', d: 'Os números que você vê são os números do livro-razão. Cada mudança de estado de uma comissão é registrada. Verifique: no seu painel, cada venda mostra o clique que a gerou.' },
     { t: 'SmartLink determinístico', d: 'Um link direciona cada visitante a uma oferta elegível para seu país e dispositivo, com regras determinísticas claras. Sem otimização de IA, sem caixa-preta, sem ganhos garantidos — e você vê para qual oferta cada clique foi.' },
     { t: 'Pagamentos manuais, aprovados por um administrador', d: 'Uma pessoa revisa os pagamentos antes de o dinheiro se mover. Net30 por padrão: as comissões aprovadas se tornam pagáveis 30 dias após o fim do mês em que foram aprovadas.' },
   ],
@@ -251,7 +251,7 @@ const PT: BrandStrings = {
     'Catálogo de ofertas: pequeno e crescendo oferta por oferta',
   ],
   pressH: 'Kit de imprensa',
-  press: 'Logotipos, texto padrão e regras de marca — baixe o kit de imprensa. Para consultas de imprensa, escreva para support@affilayer.com com o assunto "Press". Para perguntas de rastreamento, inclua o ID de clique do seu link.',
+  press: 'Logotipos, texto padrão e regras de marca — baixe o kit de imprensa. Para consultas de imprensa, escreva para support@affilayer.com com o assunto "Press". Para perguntas de rastreamento, inclua seu link de rastreamento.',
   pressCta: 'Baixar o kit de imprensa (.zip)',
 }
 

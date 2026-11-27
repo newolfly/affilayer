@@ -26,7 +26,7 @@
       <link>https://affilayer.com/blog/how-affilayer-payouts-work</link>
       <guid isPermaLink="true">https://affilayer.com/blog/how-affilayer-payouts-work</guid>
       <pubDate>Thu, 26 Nov 2026 00:00:00 GMT</pubDate>
-      <description>AffiLayer pays in USDT (TRC20) from a $50 approved balance, Net-30. Until 25 February 2027 you keep 100% of the payout. The full terms, plainly.</description>
+      <description>AffiLayer pays in USDT (TRC20) from a $50 approved balance, Net-30. The full terms, plainly.</description>
       <category>Guides</category><category>payouts</category><category>usdt</category><category>net30</category>
     </item>
     <item>
@@ -86,20 +86,12 @@
       <category>AdTech Insights</category><category>smartlink</category><category>tracking</category><category>geo</category>
     </item>
     <item>
-      <title>How affiliate tracking actually works: click IDs, postbacks and S2S</title>
-      <link>https://affilayer.com/blog/how-affiliate-tracking-works</link>
-      <guid isPermaLink="true">https://affilayer.com/blog/how-affiliate-tracking-works</guid>
-      <pubDate>Tue, 10 Nov 2026 00:00:00 GMT</pubDate>
-      <description>A click gets a unique ID, the conversion is linked back to it, and the record is signed and deduplicated. That chain is the whole of tracking.</description>
-      <category>AdTech Insights</category><category>tracking</category><category>postback</category><category>attribution</category>
-    </item>
-    <item>
-      <title>Why your conversions go missing: pixels, ad blockers and the case for server-to-server</title>
+      <title>Why your sales go missing: what to check first</title>
       <link>https://affilayer.com/blog/why-conversions-go-missing</link>
       <guid isPermaLink="true">https://affilayer.com/blog/why-conversions-go-missing</guid>
       <pubDate>Tue, 10 Nov 2026 00:00:00 GMT</pubDate>
-      <description>A conversion that never reaches the network never pays. Pixels lose conversions to browsers; server-to-server reporting does not depend on them.</description>
-      <category>AdTech Insights</category><category>tracking</category><category>postback</category><category>pixels</category>
+      <description>A sale that never reaches the network never pays. Most missing sales are lost in the reporting, not in the traffic.</description>
+      <category>AdTech Insights</category><category>tracking</category><category>sales</category><category>reporting</category>
     </item>
     <item>
       <title>Best CPA networks for beginners: real terms compared</title>

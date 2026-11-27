@@ -40,7 +40,7 @@ export interface NetworkStat {
 export const NETWORK_STATS: NetworkStat[] = [
   { value: '195', label: 'Countries live', sub: 'a country page with local join terms for each', icon: 'compass' },
   { value: '5', label: 'Offers live', sub: 'in the public catalogue right now', icon: 'tag' },
-  { value: '28', label: 'Guides published', sub: 'launch notes, guides and announcements', icon: 'file' },
+  { value: '27', label: 'Guides published', sub: 'launch notes, guides and announcements', icon: 'file' },
   { value: '82', label: 'Clicks tracked', sub: 'written to the ledger since launch', icon: 'chart' },
   { value: '24', label: 'Conversions recorded', sub: 'each one a ledger row — never edited, never deleted', icon: 'check' },
 ]
@@ -51,4 +51,4 @@ export const NETWORK_STATS: NetworkStat[] = [
 export const ACTIVITY_DISCLOSURE =
   'Counters are the network\u2019s own ledger totals since launch on 7 November 2026 and include ' +
   'AffiLayer\u2019s published end-to-end verification traffic from its forensic audit programme. ' +
-  'We publish them exactly as recorded — the same numbers our auditors reconcile.'
+  'We publish them exactly as recorded — the same numbers our auditors check.'
