@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
@@ -295,15 +295,17 @@ export function AffiliateOfferDetail() {
         <div><dt className="text-slate-500">Where you can promote it</dt><dd>{(offer.trafficSources ?? []).join(', ') || 'Anywhere — ask the team if unsure'}</dd></div>
         <div><dt className="text-slate-500">Limits</dt><dd>At most {offer.capDaily ?? 'no daily limit'} results a day{offer.capTotal != null ? `, ${offer.capTotal} in total` : ''}.</dd></div>
         <div><dt className="text-slate-500">Do you need approval first?</dt><dd>{offer.approvalRequired ? 'Yes — apply below and the advertiser reviews it.' : 'No — you can start right away.'}</dd></div>
-        <div><dt className="text-slate-500">Where your visitors go</dt><dd className="break-all">{offer.landingUrl}</dd></div>
         <div><dt className="text-slate-500">Status</dt><dd>{offer.status === 'active' ? 'Open' : offer.status === 'paused' ? 'Paused' : offer.status}</dd></div>
       </dl>
-      <p className="mt-3 text-xs text-slate-500">The page above is the advertiser's page. Your tracking link sends people there — and counts them as yours.</p>
       {application
         ? <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{application.status === 'approved' ? 'You are approved to run this offer.' : application.status === 'pending' ? 'Application submitted. You will be notified when the advertiser reviews it.' : `Application status: ${application.status}.`}</p>
         : !isMember && <button className={`${btnCls} mt-4`} onClick={apply} disabled={applying}>{applying ? 'Submitting…' : offer.approvalRequired ? 'Apply for this offer' : 'Join this offer'}</button>}
       {applyError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{applyError}</p>}
-      <Link to="/app/affiliate/tracking-links" className="ml-3 text-sm font-semibold text-amber-700">Generate tracking link →</Link>
+      <div className="mt-4 rounded-lg bg-amber-50 px-3 py-3">
+        <p className="text-sm font-semibold text-slate-900">Get your tracking link</p>
+        <p className="mt-1 text-sm text-slate-600">Your tracking link sends people there — and counts them as yours. Pick this offer, copy your link, and share it anywhere you promote.</p>
+        <Link to={`/app/affiliate/tracking-links?offer=${offer.id}`} className={`${btnCls} mt-3 inline-block`}>Get your tracking link →</Link>
+      </div>
     </Card>
   )
 }
@@ -331,7 +333,8 @@ export function AffiliateMyCampaigns() {
 export function AffiliateTrackingLinks() {
   const { user } = useAuth()
   const { data: offers } = useLoad(getOffers, [] as Offer[])
-  const [offerId, setOfferId] = useState('')
+  const [searchParams] = useSearchParams()
+  const [offerId, setOfferId] = useState(searchParams.get('offer') ?? '')
   const [subs, setSubs] = useState({ sub1: '', sub2: '', sub3: '', sub4: '', sub5: '' })
   // A team member's links carry the team head's code, not their own
   // (their own code does not work while they are on a team).

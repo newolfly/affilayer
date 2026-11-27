@@ -237,9 +237,9 @@ export function Trust() {
             proven before its first cycle is asking for faith, not showing you evidence.
           </p>
           <p>
-            <strong>Partner approvals are in flight.</strong> The live catalogue runs on a
-            CPAlead feed whose publisher approval was under review at the time of the v4 audit;
-            a second catalogue agreement (MyLead) is with the network\u2019s affiliate manager.
+            <strong>Partner approvals are in flight.</strong> The live catalogue runs on
+            partner feeds whose publisher approval was under review at the time of the v4 audit;
+            a second catalogue agreement is with another network\u2019s affiliate manager.
             Catalogue depth is the thing we are growing next, in the open.
           </p>
         </div>
