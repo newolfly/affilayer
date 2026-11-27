@@ -131,6 +131,120 @@ body {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 
+/* Homepage benefit cards ("Why run traffic on AffiLayer"): dark premium
+ * surfaces that match the hero — deep gradient, a faint dot grid fading
+ * out toward the bottom-left, an accent glow in the top corner and a
+ * thin accent bar along the top edge. The per-card accent comes from
+ * the .benefit-accent-* modifiers, which set the --accent variables. */
+.benefit-card {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  border-radius: 1rem;
+  border: 1px solid #1E2A3F;
+  background:
+    radial-gradient(150px 110px at 88% -10%, var(--accent-glow), transparent 70%),
+    linear-gradient(160deg, #101d33 0%, #0F1B2E 55%, #0B1526 100%);
+  padding: 1.25rem;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.benefit-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(138, 151, 168, 0.16) 1px, transparent 1.5px);
+  background-size: 16px 16px;
+  mask-image: radial-gradient(160px 120px at 88% 0%, black 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(160px 120px at 88% 0%, black 20%, transparent 75%);
+}
+.benefit-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), transparent 75%);
+  opacity: 0.85;
+}
+.benefit-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-border);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 8px 28px var(--accent-glow);
+}
+.benefit-card:hover .benefit-icon {
+  transform: scale(1.08) rotate(-3deg);
+}
+
+/* Per-card accents — gold is the public brand; sky and periwinkle echo
+ * the promo-kit blue/indigo already used in the signed-in app. */
+.benefit-accent-gold {
+  --accent: #F59E0B;
+  --accent-soft: rgba(245, 158, 11, 0.12);
+  --accent-glow: rgba(245, 158, 11, 0.16);
+  --accent-border: rgba(245, 158, 11, 0.55);
+}
+.benefit-accent-sky {
+  --accent: #38BDF8;
+  --accent-soft: rgba(56, 189, 248, 0.12);
+  --accent-glow: rgba(56, 189, 248, 0.14);
+  --accent-border: rgba(56, 189, 248, 0.5);
+}
+.benefit-accent-indigo {
+  --accent: #A5B4FC;
+  --accent-soft: rgba(165, 180, 252, 0.12);
+  --accent-glow: rgba(165, 180, 252, 0.14);
+  --accent-border: rgba(165, 180, 252, 0.5);
+}
+
+/* Icon chip: larger than the old beige chip, tinted with the card accent. */
+.benefit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.85rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  transition: transform 0.2s ease;
+}
+
+/* "Ready to start?" conversion card: stays distinct — gold-tinted dark
+ * surface with the same dot language and a stronger gold edge. */
+.benefit-cta {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  background:
+    radial-gradient(170px 130px at 85% -10%, rgba(245, 158, 11, 0.22), transparent 70%),
+    linear-gradient(150deg, rgba(245, 158, 11, 0.14), rgba(217, 119, 6, 0.04) 55%, #111C30);
+  padding: 1.25rem;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.benefit-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(245, 158, 11, 0.18) 1px, transparent 1.5px);
+  background-size: 16px 16px;
+  mask-image: radial-gradient(170px 130px at 88% 0%, black 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(170px 130px at 88% 0%, black 20%, transparent 75%);
+}
+.benefit-cta:hover {
+  transform: translateY(-4px);
+  border-color: rgba(245, 158, 11, 0.7);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+.benefit-cta:hover .benefit-icon {
+  transform: scale(1.08) rotate(-3deg);
+}
+
 /* Respect users who prefer no motion. */
 @media (prefers-reduced-motion: reduce) {
   .reveal {
@@ -146,10 +260,19 @@ body {
   }
   .lift,
   .pill-btn,
-  .pill-btn-outline {
+  .pill-btn-outline,
+  .benefit-card,
+  .benefit-cta,
+  .benefit-icon {
     transition: none;
   }
-  .lift:hover {
+  .lift:hover,
+  .benefit-card:hover,
+  .benefit-cta:hover {
+    transform: none;
+  }
+  .benefit-card:hover .benefit-icon,
+  .benefit-cta:hover .benefit-icon {
     transform: none;
   }
   .page-in {

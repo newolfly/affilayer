@@ -53,6 +53,14 @@ const PATHS: Record<string, (p: IconProps) => JSX.Element> = {
     <path d="M20.59 13.41 11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82z" />
     <circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none" />
   </>, p),
+  /** Price tag with a check badge — an offer whose terms are stated
+   *  up front. The badge sits clear of the tag's diagonal band. */
+  'tag-check': (p) => base(<>
+    <path d="M20.59 13.41 11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82z" />
+    <circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none" />
+    <circle cx="17.5" cy="17.5" r="4" />
+    <polyline points="15.8 17.5 17 18.7 19.3 16.3" />
+  </>, p),
   megaphone: (p) => base(<>
     <path d="m3 11 18-5v12L3 13v-2z" />
     <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
@@ -61,10 +69,22 @@ const PATHS: Record<string, (p: IconProps) => JSX.Element> = {
     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
   </>, p),
+  /** One link splitting into two destinations — SmartLink routing. */
+  route: (p) => base(<>
+    <circle cx="6" cy="12" r="2.2" />
+    <circle cx="18" cy="5" r="2.2" />
+    <circle cx="18" cy="19" r="2.2" />
+    <path d="M8.2 11 15.8 6M8.2 13 15.8 18" />
+  </>, p),
   chart: (p) => base(<>
     <line x1="12" y1="20" x2="12" y2="10" />
     <line x1="18" y1="20" x2="18" y2="4" />
     <line x1="6" y1="20" x2="6" y2="16" />
+  </>, p),
+  /** Funnel — the full click-to-sale funnel, counted end to end. */
+  funnel: (p) => base(<>
+    <path d="M4 4h16l-6.5 7.5V19l-3 1.5v-9L4 4z" />
+    <line x1="12" y1="15" x2="12" y2="17.5" />
   </>, p),
   wallet: (p) => base(<>
     <path d="M20 7H4a2 2 0 0 1 0-4h14a2 2 0 0 1 2 2v2" />
@@ -77,6 +97,11 @@ const PATHS: Record<string, (p: IconProps) => JSX.Element> = {
     <line x1="6" y1="12" x2="6.01" y2="12" />
     <line x1="18" y1="12" x2="18.01" y2="12" />
   </>, p),
+  /** Banknote with a check — a payout that was reviewed before it paid. */
+  'banknote-check': (p) => base(<>
+    <rect x="2" y="6" width="20" height="12" rx="2" />
+    <polyline points="8 12 10.8 14.8 16 9.6" />
+  </>, p),
   user: (p) => base(<>
     <circle cx="12" cy="8" r="4" />
     <path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" />
@@ -86,6 +111,13 @@ const PATHS: Record<string, (p: IconProps) => JSX.Element> = {
     <path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5" />
     <path d="M16 5.5a3.5 3.5 0 0 1 0 6.5" />
     <path d="M17.5 14.8c2.4.7 4 2.3 4 5.2" />
+  </>, p),
+  /** Headset — a real person answering support, not a bot. */
+  headset: (p) => base(<>
+    <path d="M4 13a8 8 0 0 1 16 0" />
+    <rect x="3" y="13" width="4" height="6" rx="1.5" />
+    <rect x="17" y="13" width="4" height="6" rx="1.5" />
+    <path d="M19 19a4 4 0 0 1-4 2h-3" />
   </>, p),
   shield: (p) => base(<>
     <path d="M12 22s8-3.6 8-10V5l-8-3-8 3v7c0 6.4 8 10 8 10z" />
