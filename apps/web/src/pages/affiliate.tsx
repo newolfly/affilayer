@@ -379,6 +379,149 @@ export function AffiliateOffers() {
   )
 }
 
+/** Escape text for embedding in an HTML snippet. */
+function escHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function CopyButton({ text, label, className = '' }: { text: string; label: string; className?: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      type="button"
+      className={`${btnCls} ${className}`}
+      onClick={() => {
+        navigator.clipboard?.writeText(text).catch(() => undefined)
+        setCopied(true)
+        window.setTimeout(() => setCopied(false), 2000)
+      }}
+    >
+      {copied ? 'Copied' : label}
+    </button>
+  )
+}
+
+const STEP_ICONS = {
+  link: (
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+  ),
+  image: (
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+  ),
+  share: (
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+  ),
+}
+
+/** Ready-made promotion material for one active offer: banners, a
+ *  poster, bio lines, and the steps to share them. Every template
+ *  carries the affiliate's own tracking link — team members use their
+ *  team head's code, same as the tracking-links page. Active offers
+ *  only; coming-soon cards get no promo kit. */
+function AffiliatePromoKit({ offer }: { offer: Offer }) {
+  const { user } = useAuth()
+  const code = user?.teamContext?.parentCode ?? user?.affiliateCode ?? ''
+  const url = code ? trackingLink(code, offer.id) : ''
+  const payout = offerPayoutPlain(offer)
+  const headline = offerHeadline(offer)
+  const [done, setDone] = useState<string[]>([])
+  const toggle = (k: string) => setDone((d) => (d.includes(k) ? d.filter((x) => x !== k) : [...d, k]))
+
+  const wideHtml = `<a href="${url}" style="display:block;max-width:728px;background:linear-gradient(135deg,#1e1b4b,#294ffc);color:#ffffff;padding:18px 24px;border-radius:12px;text-decoration:none;font-family:sans-serif;"><span style="font-size:20px;font-weight:700;">${escHtml(offer.name)}</span><br><span style="font-size:14px;">${escHtml(payout)}</span></a>`
+  const squareHtml = `<a href="${url}" style="display:block;width:300px;background:linear-gradient(160deg,#312e81,#2e8cff);color:#ffffff;padding:24px;border-radius:16px;text-decoration:none;font-family:sans-serif;text-align:center;"><span style="font-size:22px;font-weight:700;">${escHtml(offer.name)}</span><br><span style="font-size:14px;">${escHtml(payout)}</span><br><span style="display:inline-block;margin-top:12px;background:#fbbf24;color:#0b1220;font-weight:700;font-size:14px;padding:8px 16px;border-radius:999px;">Start now</span></a>`
+  const posterHtml = `<div style="width:360px;background:#f4f5f9;border-radius:16px;padding:28px 24px;font-family:sans-serif;text-align:center;"><p style="color:#294ffc;font-weight:700;letter-spacing:2px;font-size:12px;">AFFILAYER</p><h2 style="font-size:26px;margin:8px 0;color:#1e1b4b;">${escHtml(offer.name)}</h2><p style="font-size:15px;color:#2b2b4d;">${escHtml(offerCommissionLabel(offer))}</p><p style="margin-top:16px;"><a href="${url}" style="color:#294ffc;font-weight:700;word-break:break-all;">${escHtml(url)}</a></p></div>`
+
+  const bios = [
+    `Earning with AffiLayer — ${offer.name}: ${payout}. My link: ${url} · Code: ${code}`,
+    `${offer.name} pays ${headline} — I promote it with AffiLayer. Join me: ${url} · Code: ${code}`,
+    `My AffiLayer link for ${offer.name} — ${payout}. ${url} · Code: ${code}`,
+  ]
+  const todos = [
+    'Copy your tracking link',
+    'Put the banner on your page or in a post',
+    'Add a bio line to your profile',
+    'Share your link in one place today',
+  ]
+  const steps = [
+    { key: 'link', icon: STEP_ICONS.link, title: '1. Copy your link', text: 'Your own link for this offer. Anyone who uses it counts as yours.', action: 'Copy your link', copy: url },
+    { key: 'banner', icon: STEP_ICONS.image, title: '2. Get your banner', text: 'A ready-made banner with your link built in. Paste it on your page or in a post.', action: 'Copy banner HTML', copy: wideHtml },
+    { key: 'share', icon: STEP_ICONS.share, title: '3. Share it', text: 'Post it where your people are — WhatsApp, Facebook, Telegram, or your own page.', action: 'Copy link to share', copy: url },
+  ]
+
+  return (
+    <Card title="Promote this offer">
+      <p className="text-sm text-slate-600">Everything below is ready to use — your tracking link is already built into every template. Copy, paste, share.</p>
+      {user?.teamContext && <p className="mt-3 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">These templates use your team head's code — clicks and earnings go to the team.</p>}
+      {!url && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Your affiliate code is not available on this account yet, so a working link cannot be generated. Please contact support@affilayer.com.</p>}
+      {url && (
+        <>
+          <p className="mt-4 text-sm font-semibold text-slate-900">Your code: <span className="font-mono">{code}</span></p>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            {steps.map((s) => (
+              <div key={s.key} className="flex flex-col rounded-2xl border border-indigo-100 bg-gradient-to-b from-indigo-50/70 to-white p-4 shadow-sm">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1e1b4b] to-[#294ffc] text-white">{s.icon}</div>
+                <h3 className="mt-3 text-base font-semibold text-slate-900">{s.title}</h3>
+                <p className="mt-1 flex-1 text-sm text-slate-600">{s.text}</p>
+                <CopyButton text={s.copy} label={s.action} className="mt-3 self-start" />
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+            <p className="text-sm font-semibold text-slate-900">Your to-do list {done.length > 0 && <span className="font-normal text-slate-500">— {done.length} of {todos.length} done</span>}</p>
+            <ul className="mt-2 space-y-2">
+              {todos.map((t) => (
+                <li key={t}>
+                  <button type="button" onClick={() => toggle(t)} className="flex items-center gap-2 text-left text-sm text-slate-700" aria-pressed={done.includes(t)}>
+                    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${done.includes(t) ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-300 bg-white text-transparent'}`}>✓</span>
+                    <span className={done.includes(t) ? 'line-through text-slate-400' : ''}>{t}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <h3 className="mt-6 text-base font-semibold text-slate-900">Banners — your link is built in</h3>
+          <div className="mt-3 space-y-4">
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Wide banner</p>
+              <div className="rounded-xl bg-gradient-to-r from-[#1e1b4b] to-[#294ffc] px-6 py-4 text-white">
+                <p className="text-lg font-bold">{offer.name}</p>
+                <p className="text-sm text-indigo-100">{payout}</p>
+              </div>
+              <CopyButton text={wideHtml} label="Copy HTML" className="mt-2" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Square banner</p>
+              <div className="flex aspect-square w-full max-w-[300px] flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-[#312e81] to-[#2e8cff] p-6 text-center text-white">
+                <p className="text-xl font-bold">{offer.name}</p>
+                <p className="mt-1 text-sm text-indigo-100">{payout}</p>
+                <span className="mt-3 rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-[#0b1220]">Start now</span>
+              </div>
+              <CopyButton text={squareHtml} label="Copy HTML" className="mt-2" />
+            </div>
+          </div>
+          <h3 className="mt-6 text-base font-semibold text-slate-900">Poster</h3>
+          <div className="mt-3 w-full max-w-[360px] rounded-2xl bg-[#f4f5f9] p-7 text-center">
+            <p className="text-xs font-bold tracking-[2px] text-[#294ffc]">AFFILAYER</p>
+            <p className="mt-2 text-2xl font-bold text-[#1e1b4b]">{offer.name}</p>
+            <p className="mt-1 text-sm text-[#2b2b4d]">{offerCommissionLabel(offer)}</p>
+            <p className="mt-4 break-all text-sm font-semibold text-[#294ffc]">{url}</p>
+          </div>
+          <CopyButton text={posterHtml} label="Copy poster HTML" className="mt-2" />
+          <h3 className="mt-6 text-base font-semibold text-slate-900">Bio lines — paste one on your profile</h3>
+          <div className="mt-3 space-y-3">
+            {bios.map((b, i) => (
+              <div key={i} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="break-words text-sm text-slate-700">{b}</p>
+                <CopyButton text={b} label="Copy bio" className="mt-2" />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </Card>
+  )
+}
+
 export function AffiliateOfferDetail() {
   const { id } = useParams()
   const { user } = useAuth()
@@ -387,13 +530,17 @@ export function AffiliateOfferDetail() {
   // since members generate links with the team head's code.
   const isMember = !!user?.teamContext
   const [offer, setOffer] = useState<Offer | undefined>()
+  const [loaded, setLoaded] = useState(false)
   const [application, setApplication] = useState<OfferApplication | null>(null)
   const [applyError, setApplyError] = useState('')
   const [applying, setApplying] = useState(false)
-  useEffect(() => { if (id) getOffers().then((os) => setOffer(os.find((o) => o.id === id))) }, [id])
+  useEffect(() => { if (id) getOffers().then((os) => { setOffer(os.find((o) => o.id === id)); setLoaded(true) }).catch(() => setLoaded(true)) }, [id])
   useEffect(() => {
     if (id) getMyOfferApplications().then((apps) => setApplication(apps.find((a) => a.offerId === id) ?? null))
   }, [id])
+  // Show a loading state until the offers arrive — rendering "not found"
+  // first flashed it on every click-through from the Offers page.
+  if (!loaded) return <Card><p className="text-sm text-slate-500">Loading offer…</p></Card>
   if (!offer) return <Card><Empty text="Offer not found." /></Card>
   const apply = async () => {
     setApplying(true)
@@ -404,6 +551,7 @@ export function AffiliateOfferDetail() {
     setApplication(apps.find((a) => a.offerId === offer.id) ?? null)
   }
   return (
+    <>
     <Card title={offer.name}>
       <p className="text-sm text-slate-600">{offer.description}</p>
       <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-slate-900">{offerPayoutPlain(offer)}</p>
@@ -437,6 +585,8 @@ export function AffiliateOfferDetail() {
         <Link to={`/app/affiliate/tracking-links?offer=${offer.id}`} className={`${btnCls} mt-3 inline-block`}>Get your tracking link →</Link>
       </div>
     </Card>
+    {offer.status === 'active' && <AffiliatePromoKit offer={offer} />}
+    </>
   )
 }
 
