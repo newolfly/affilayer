@@ -33,7 +33,7 @@ CHROME = next(
 # Routes that intentionally carry no JSON-LD: noindex auth pages get no
 # structured data by design (seo.ts returns no jsonLd for them), so the
 # JSON-LD presence check below does not apply to them.
-NO_JSONLD = {"/login", "/register", "/forgot-password", "/reset-password", "/onboarding"}
+NO_JSONLD = {"/login", "/register", "/forgot-password", "/reset-password", "/onboarding", "/app"}
 
 # route -> texts that must appear in the prerendered HTML (proves real content, not the shell)
 ROUTES = {
@@ -48,6 +48,13 @@ ROUTES = {
     "/forgot-password": ["Forgot password", "Enter the email you registered with"],
     "/reset-password": ["Set a new password", "This reset link is invalid or has expired."],
     "/onboarding": ["Onboarding", "Tell us about your profile"],
+    # /app must exist as a real file: without dist/app/index.html,
+    # Cloudflare Pages 308-redirects /app to / and the SPA never loads,
+    # so a signed-in user typing /app lands on the homepage instead of
+    # their dashboard. The prerendered shell boots the app and AppHome
+    # routes the signed-in user to their role dashboard. Marker is the
+    # page title (RouteSeo sets it for /app); no JSON-LD on app routes.
+    "/app": ["AffiLayer — Global CPA Affiliate Network"],
     "/faq": ["What is AffiLayer?"],
     "/blog": ["AffiLayer is live"],
     "/blog/category/launch-notes": ["Launch Notes", "AffiLayer blog"],

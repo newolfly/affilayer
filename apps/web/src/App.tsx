@@ -101,6 +101,12 @@ const affiliateNav: DashboardNavItem[] = [
   { to: '/app/affiliate', label: 'Dashboard', icon: 'grid' },
   { to: '/app/affiliate/guide', label: 'Getting started', icon: 'compass' },
   { to: '/app/affiliate/offers', label: 'Offers', icon: 'tag' },
+  // Pillar item: the Dating Smartlink — one link with 1,000+ dating
+  // offers inside (offer 4862c284-05cf-4fe2-ab6f-ae290473ca91, verified
+  // from the DB 27 Nov 2026). Members see it too: AffiliateLayout only
+  // hides Payouts and Postbacks for members, and members generate links
+  // with the team head's code.
+  { to: '/app/affiliate/offers/4862c284-05cf-4fe2-ab6f-ae290473ca91', label: 'Smartlink', icon: 'link' },
   { to: '/app/affiliate/my-campaigns', label: 'My campaigns', icon: 'megaphone' },
   { to: '/app/affiliate/team', label: 'Team', icon: 'users' },
   { to: '/app/affiliate/tracking-links', label: 'Tracking links', icon: 'link' },

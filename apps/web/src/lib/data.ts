@@ -574,6 +574,37 @@ function ratePct(rateBps: number): string {
   return Number.isInteger(p) ? String(p) : p.toFixed(2).replace(/0$/, '')
 }
 
+/** Money with its currency code attached — a EUR offer must never
+ *  render as $. "$40.00 USD" / "€5.47 EUR". */
+export function money(amount: number, currency: string): string {
+  const code = (currency || 'USD').toUpperCase()
+  const symbol = code === 'EUR' ? '€' : '$'
+  return `${symbol}${amount.toFixed(2)} ${code}`
+}
+
+/** What a CPS offer pays on a $100 / €100 example order. CPS rows store
+ *  payout 0 — the sale value is unknown until a visitor buys — so a
+ *  label must never multiply the stored payout (that renders $0.00). */
+function exampleCommission(offer: Offer): number | null {
+  if (offer.payoutModel !== 'CPS' || offer.rateBps == null) return null
+  try {
+    return computeCommission(100, 'CPS', offer.rateBps)
+  } catch {
+    return null
+  }
+}
+
+/** Big payout figure for an offer card: the % for CPS, the flat amount
+ *  otherwise, "Varies" when the amount is not a fixed number. */
+export function offerHeadline(offer: Offer): string {
+  if (offer.payoutModel === 'CPS') {
+    if (offer.rateBps == null) return 'Rate missing'
+    return `${ratePct(offer.rateBps)}%`
+  }
+  if (offer.payout <= 0) return 'Varies'
+  return money(offer.payout, offer.currency)
+}
+
 /** Commission for one offer (what the affiliate earns per conversion),
  *  or null when it cannot be calculated — a CPS offer with no rate.
  *  Never the sale value: computeCommission throws for rateless CPS. */
@@ -586,24 +617,32 @@ export function offerCommission(offer: Offer): number | null {
 }
 
 /** How an offer pays, as shown in lists and tables. M-05: for CPS this
- *  is the percentage of the sale plus the dollar commission — never the
- *  bare sale amount. E.g. a 10% CPS offer: "CPS — 10% of sale ($1.20)". */
+ *  is the percentage of the sale plus the commission on a $100 / €100
+ *  example order — never the stored payout (CPS rows store payout 0).
+ *  E.g. a 40% CPS offer: "CPS — 40% of sale ($40.00 USD on a
+ *  $100.00 USD order)". A flat offer with no fixed amount renders
+ *  "varies", never $0.00. */
 export function offerPayoutLabel(offer: Offer): string {
   if (offer.payoutModel === 'CPS') {
     if (offer.rateBps == null) return 'CPS — rate missing'
-    const commission = offerCommission(offer)
-    return `CPS — ${ratePct(offer.rateBps)}% of sale (${commission == null ? '—' : `$${commission.toFixed(2)}`})`
+    const commission = exampleCommission(offer)
+    return `CPS — ${ratePct(offer.rateBps)}% of sale (${commission == null ? '—' : `${money(commission, offer.currency)} on a ${money(100, offer.currency)} order`})`
   }
-  return `${offer.payoutModel} $${offer.payout.toFixed(2)} ${offer.currency}`
+  if (offer.payout <= 0) return `${offer.payoutModel} — varies per ${resultNoun(offer.conversionType)}`
+  return `${offer.payoutModel} ${money(offer.payout, offer.currency)}`
 }
 
-/** Commission line for an offer detail view. */
+/** Commission line for an offer detail view. CPS shows the commission on
+ *  a $100 / €100 example order, never the stored payout (which is 0). */
 export function offerCommissionLabel(offer: Offer): string {
-  const commission = offerCommission(offer)
-  if (commission == null) return 'Rate missing — commission cannot be calculated'
-  return offer.payoutModel === 'CPS'
-    ? `$${commission.toFixed(2)} per sale (${ratePct(offer.rateBps ?? 0)}% of $${offer.payout.toFixed(2)} order)`
-    : `$${commission.toFixed(2)} per conversion`
+  if (offer.payoutModel === 'CPS') {
+    if (offer.rateBps == null) return 'Rate missing — commission cannot be calculated'
+    const commission = exampleCommission(offer)
+    if (commission == null) return 'Rate missing — commission cannot be calculated'
+    return `${money(commission, offer.currency)} per sale (${ratePct(offer.rateBps)}% of a ${money(100, offer.currency)} order)`
+  }
+  if (offer.payout <= 0) return `Varies per ${resultNoun(offer.conversionType)}`
+  return `${money(offer.payout, offer.currency)} per ${resultNoun(offer.conversionType)}`
 }
 
 /** Plain words for a conversion type: what the visitor does that earns money. */
@@ -623,16 +662,19 @@ export function resultNoun(conversionType?: string): string {
   }
 }
 
-/** What the affiliate earns, in plain words: "You earn $57.25 for each
- *  sale" / "You earn 10% of each sale ($1.20 on a $12.00 order)". */
+/** What the affiliate earns, in plain words: "You earn $57.25 USD for
+ *  each sale" / "You earn 40% of each sale ($40.00 USD on a
+ *  $100.00 USD order)". A flat offer with no fixed amount renders
+ *  "varies", never $0.00. */
 export function offerPayoutPlain(offer: Offer): string {
-  const commission = offerCommission(offer)
   if (offer.payoutModel === 'CPS') {
-    if (offer.rateBps == null || commission == null) return 'You earn a share of each sale — rate missing'
-    return `You earn ${ratePct(offer.rateBps)}% of each sale ($${commission.toFixed(2)} on a $${offer.payout.toFixed(2)} order)`
+    if (offer.rateBps == null) return 'You earn a share of each sale — rate missing'
+    const commission = exampleCommission(offer)
+    if (commission == null) return 'You earn a share of each sale — rate missing'
+    return `You earn ${ratePct(offer.rateBps)}% of each sale (${money(commission, offer.currency)} on a ${money(100, offer.currency)} order)`
   }
-  if (commission == null) return 'You earn a commission for each result'
-  return `You earn $${commission.toFixed(2)} for each ${resultNoun(offer.conversionType)}`
+  if (offer.payout <= 0) return `You earn a commission for each ${resultNoun(offer.conversionType)} — the amount varies`
+  return `You earn ${money(offer.payout, offer.currency)} for each ${resultNoun(offer.conversionType)}`
 }
 
 /** Commission owed for one conversion. M-05: the ledger is the money

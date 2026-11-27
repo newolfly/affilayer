@@ -4,7 +4,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } 
 import { Card, Empty, FirstSteps, Stat } from '../components/layout'
 import { BarChart, LineChart } from '../components/charts'
 import { useAuth } from '../lib/auth'
-import { acceptTeamInvite, applyToOffer, cancelTeamInvite, conversionCommission, createTicket, declineTeamInvite, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getMyOfferApplications, getMyPendingInvites, getMyPostbackConfigs, getMyTeamInvites, getMyTeamMembers, getNpPayouts, getOffers, getPayouts, getStats, getTickets, inviteTeamMember, leaveTeam, offerCommissionLabel, offerPayoutLabel, offerPayoutPlain, removeTeamMember, requestPayout, resultNoun, savePostbackConfig, savePayoutWallet, sumCommissions } from '../lib/data'
+import { acceptTeamInvite, applyToOffer, cancelTeamInvite, conversionCommission, createTicket, declineTeamInvite, getClicks, getConversions, getLedgerEntries, getMyAffiliateProfile, getMyOfferApplications, getMyPendingInvites, getMyPostbackConfigs, getMyTeamInvites, getMyTeamMembers, getNpPayouts, getOffers, getPayouts, getStats, getTickets, inviteTeamMember, leaveTeam, offerCommissionLabel, offerHeadline, offerPayoutLabel, offerPayoutPlain, removeTeamMember, requestPayout, resultNoun, savePostbackConfig, savePayoutWallet, sumCommissions } from '../lib/data'
 import type { OfferApplication, PostbackConfig, ReportFilters, TeamInvite, TeamMember } from '../lib/data'
 import { looksLikeTrc20, validatePayoutAddress } from '../lib/payments'
 import { NETWORK_SETTINGS } from '../lib/network-settings'
@@ -48,6 +48,7 @@ export function AffiliateDashboard() {
   const isMember = !!user?.teamContext
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, approved: 0, pending: 0, revenue: 0, epc: 0, cr: 0 })
   const [offers, setOffers] = useState<Offer[]>([])
+  const [offersLoading, setOffersLoading] = useState(true)
   const [balance, setBalance] = useState(0)
   const [chartClicks, setChartClicks] = useState<Click[]>([])
   const [chartConvs, setChartConvs] = useState<Conversion[]>([])
@@ -82,7 +83,11 @@ export function AffiliateDashboard() {
   })()
   useEffect(() => {
     getStats({ affiliateCode: user?.affiliateCode }).then((s) => setStats(s))
-    getOffers().then(setOffers)
+    // The Active-offers card must not flash "No open offers" while the
+    // list is still loading — the empty message is only true once the
+    // load has finished and returned zero active offers.
+    setOffersLoading(true)
+    getOffers().then((os) => { setOffers(os); setOffersLoading(false) }).catch(() => setOffersLoading(false))
     getClicks({ affiliateCode: user?.affiliateCode }).then(setChartClicks)
   }, [user?.affiliateCode])
   useEffect(() => {
@@ -146,7 +151,8 @@ export function AffiliateDashboard() {
         <Card title="Results — last 7 days"><LineChart data={last7DaysSeries(chartConvs)} /></Card>
       </div>
       <Card title="Active offers">
-        {offers.filter((o) => o.status === 'active').length === 0 ? <Empty text="No open offers right now — check back soon." /> : offers.filter((o) => o.status === 'active').map((o) => (
+        {offersLoading ? <p className="py-2 text-sm text-slate-500">Loading offers…</p>
+        : offers.filter((o) => o.status === 'active').length === 0 ? <Empty text="No open offers right now — check back soon." /> : offers.filter((o) => o.status === 'active').map((o) => (
           <div key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
             <span>{o.name} — {offerPayoutPlain(o)}</span>
             <Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View →</Link>
@@ -226,35 +232,150 @@ export function AffiliateGuide() {
   )
 }
 
+/** The Dating Smartlink: one link, 1,000+ dating offers inside. The line
+ *  is shown verbatim on the smartlink card and at the top of its detail
+ *  page — it is the whole point of the product, so it cannot be buried
+ *  in the description. No provider name, no backend mechanics. */
+const SMARTLINK_OFFER_NAME = 'Dating Smartlink'
+const SMARTLINK_LINE = 'One link with 1,000+ dating offers inside — each visitor sees the best match for their country and device.'
+const isSmartlink = (o: Offer) => o.name === SMARTLINK_OFFER_NAME
+
+function countriesText(o: Offer): string {
+  return !o.countries || o.countries.length === 0 || o.countries.includes('ALL') ? 'All countries' : o.countries.join(', ')
+}
+
+/** Coming-soon showcase — STATIC, by design. These offers are paused in
+ *  the DB and RLS hides paused offers from affiliates, so the page
+ *  cannot read them from the API; the cards below are the showcase.
+ *  Rates verified 27 Nov 2026 against the DB rows (named + Mobidea) and
+ *  the CJ welcome emails (CJ 8). When an offer activates, DELETE its row
+ *  here — the live card then comes from getOffers() automatically.
+ *  NEVER list here: the internal Test Finance Offer, the 9 CPAlead rows
+ *  (account denied), the 23 Beans drafts (unverified), Velocity Outdoor
+ *  (programme deactivated). */
+type ComingSoonOffer = { name: string; payout: string; category: string; countries?: string }
+const COMING_SOON_NAMED: ComingSoonOffer[] = [
+  { name: 'GearUP', payout: '70% of each sale', category: 'Gaming & Software', countries: 'All countries' },
+  { name: 'EdenFantasys', payout: '25% of each sale', category: 'Adult', countries: 'All countries' },
+  { name: 'Canada Pet Care', payout: '10% of each sale', category: 'Pets', countries: 'All countries' },
+  { name: 'Virgin Mobile UAE', payout: '$20.00 USD per order', category: 'Telecom', countries: 'All countries' },
+  { name: 'AliExpress - Global', payout: 'From 1% of each sale', category: 'E-commerce', countries: 'All countries' },
+  // Systeme.io: the DB row still holds the stale pre-promo 4500 bps; the
+  // programme pays 60% lifetime, so 60% is the rate at launch.
+  { name: 'Systeme.io', payout: '60% of each sale', category: 'Marketing Software', countries: 'All countries' },
+  // Finance Survey RevShare: the 50% was seen once and never re-confirmed
+  // — no % on this card until it is confirmed in writing at launch.
+  { name: 'Finance Survey RevShare', payout: 'Revenue share — rate confirmed at launch', category: 'Surveys', countries: 'All countries' },
+]
+const COMING_SOON_MOBIDEA: ComingSoonOffer[] = [
+  // Real € payouts from the DB rows (imported 27 Nov 2026, all CPA, EUR),
+  // best first. Names are the cleaned DB names, spellings as stored.
+  { name: 'NO Download Now PIN', payout: '€5.47 EUR per sign-up', category: 'Entertainment', countries: 'NO' },
+  { name: 'FR Metaplay PIN', payout: '€3.19 EUR per sign-up', category: 'Entertainment', countries: 'FR' },
+  { name: 'CZ Access to Content SMS', payout: '€0.91 EUR per sign-up', category: 'Entertainment', countries: 'CZ' },
+  { name: 'YT Fitness All Click2SMS', payout: '€0.70 EUR per sign-up', category: 'Entertainment', countries: 'YT' },
+  { name: 'IN Starly PayU', payout: '€0.64 EUR per sign-up', category: 'Entertainment', countries: 'IN' },
+  { name: 'IN Starly PayU 7', payout: '€0.64 EUR per sign-up', category: 'Entertainment', countries: 'IN' },
+  { name: 'EE AI Art Download SMS', payout: '€0.64 EUR per sign-up', category: 'Entertainment', countries: 'EE' },
+  { name: 'PK Metaplay BILL Jazz Non billable PIN', payout: '€0.51 EUR per sign-up', category: 'Entertainment', countries: 'PK' },
+  { name: 'PK Sypee Jazz billable PIN', payout: '€0.51 EUR per sign-up', category: 'Entertainment', countries: 'PK' },
+  { name: 'PT Download File SMS', payout: '€0.47 EUR per sign-up', category: 'Entertainment', countries: 'PT' },
+  { name: 'GH Story Portal MTN 2 Click', payout: '€0.32 EUR per sign-up', category: 'Entertainment', countries: 'GH' },
+  { name: 'NG Game Win Evina MTN 2 Click', payout: '€0.29 EUR per sign-up', category: 'Gaming & Software', countries: 'NG' },
+  { name: 'ZW Hardy Games Econet PIN', payout: '€0.29 EUR per sign-up', category: 'Gaming & Software', countries: 'ZW' },
+  { name: 'GH HomiTV Videos MTN 2 click', payout: '€0.26 EUR per sign-up', category: 'Entertainment', countries: 'GH' },
+  { name: 'JO MAGZMOBI All Non Billable PIN', payout: '€0.26 EUR per sign-up', category: 'Entertainment', countries: 'JO' },
+  { name: 'JO Metaplay All Non Billable PIN', payout: '€0.26 EUR per sign-up', category: 'Entertainment', countries: 'JO' },
+  { name: 'LK Metaplay Hutch Non Billable PIN', payout: '€0.26 EUR per sign-up', category: 'Entertainment', countries: 'LK' },
+  { name: 'GH 233 Comics MTN 2 Click', payout: '€0.22 EUR per sign-up', category: 'Entertainment', countries: 'GH' },
+  { name: 'MM Get Access ATOM PIN', payout: '€0.22 EUR per sign-up', category: 'Entertainment', countries: 'MM' },
+  { name: 'NG Century Games MTN Evina 2Click', payout: '€0.19 EUR per sign-up', category: 'Gaming & Software', countries: 'NG' },
+  { name: 'TZ Hardy Games Vodacom PIN', payout: '€0.19 EUR per sign-up', category: 'Gaming & Software', countries: 'TZ' },
+  { name: 'ID Classic Histeria Telkomsel Evina PIN', payout: '€0.16 EUR per sign-up', category: 'Entertainment', countries: 'ID' },
+  { name: 'ID FITRI Hot Telkomsel Evina PIN', payout: '€0.16 EUR per sign-up', category: 'Entertainment', countries: 'ID' },
+  { name: 'ID Fun Fun Telkomsel Evina PIN', payout: '€0.16 EUR per sign-up', category: 'Entertainment', countries: 'ID' },
+  { name: 'ID GAME 2.0 Telkomsel PIN', payout: '€0.16 EUR per sign-up', category: 'Gaming & Software', countries: 'ID' },
+  { name: 'ID IZZ Hotquiz', payout: '€0.16 EUR per sign-up', category: 'Gaming & Software', countries: 'ID' },
+  { name: 'BR Win Mistery Box PIN Revshare', payout: '€0.15 EUR per sign-up', category: 'Sweeps', countries: 'BR' },
+  { name: 'CD Metaplay Africell Non billable PIN', payout: '€0.13 EUR per sign-up', category: 'Entertainment', countries: 'CD' },
+  { name: 'PH Darna Play Games', payout: '€0.13 EUR per sign-up', category: 'Gaming & Software', countries: 'PH' },
+  { name: 'PK Metagame Jazz Non billable PIN', payout: '€0.13 EUR per sign-up', category: 'Gaming & Software', countries: 'PK' },
+  { name: 'PK Slypee Jazz Non billable PIN', payout: '€0.13 EUR per sign-up', category: 'Entertainment', countries: 'PK' },
+  { name: 'TZ TeeAI Vodacom PIN', payout: '€0.10 EUR per sign-up', category: 'Entertainment', countries: 'TZ' },
+  { name: 'IN Mystery Box PIN', payout: '€0.02 EUR per sign-up', category: 'Sweeps', countries: 'IN' },
+]
+const COMING_SOON_CJ: ComingSoonOffer[] = [
+  // Rates from the CJ welcome emails (verified 26 Nov 2026). No DB rows
+  // exist for these — the tracking links were never collected — so these
+  // cards are static only and must never gain a tracking-link action.
+  { name: 'DUOTTS', payout: '6% per sale', category: 'E-bikes' },
+  { name: '24-7PressRelease', payout: '$15.00 USD flat per sale', category: 'Marketing' },
+  { name: 'Abelssoft', payout: '50% per sale', category: 'Software' },
+  { name: 'Bilet BG / Eistirio', payout: '2–7% per sale', category: 'Tickets', countries: 'Bulgaria, Greece, Cyprus' },
+  { name: 'Silver Gold Bull', payout: '1.7% new customers / 0.8% returning', category: 'Finance' },
+  { name: 'DHGate', payout: '2–50% per sale', category: 'E-commerce' },
+  { name: 'Corel', payout: 'Rate confirmed at launch', category: 'Software' },
+  { name: 'TikTok Shop US', payout: 'Rate confirmed at launch', category: 'E-commerce', countries: 'United States' },
+]
+
 export function AffiliateOffers() {
-  const { data: offers } = useLoad(getOffers, [] as Offer[])
+  const { data: offers, loading } = useLoad(getOffers, [] as Offer[])
   const [q, setQ] = useState('')
   const [vertical, setVertical] = useState('')
   const filtered = offers.filter((o) => (!q || o.name.toLowerCase().includes(q.toLowerCase())) && (!vertical || o.vertical === vertical))
+  const active = filtered.filter((o) => o.status === 'active')
+  const comingSoon = [...COMING_SOON_NAMED, ...COMING_SOON_MOBIDEA, ...COMING_SOON_CJ]
   return (
-    <Card title="Offers">
-      <div className="mb-4 flex gap-2">
-        <input className={inputCls} placeholder="Search offers…" aria-label="Search offers" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select className={inputCls} value={vertical} onChange={(e) => setVertical(e.target.value)}>
-          <option value="">All categories</option>
-          {[...new Set(offers.map((o) => o.vertical))].map((v) => <option key={v}>{v}</option>)}
-        </select>
-      </div>
-      {filtered.length === 0 ? <Empty text="No offers match your filters. Clear the search or pick a different category." /> : (
-        <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
-          <thead><tr className="text-left text-slate-500"><th className="py-2">Offer</th><th>Category</th><th>You earn</th><th>Countries</th><th>Status</th><th /></tr></thead>
-          <tbody>
-            {filtered.map((o) => (
-              <tr key={o.id} className="border-t border-slate-100">
-                <td className="py-2 font-medium">{o.name}</td><td>{o.vertical ?? '—'}</td>
-                <td>{offerPayoutPlain(o)}</td><td>{!o.countries || o.countries.length === 0 || o.countries.includes('ALL') ? 'All countries' : o.countries.join(', ')}</td><td>{o.status === 'active' ? 'Open' : o.status === 'paused' ? 'Paused' : o.status}</td>
-                <td><Link to={`/app/affiliate/offers/${o.id}`} className="font-semibold text-amber-700">View</Link></td>
-              </tr>
+    <div className="space-y-4">
+      <Card title="Offers">
+        <div className="mb-4 flex gap-2">
+          <input className={inputCls} placeholder="Search offers…" aria-label="Search offers" value={q} onChange={(e) => setQ(e.target.value)} />
+          <select className={inputCls} value={vertical} onChange={(e) => setVertical(e.target.value)}>
+            <option value="">All categories</option>
+            {[...new Set(offers.map((o) => o.vertical))].map((v) => <option key={v}>{v}</option>)}
+          </select>
+        </div>
+        {loading ? <p className="py-2 text-sm text-slate-500">Loading offers…</p>
+        : active.length === 0 ? <Empty text="No offers match your filters. Clear the search or pick a different category." /> : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {active.map((o) => (
+              <div key={o.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-base font-semibold text-slate-900">{o.name}</h3>
+                  <span className="shrink-0 rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700">Open</span>
+                </div>
+                <p className="mt-2 text-2xl font-bold text-slate-900">{offerHeadline(o)}</p>
+                <p className="mt-0.5 text-sm text-slate-600">{offerPayoutPlain(o)}</p>
+                {isSmartlink(o) && (
+                  <p className="mt-2 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">{SMARTLINK_LINE}</p>
+                )}
+                <p className="mt-2 text-sm text-slate-500">{o.vertical ?? '—'} · {countriesText(o)}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link to={`/app/affiliate/offers/${o.id}`} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700">View</Link>
+                  <Link to={`/app/affiliate/tracking-links?offer=${o.id}`} className={btnCls}>Get tracking link</Link>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table></div>
-      )}
-    </Card>
+          </div>
+        )}
+      </Card>
+      <Card title="Coming soon">
+        <p className="mb-4 text-sm text-slate-600">Offers we're finishing the setup for — they'll open here when they're ready. Nothing below can be run yet.</p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {comingSoon.map((c) => (
+            <div key={c.name} className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-sm font-semibold text-slate-800">{c.name}</h3>
+                <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">Coming soon</span>
+              </div>
+              <p className="mt-1 text-base font-bold text-slate-800">{c.payout}</p>
+              <p className="mt-0.5 text-sm text-slate-500">{c.category}{c.countries ? ` · ${c.countries}` : ''}</p>
+              <p className="mt-2 text-sm text-slate-500">Opening soon — we're finishing the setup.</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
   )
 }
 
@@ -286,6 +407,11 @@ export function AffiliateOfferDetail() {
     <Card title={offer.name}>
       <p className="text-sm text-slate-600">{offer.description}</p>
       <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-slate-900">{offerPayoutPlain(offer)}</p>
+      {isSmartlink(offer) && (
+        <div className="mt-3 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">
+          <span className="font-semibold text-sky-900">{SMARTLINK_LINE}</span>
+        </div>
+      )}
       <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
         <span className="font-semibold text-slate-900">How you earn: </span>
         Share your tracking link. When a visitor buys or registers through it, the sale counts as yours and shows in your reports. You get paid in USDT (TRC20) once your approved balance reaches $50, Net-30.
@@ -297,7 +423,7 @@ export function AffiliateOfferDetail() {
         <div><dt className="text-slate-500">Countries</dt><dd>{!offer.countries || offer.countries.length === 0 || offer.countries.includes('ALL') ? 'All countries' : offer.countries.join(', ')}</dd></div>
         <div><dt className="text-slate-500">Devices</dt><dd>{(offer.devices ?? []).join(', ') || 'All devices'}</dd></div>
         <div><dt className="text-slate-500">Where you can promote it</dt><dd>{(offer.trafficSources ?? []).join(', ') || 'Anywhere — ask the team if unsure'}</dd></div>
-        <div><dt className="text-slate-500">Limits</dt><dd>At most {offer.capDaily ?? 'no daily limit'} results a day{offer.capTotal != null ? `, ${offer.capTotal} in total` : ''}.</dd></div>
+        <div><dt className="text-slate-500">Limits</dt><dd>{offer.capDaily != null ? `At most ${offer.capDaily} results a day` : 'No daily limit'}{offer.capTotal != null ? `, ${offer.capTotal} in total` : ''}.</dd></div>
         <div><dt className="text-slate-500">Do you need approval first?</dt><dd>{offer.approvalRequired ? 'Yes — apply below and the advertiser reviews it.' : 'No — you can start right away.'}</dd></div>
         <div><dt className="text-slate-500">Status</dt><dd>{offer.status === 'active' ? 'Open' : offer.status === 'paused' ? 'Paused' : offer.status}</dd></div>
       </dl>
