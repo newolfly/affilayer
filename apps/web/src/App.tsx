@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { AppLayout, PageLoader } from './components/layout'
@@ -147,21 +147,35 @@ function SkipLink() {
   )
 }
 
-function AuthLandingNotice() {
-  const [show, setShow] = useState(false)
+function SignupRedirect() {
+  const navigate = useNavigate()
   useEffect(() => {
     // Supabase email-confirmation links land on the homepage with
-    // #access_token=…&type=signup in the URL. Until now the user got no
-    // message at all that confirmation had worked (walk audit, H-1).
-    if (window.location.hash.includes('type=signup')) setShow(true)
-  }, [])
-  if (!show) return null
-  return (
-    <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 bg-green-600 px-4 py-2 text-center text-sm font-medium text-white">
-      <span>Your email is confirmed — you're signed in. Welcome to AffiLayer.</span>
-      <button onClick={() => setShow(false)} aria-label="Dismiss" className="rounded bg-white/20 px-2 py-0.5">✕</button>
-    </div>
-  )
+    // #access_token=…&type=signup in the URL. The user was signed in
+    // by the link but stayed on the homepage — nothing routed them to
+    // the dashboard. Route them to /app once the session is set:
+    // RequireAuth sends an approved user to their role dashboard and
+    // a pending user to /pending. The session check comes first —
+    // navigating before the client has consumed the hash token would
+    // lose the sign-in — so wait for getSession() or the SIGNED_IN /
+    // INITIAL_SESSION event.
+    if (!window.location.hash.includes('type=signup')) return
+    if (!supabase) return
+    let done = false
+    const go = () => {
+      if (done) return
+      done = true
+      navigate('/app', { replace: true })
+    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) go()
+    })
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) go()
+    })
+    return () => sub.subscription.unsubscribe()
+  }, [navigate])
+  return null
 }
 
 function RecoveryRedirect() {
@@ -208,7 +222,7 @@ export default function App() {
     <BrowserRouter>
       <LocaleProvider>
       <SkipLink />
-      <AuthLandingNotice />
+      <SignupRedirect />
       <RecoveryRedirect />
       <RouteSeo />
       <Suspense fallback={<PageLoader />}>

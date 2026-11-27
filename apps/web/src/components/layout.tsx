@@ -178,7 +178,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               <Link to="/app" className="pill-btn whitespace-nowrap !px-4 !py-2.5 !text-sm">{t('nav.dashboard')}</Link>
             ) : (
               <>
-                <Link to="/login" className="hidden whitespace-nowrap rounded-full border border-slate-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:border-slate-400 sm:inline-block">{t('nav.login')}</Link>
+                <Link to="/login" className="inline-block whitespace-nowrap rounded-full border border-slate-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-slate-400 sm:px-4 sm:py-2.5 sm:text-sm">{t('nav.login')}</Link>
                 <Link to="/register" className="pill-btn whitespace-nowrap !px-4 !py-2.5 !text-sm">{t('nav.register')}</Link>
               </>
             )}
